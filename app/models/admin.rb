@@ -79,7 +79,11 @@ class Admin < ActiveRecord::Base
 
   # method provided by devise database_authenticable module.
   def send_password_change_notification
-    # do not notify the admins for now
+    # In the MessageNotification.set_from_email_address the default from_address in the user.email and not the admin.email.
+    # If the Settings::NotificationsFromEmail is not set, this notification fails. For now, skip it.
+    return unless Settings::NotificationsFromEmail
+
+    Admins::PasswordChanged.notify(self)
   end
 
   protected

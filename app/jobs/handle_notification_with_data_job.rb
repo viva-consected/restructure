@@ -1,24 +1,17 @@
 # frozen_string_literal: true
 
-class HandlePasswordChangedNotificationJob < ApplicationJob
+class HandleNotificationWithDataJob < ApplicationJob
   queue_as :default
 
-  def perform(user)
-    mn = Messaging::MessageNotification.create! user: user,
-                                                recipient_user_ids: [user.id],
+  def perform(defaults, data = {}, *recipients)
+    recipient_data = recipients.map(&:email)
+    mn = Messaging::MessageNotification.create! recipient_data: recipient_data,
                                                 layout_template_name: defaults[:layout],
                                                 content_template_name: defaults[:content],
                                                 message_type: :email,
                                                 subject: defaults[:subject],
-                                                item: user
+                                                data: data
 
     mn.handle_notification_now logger: Delayed::Worker.logger
-
-  end
-
-  private
-
-  def defaults
-    Users::PasswordChanged.password_changed_defaults
   end
 end

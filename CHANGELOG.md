@@ -19,7 +19,7 @@ release will be created for any release tested in production, and may be marked 
 ## Unreleased
 
 - [Added] ability to specify multiple checkboxes in report select items
-- [Fixed] bug by supressing notification  when the admins change their passwords
+- [Fixed] bug by suppressing notification  when the admins change their passwords
 - [Updated] css for mobile responsiveness, css vars and app styles
 - [Updated] document library to correctly link to source repository
 - [Updated] admin scripts to improve server configuration
