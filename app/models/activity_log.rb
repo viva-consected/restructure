@@ -337,6 +337,7 @@ class ActivityLog < ActiveRecord::Base
             patch "#{ic}/:item_id/#{brn}/:id", to: "#{brn}#update"
             put "#{ic}/:item_id/#{brn}/:id", to: "#{brn}#update"
             get "#{ic}/:item_id/#{brn}/:id/template_config", to: "#{brn}#template_config"
+            get "#{ic}/:item_id/#{brn}/:extra_log_type/new", to: "#{brn}#new"
 
             # used by links to get to activity logs without having to use parent item
             # (such as a player contact with phone logs)
@@ -347,6 +348,7 @@ class ActivityLog < ActiveRecord::Base
             post brn, to: "#{brn}#create"
             patch "#{brn}/:id", to: "#{brn}#update"
             get "#{brn}/:id/template_config", to: "#{brn}#template_config"
+            get "#{brn}/:extra_log_type/new", to: "#{brn}#new"
 
             # used by item flags to generate appropriate URLs
             begin
@@ -608,5 +610,35 @@ class ActivityLog < ActiveRecord::Base
     tn = table_name.sub('activity_log_', 'al_')
     ttn = to_table_name.sub('activity_log_', 'al_')
     "#{ttn}_from_#{tn}"
+  end
+
+  # Hyphenated name, typically used in HTML markup for referencing target blocks and panels
+  def hyphenated_name
+    full_item_type_name.ns_hyphenate
+  end
+
+  # Override to enable extra log types to also be added to Resouces::Models
+  def add_model_to_list(m)
+    super
+    self.class.all_option_configs_resource_names.each do |rn|
+      elt = rn.split('__').last
+      Resources::Models.add(
+        m,
+        resource_name: rn,
+        type: :activity_log_type,
+        base_route_name: nil,
+        base_route_segments: "#{m.base_route_segments}/#{elt}",
+        hyphenated_name: "activity-log--#{implementation_model_name.hyphenate}-#{elt.hyphenate}"
+      )
+    end
+  end
+
+  # Override to enable extra log types to also be added to Resouces::Models
+  # @param [String] tn
+  def remove_model_from_list
+    super
+    self.class.all_option_configs_resource_names.each do |rn|
+      Resources::Models.remove(resource_name: rn)
+    end
   end
 end
