@@ -17,6 +17,8 @@ module AdminHandler
     before_validation :ensure_admin_set, unless: -> { self.class.admin_optional }
     before_create :setup_values
     after_save :invalidate_cache
+
+    add_model_to_list
   end
 
   class_methods do
@@ -50,6 +52,11 @@ module AdminHandler
       name.ns_underscore.pluralize
     end
 
+    # Resource name for a single instance of the model
+    def resource_item_name
+      resource_name.to_s.singularize.to_sym
+    end
+
     def human_name
       name.underscore.humanize.titleize
     end
@@ -58,6 +65,20 @@ module AdminHandler
     # Save this model in the resources list
     def add_model_to_list
       Resources::Models.add self unless abstract_class
+    end
+
+    # The base string for route
+    # For example "admin/app_types"
+    # Dynamic configurations will override this
+    def base_route_segments
+      "admin/#{table_name}"
+    end
+
+    # The base string for route names
+    # For example `send("new_#{base_route_name}_path")` returns the path
+    # to the "new" controller action
+    def base_route_name
+      base_route_segments.singularize.gsub('/', '_')
     end
   end
 
@@ -187,6 +208,19 @@ module AdminHandler
     return super if defined? super
 
     admin_resource_name
+  end
+
+  # Resource name for a single instance of the model
+  def resource_item_name
+    resource_name.to_s.singularize.to_sym
+  end
+
+  # Provide a usable name if this is not overriden or
+  # already exists as a DB attribute
+  def name
+    return super if defined? super
+
+    resource_name.humanize
   end
 
   #

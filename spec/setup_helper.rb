@@ -173,6 +173,8 @@ module SetupHelper
                   'follow_up_when, notes, protocol_id, set_related_player_contact_rank',
       blank_log_field_list: 'select_who, called_when, select_next_step, follow_up_when, notes, protocol_id'
     )
+    ActivityLogSupport.cleanup_matching_activity_logs(item_type, rec_type, process_name, admin: auto_admin, excluding_id: res&.id)
+
     unless res.active_model_configuration?
       # If this was a new item, set an admin. Also set disabled nil, since this forces regeneration of the model
       res.update!(current_admin: auto_admin) unless res.admin
@@ -267,5 +269,35 @@ module SetupHelper
     reload_configs
 
     res
+  end
+
+  # Used only to get responses from live API requests so they can be
+  # made into stub_request arguments
+  def self.get_webmock_responses
+    WebMock.allow_net_connect!
+    WebMock.after_request do |request_signature, response|
+      stubbing_instructions =
+        WebMock::RequestSignatureSnippet
+        .new(request_signature)
+        .stubbing_instructions
+      begin
+        json = JSON.parse(response.body)
+      rescue JSON::ParserError
+        json = response.body
+      end
+      parsed_body = json
+      puts '===== outgoing request ======================='
+      puts stubbing_instructions
+      puts
+      puts 'parsed body:'
+      puts
+      pp parsed_body
+      puts 'response headers'
+      puts
+      puts response.headers
+      puts
+      puts '=============================================='
+      puts
+    end
   end
 end

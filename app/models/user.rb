@@ -12,7 +12,6 @@ class User < ActiveRecord::Base
 
   acts_as_token_authenticatable
 
-  # TODO: comments
   supported_modules = %i[trackable timeoutable lockable validatable]
   supported_modules += %i[registerable confirmable recoverable] if Settings::AllowUsersToRegister
   if two_factor_auth_disabled
@@ -25,12 +24,14 @@ class User < ActiveRecord::Base
 
   belongs_to :admin
   has_one :contact_info, class_name: 'Users::ContactInfo', foreign_key: :user_id
+  has_one :user_preference, autosave: true, inverse_of: :user
 
   belongs_to :app_type, class_name: 'Admin::AppType', optional: true
 
   default_scope -> { order email: :asc }
   scope :not_template, -> { where('email NOT LIKE ?', Settings::TemplateUserEmailPatternForSQL) }
   before_save :set_app_type
+  before_create :find_or_create_user_preference # Builds the user_preference if it does not exist.
 
   validates :first_name,
             presence: {
@@ -100,14 +101,6 @@ class User < ActiveRecord::Base
     end
 
     res.map { |u| ["#{u.email} #{u.disabled ? '[disabled]' : ''}", u.id] }
-  end
-
-  #
-  # Placeholder for user preference object, which is current hard coded,
-  # but will become an editable model in the future
-  # @return [UserPreference]
-  def user_preference
-    UserPreference.new
   end
 
   #
@@ -240,4 +233,11 @@ class User < ActiveRecord::Base
     email.end_with?(Settings::TemplateUserEmailPattern) || email == Settings::BatchUserEmail
   end
 
+  private
+
+  def find_or_create_user_preference
+    unless user_preference
+      build_user_preference({ current_user: self }) unless a_template_or_batch_user?
+    end
+  end
 end

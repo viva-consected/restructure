@@ -6,7 +6,10 @@ module UserSupport
 
   def create_user(part = nil, extra = '', opt = {})
     start_time = Time.now
-
+    if part.is_a? Hash
+      opt = part
+      part = nil
+    end
     part ||= Time.new.to_f.to_s
     good_email = opt[:email] || gen_username("#{part}-#{extra}-")
     admin, = @admin || create_admin
@@ -201,5 +204,24 @@ module UserSupport
                                      resource_type: :table, resource_name: resource_name
 
     # expect(user.has_access_to?(:create, :table, resource_name)).to be_truthy
+  end
+
+  def validate_setup
+    user = User.find_by(email: @good_email)
+    expect(user).to be_a User
+    expect(user.id).to equal @user.id
+
+    return if defined? Scantron
+
+    puts 'Scantron was not defined!'
+    Rails.logger.warn 'Scantron was not defined!'
+    seed_database
+    return if defined? Scantron
+
+    m = Resources::Models.find_by(resource_name: 'scantrons')
+    r = ExternalIdentifier.active.where(name: 'scantron')
+    Rails.logger.warn m
+    Rails.logger.warn r
+    raise FphsException, "Scantron is still not defined, even after seeding: \n#{m}\n#{r}"
   end
 end

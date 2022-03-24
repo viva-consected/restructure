@@ -133,8 +133,11 @@ module NavHandler
   def setup_user_sub_nav(user_sub)
     return unless current_user
 
-    @app_type_switches = current_user.accessible_app_types.map { |m| [m.label, m.id] }
+    @app_type_switches = current_user.accessible_app_types
+                                     .map { |m| [m.label, m.id] }
+                                     .sort { |a, b| a.first <=> b.first }
 
+    user_sub << { label: 'user profile', url: '/user_profile' }
     user_sub << { label: "#{current_admin ? 'user ' : ''}password", url: '/users/edit',
                   extras: { 'data-do-action' => 'user-change-password' } }
     user_sub << { label: 'logout', url: '/users/sign_out',

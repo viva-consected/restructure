@@ -3,6 +3,11 @@
 echo "Starting release and build"
 CURRDIR="$(pwd)"
 
+if [ "$1" == 'clean' ]; then
+  build_arg='clean'
+  echo 'Cleaning up old container and rebuilding it from scratch'
+fi
+
 export GIT_MERGE_AUTOEDIT=no
 
 FROM_BRANCH=${FROM_BRANCH:=develop}
@@ -56,13 +61,24 @@ if [ "$(cat .ruby-version)" != ${RUBY_V} ]; then
 fi
 
 if [ -z "${SKIP_BRAKEMAN}" ]; then
-  echo "Checking brakeman before we go through the whole process"
+  echo "Checking brakeman and bundle-audit before we go through the whole process"
   bin/brakeman -q --summary > /tmp/fphs-brakeman-summary.txt
   if [ "$?" == 0 ]; then
     echo "Brakeman OK"
   else
     cat /tmp/fphs-brakeman-summary.txt
     echo "Brakeman Failed"
+    exit 1
+  fi
+
+  bundle exec bundle-audit update 2>&1
+  bundle exec bundle-audit check 2>&1 > /tmp/bundle-audit-output.md
+  RES=$?
+  if [ "${RES}" == 0 ]; then
+    echo "bundle-audit OK"
+  else
+    echo "bundle-audit Failed: ${RES}"
+    cat /tmp/bundle-audit-output.md
     exit 1
   fi
 fi
@@ -88,7 +104,7 @@ git checkout ${FROM_BRANCH}
 
 echo "Starting build container"
 cd ../restructure-build
-./build.sh
+./build.sh ${build_arg}
 if [ $? != 0 ]; then
   echo "***** build.sh failed with exit code $? *****"
   exit 101

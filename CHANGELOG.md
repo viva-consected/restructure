@@ -16,6 +16,97 @@ The [Unreleased](#unreleased) section collects notes for unreleased changes and 
 Note that not every tagged version may be suitable for production use. A Github
 release will be created for any release tested in production, and may be marked below with the tag [Release]
 
+## [8.0.54] - 2022-03-16
+
+Interim release for testing only
+
+## [8.0.53] - 2022-03-15
+
+Interim release for testing only
+
+## [8.0.52] - 2022-03-08
+
+- [Added] paths and resource names when referencing activity log types
+- [Added] much more consistent handling of resource names with **Resources::Models**
+- [Added] user profiles tabs definable using page layout definitions
+- [Added] ability to include activity log type as a resource in a page layout definition
+- [Added] **add_item_button** substitution for captions and report headers
+- [Added] user definable user preferences for timezones and formats
+- [Added] per-server caching of latest dynamic definition versions, to allow automated reloading on a page refresh
+- [Added] view_options for references in activity log def to always open a reference
+- [Added] new disk usage and host id information
+- [Added] user_is_creator as references from: option, including for NFS store containers
+- [Added] option to skip creating a container as a save trigger if one already exists with a matching name
+- [Changed] to restart server on successful app import
+- [Changed] NFS Store file download to ensure the file is correctly retrieved when a user is in a different app to the container
+- [Changed] app migrations to ignore removed columns if ALLOW_DROP_COLUMNS not set
+- [Fixed] handling of admin filters to consistently show correct app selection
+
+## [8.0.51] - 2022-03-03
+
+Interim release for testing only
+
+## [8.0.50] - 2022-03-03
+
+Interim release for testing only
+
+## [8.0.49] - 2022-03-02
+
+Interim release for testing only
+
+## [8.0.48] - 2022-03-01
+
+Interim release for testing only
+
+## [8.0.46] - 2022-02-24
+
+Interim release for testing only
+
+## [8.0.45] - 2022-02-24
+
+Interim release for testing only
+
+## [8.0.44] - 2022-02-24
+
+Interim release for testing only
+
+## [8.0.43] - 2022-02-23
+
+Interim release for testing only
+
+## [8.0.41] - 2022-02-11
+
+### Transfer from ReStructure 8.0.27 - 2022-02-10
+
+- [Fixed] pregenerated and non-editable external identifier fields not to show
+- [Changed] export of app-export migrations to go to a single app directory, not each schema directory
+- [Added] app admin navigation for current app
+- [Fixed] Beanstalk scripts
+- [Updated] restart script to allow full EB restart of all app servers
+- [Added] app type components page for easy viewing and navigation around an app
+- [Added] ability to filter admin resources by id, ids or resource name
+
+## [8.0.40] - 2022-01-24
+
+- [Added] ability to show embedded block from an embedded report in a second modal
+
+## [8.0.39] - 2022-01-11
+
+- [Fixed] issue with active app types when specified with env var, since it returned an array not a scope
+
+## [8.0.38] - 2022-01-11
+
+- [Updated] release script to allow clean container to be requested
+- [Updated] change_user_roles trigger to allow app_type to be specified
+
+## [8.0.37] - 2022-01-11
+
+- [Added] ability to specify multiple checkboxes in report select items
+- [Fixed] bug by supressing notification  when the admins change their passwords
+- [Updated] css for mobile responsiveness, css vars and app styles
+- [Updated] document library to correctly link to source repository
+- [Updated] admin scripts to improve server configuration
+
 ## [8.0.35] - 2022-01-06
 
 - [Bumped] version

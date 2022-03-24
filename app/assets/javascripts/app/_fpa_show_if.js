@@ -141,12 +141,19 @@ _fpa.show_if.methods = {
             subdef[cond_field] = exp_value;
             var matches = _fpa.show_if.methods.calc_conditions(subdef, data);
           }
+          else if (cond_field == 'always') {
+            matches = exp_value
+          }
+          else if (cond_field == 'never') {
+            matches = !exp_value
+          }
           else {
             // This is instead a standard field comparison
 
             // Expect field data
             var exp_field_value = data[cond_field];
             if (typeof exp_field_value == 'number') exp_field_value = exp_field_value.toString();
+            if (typeof exp_field_value == 'undefined') exp_field_value = null;
 
             // to have value
             if (exp_value == null)
@@ -161,8 +168,8 @@ _fpa.show_if.methods = {
             }
             else if (typeof exp_value == 'object') {
               for (var i = 0; i < exp_value.length; i++) {
-                if (exp_value[i] === true) exp_value.push('yes');
-                if (exp_value[i] === false) exp_value.push('no');
+                if (exp_value[i] === true && exp_value.indexOf('yes') == -1) exp_value.push('yes');
+                if (exp_value[i] === false && exp_value.indexOf('no') == -1) exp_value.push('no');
                 if (typeof exp_value[i] == 'number') exp_value[i] = exp_value[i].toString();
               }
             }

@@ -35,15 +35,13 @@ describe 'tracker block', js: true, driver: :app_firefox_driver do
     # end
 
     # before :each do
-    user = User.where(email: @good_email).first
-    expect(user).to be_a User
-    expect(user.id).to equal @user.id
+    validate_setup
 
-    setup_access :player_contacts, user: user
-    setup_access :player_infos, user: user
-    setup_access :trackers, user: user
-    setup_access :tracker_histories, user: user
-    setup_access :create_master, resource_type: :general, access: :read, user: user
+    setup_access :player_contacts, user: @user
+    setup_access :player_infos, user: @user
+    setup_access :trackers, user: @user
+    setup_access :tracker_histories, user: @user
+    setup_access :create_master, resource_type: :general, access: :read, user: @user
 
     login
   end
@@ -71,6 +69,7 @@ describe 'tracker block', js: true, driver: :app_firefox_driver do
     # Be sure that the page is showing the menu correctly
 
     click_link 'Create Master'
+    dismiss_modal
 
     # click a test only hidden button to generate a completely empty master record
     # Without this, the player info record that is normally created doesn't provide a completely empty set of tracker records
@@ -81,6 +80,7 @@ describe 'tracker block', js: true, driver: :app_firefox_driver do
       all('input[type="submit"]').first.click
     end
 
+    dismiss_modal
     expand_tracker_panel
 
     has_css? '.tracker-tree-results'
@@ -97,6 +97,7 @@ describe 'tracker block', js: true, driver: :app_firefox_driver do
 
   it 'should create a new tracker item' do
     visit '/masters/search'
+    dismiss_modal
 
     # Switch to advanced search form
     within '#simple_search_master' do
@@ -157,20 +158,26 @@ describe 'tracker block', js: true, driver: :app_firefox_driver do
     have_css '.tracker-block.collapse.in'
 
     # Validate that we don't already have a protocol / sub process tracked for this player
-    protocol = Classification::Protocol.selectable.first
-    sps = protocol.sub_processes.enabled
+    protocol = Classification::Protocol.active.selectable.find_by(name: 'Q1')
+    sps = protocol.sub_processes.enabled.where.not(name: 'Alerts')
+
+    spslen = sps.length
+    expect(spslen).to be_positive
 
     sp = nil
     pe = nil
     pe_orig = nil
     pes = nil
     sp_orig = nil
+    i = 0
     while pe.nil?
       sp = pick_one_from sps
       sp_orig = sp
       pes = sp.protocol_events.enabled.reload
-      pe = pes[0]
+      pe = pes[i]
       pe_orig = pe
+      i += 1
+      expect(i).to be <= spslen
     end
 
     have_css "##{h}.tracker-block.collapse.in"

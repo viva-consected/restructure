@@ -42,8 +42,11 @@ class Classification::SelectionOptionsHandler
   # @param [String | Symbol] field_value
   # @return [Array|nil]
   def label_for(field_name, field_value)
+    field_value = field_value.to_s
     res = edit_as_alt_option_label_for(field_name, field_value) if user_base_object
-    res || general_selection_label_for(field_name, field_value)
+    res ||= general_selection_label_for(field_name, field_value)
+    res ||= get_field_label_for(field_name, field_value)
+    res || field_value
   end
 
   #
@@ -114,6 +117,17 @@ class Classification::SelectionOptionsHandler
   end
 
   #
+  # Get the label for the actual field value, based on a get_<field>_name class method
+  # such as ViewHandlers::Subject.get_rank_name for PlayerInfo and general Subject models.
+  def get_field_label_for(field_name, field_value)
+    klass = user_base_object&.class
+    mname = "get_#{field_name}_name"
+    return unless klass.respond_to?(mname)
+
+    klass.send(mname, field_value)
+  end
+
+  #
   # Get the form_options.edit_as.alt_options configurations for a specific (UserBase) object
   # For activity logs, generally the extra_log_type attribute is set, allowing the appropriate
   # configuration to be pulled.
@@ -137,7 +151,7 @@ class Classification::SelectionOptionsHandler
 
   #
   # Get all the general selection configurations and override them with the form_options.edit_as.alt_options
-  # This is only really used by UI requests to the DefinitionsController to get and cache general selections
+  # This is only used by UI requests to the DefinitionsController to get and cache general selections
   # options on the front end.
   #
   # If alt_options override an existing select_... field, the general selection records for this will
@@ -152,13 +166,15 @@ class Classification::SelectionOptionsHandler
   # [
   #   {
   #     id: GeneralSelection#id or nil if alt_option,
-  #     item_type: ,
+  #     item_type: (base_item_type)_(field_name),
   #     name: (label),
   #     value: (stored field value),
   #     create_with: GeneralSelection#create_with or nil if alt_option,
   #     edit_if_set: GeneralSelection#edit_if_set or nil if alt_option,
   #     edit_always: GeneralSelection#edit_always or true if alt_option,
-  #     lock: GeneralSelection#lock or nil if alt_option
+  #     lock: GeneralSelection#lock or nil if alt_option,
+  #     base_item_type: (the model#item_type),
+  #     field_name: (field_name)
   #   }, ...
   # ]
   #
@@ -168,6 +184,8 @@ class Classification::SelectionOptionsHandler
     if conditions.is_a? Hash
       extra_log_type = conditions.delete(:extra_log_type)
       item_type = conditions.delete(:item_type)
+      single_field = conditions.delete(:field_name)
+      only_field_names = [single_field] if single_field
     end
 
     # Get the all enabled general selection data as an array of results
@@ -176,7 +194,7 @@ class Classification::SelectionOptionsHandler
     # Get a list of implementations that may have alt_options defined
     impl_classes = implementation_classes
     # If an item type has been specified, filter the possible classes
-    impl_classes = impl_classes.select { |ic| ic.item_type == item_type } if item_type
+    impl_classes = impl_classes.select { |ic| ic.item_type.singularize == item_type.singularize } if item_type
     # Check each definition is ready to use and prepare it for use
     impl_classes.select! { |ic| ic.definition.ready_to_generate? }
 
@@ -191,8 +209,16 @@ class Classification::SelectionOptionsHandler
       # If item_type was specified, filter the results from the general selections that match it
       # This leaves us with all field definitions for that item_type
       if item_type
-        item_types = dyn_object.attribute_names.map { |a| "#{prefix}_#{a}" }
+        fns = only_field_names || dyn_object.attribute_names
+        item_types = fns.map { |a| "#{prefix}_#{a}" }
         res.select! { |r| r[:item_type].in? item_types }
+      end
+
+      res.each do |r|
+        if r[:item_type].start_with?(prefix)
+          r.merge!(base_item_type: prefix,
+                   field_name: r[:item_type].sub("#{prefix}_", ''))
+        end
       end
 
       # Get the alt_options that add to or override the general selections
@@ -204,6 +230,8 @@ class Classification::SelectionOptionsHandler
       # remove the existing general_selection results that match the item_type (if any)
       # and add in the new options
       alt_options.each do |field_name, opts|
+        next if single_field && field_name.to_s != single_field.to_s
+
         gsit = "#{prefix}_#{field_name}"
         # Remove any existing general selections for this model / field combo
         res.reject! { |r| r[:item_type] == gsit }
@@ -222,7 +250,9 @@ class Classification::SelectionOptionsHandler
             create_with: nil,
             edit_if_set: nil,
             edit_always: true,
-            lock: nil
+            lock: nil,
+            base_item_type: prefix,
+            field_name: field_name
           }
         end
       end
@@ -242,7 +272,9 @@ class Classification::SelectionOptionsHandler
   # that can provide form_options.edit_as.alt_options configurations
   # Memoize the result, since this is a slow process
   def self.implementation_classes
-    @implementation_classes ||= ActivityLog.implementation_classes + DynamicModel.implementation_classes
+    @implementation_classes ||= ActivityLog.implementation_classes +
+                                DynamicModel.implementation_classes +
+                                ExternalIdentifier.implementation_classes
   end
 
   #

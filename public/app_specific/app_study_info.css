@@ -12,34 +12,46 @@
   --link-active-color: #402964;
   --bottom-grad-color: #4a3277;
   --bottom-grad-darker-color: #452e70;
-  --content-font-family: 'Lato', sans-serif;
-  --table-font-family: 'Lato', sans-serif;
+  --input-has-value-color: rgb(247, 237, 253);
+
+  /* --content-font-family: "Lato", sans-serif;
+  --table-font-family: "Lato", sans-serif; */
+  --content-font-family: "Assistant", sans-serif;
+  --content-font-size: 18px;
+
+  --button-font-family: "Assistant", sans-serif;
+  --label-font-family: "Assistant", sans-serif;
+
+  --table-font-family: "Assistant", sans-serif;
+  --table-font-size: 16px;
+  --table-head-font-family: "Assistant", sans-serif;
+  --table-head-font-size: 15px;
 }
 
 @font-face {
-  font-family: 'Lato';
-  src: url('/fonts/lato/Lato-Regular.ttf');
+  font-family: "Lato";
+  src: url("/fonts/lato/Lato-Regular.ttf");
   font-weight: normal;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'Lato';
-  src: url('/fonts/lato/Lato-Black.ttf');
+  font-family: "Lato";
+  src: url("/fonts/lato/Lato-Black.ttf");
   font-weight: bold;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'Lato';
-  src: url('/fonts/lato/Lato-Italic.ttf');
+  font-family: "Lato";
+  src: url("/fonts/lato/Lato-Italic.ttf");
   font-weight: normal;
   font-style: italic;
 }
 
 @font-face {
-  font-family: 'Lato';
-  src: url('/fonts/lato/Lato-BlackItalic.ttf');
+  font-family: "Lato";
+  src: url("/fonts/lato/Lato-BlackItalic.ttf");
   font-weight: bold;
   font-style: italic;
 }
@@ -150,18 +162,13 @@ li.list-group-item.results-caption-before.activity-log--study-info-part-page-des
   appearance: none;
 }
 
-#master_results_block form .edit-field-container input[type='checkbox'] {
+#master_results_block form .edit-field-container input[type="checkbox"] {
   appearance: auto;
   min-width: 1em;
 }
 
 input.form-control,
 select.form-control {
-  background-color: rgb(255, 246, 226) !important;
-}
-
-input.form-control.has-value,
-select.form-control.has-value {
   background-color: rgb(255, 246, 226) !important;
 }
 
@@ -193,6 +200,8 @@ table.table.report-table td {
 
 .page-embedded-block .list-group-item.caption-before {
   display: block;
+  padding: 7px;
+  font-size: 94%;
 }
 
 .page-embedded-block ul.list-group .list-group-item.record-meta {
@@ -213,6 +222,28 @@ table.table.report-table td {
 
 .page-embedded-block .list-group-item.submit-action-container {
   display: block;
+}
+
+div.reset-row .common-template-item div .page-embedded-block > .data-results {
+  border: 1px solid rgb(192 192 192);
+  border-radius: 4px;
+  padding: 1em;
+}
+
+.notes-text {
+  font-size: 17px;
+}
+div.reset-row .custom-editor h1,
+div.reset-row .custom-editor-viewer h1 {
+  font-size: 2.5em;
+}
+div.reset-row .custom-editor h2,
+div.reset-row .custom-editor-viewer h2 {
+  font-size: 1.4em;
+}
+.footer,
+.footer p {
+  font-size: 15px;
 }
 
 #standalone-page > .standalone-page-container h1,
@@ -237,7 +268,7 @@ table.table.report-table td {
 }
 #standalone-page > .standalone-page-container .reset-row p br {
   display: block;
-  content: '';
+  content: "";
   margin-top: 0.8em;
   line-height: 190%;
   vertical-align: top;
@@ -385,10 +416,7 @@ table.table.report-table td {
   a.browse-filename:focus {
   color: rgb(64, 64, 64);
 }
-#standalone-page > .standalone-page-container .icon-files-center .container-icons-folder-items {
-  justify-content: center;
-}
-#standalone-page > .standalone-page-container .no-border {
-  border: 0;
-  box-shadow: none;
+
+.ui-timepicker-container.ui-timepicker-standard {
+  font-size: 16px;
 }

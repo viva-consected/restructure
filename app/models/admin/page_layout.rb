@@ -5,6 +5,10 @@
 class Admin::PageLayout < Admin::AdminBase
   self.table_name = 'page_layouts'
 
+  def self.app_type_not_required
+    true
+  end
+
   include AdminHandler
   include AppTyped
   include OptionsHandler
@@ -18,6 +22,7 @@ class Admin::PageLayout < Admin::AdminBase
   # @attr [String] layout_name - the role of the definition
   #   - master - a standard master result panel, laid out according to
   #              standard activity log / dynamic model panel configurations, or forced orientation
+  #   - user_profile - definition of the panels to show in a user profile page
   #   - nav - top nav (menu bar) item or "master-tabs" item
   #   - standalone - a standalone page / dashboard
   #   - view - a panel that allows row / column layout definition
@@ -61,7 +66,9 @@ class Admin::PageLayout < Admin::AdminBase
   #   limit: max number of items to show in panel
   #   initial_show: initially open up a panel
   #   find_with: the alternative id (crosswalk or external id) to search for the master record with for standalone pages
-  configure :view_options, with: %i[initial_show orientation add_item_label limit find_with]
+  configure :view_options,
+            with: %i[initial_show orientation add_item_label limit find_with hide_sublist_controls
+                     hide_activity_logs_header]
 
   # List options for dashboards list
   configure :list_options, with: %i[hide_in_list]
@@ -199,5 +206,10 @@ class Admin::PageLayout < Admin::AdminBase
     return true if self.class.standalone_page_available_to_user self, user
 
     user.has_access_to?(:read, :standalone_page, :_all_standalone_pages_)
+  end
+
+  # Provide a viewable name
+  def name
+    "#{layout_name} #{panel_name}"
   end
 end

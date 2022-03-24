@@ -2,7 +2,7 @@
 
 class Settings
   DefaultMigrationSchema = 'ml_app'
-  DefaultSchemaOwner = 'fphs'
+  DefaultSchemaOwner = ENV['FPHS_DEFAULT_SCHEMA_OWNER'] || 'vivadba'
 
   # Does not set the prefix, just specifies what we search by in jobs
   GlobalIdPrefix = 'fpa1'
@@ -51,7 +51,7 @@ class Settings
   # Disable 2FA by setting to true. The environment variable should be 'true' to set this
   TwoFactorAuthDisabled = (ENV['FPHS_2FA_AUTH_DISABLED'] == 'true')
   # App name that appears within 2FA authenticator app
-  TwoFactorAuthIssuer = ENV['FPHS_2FA_APP'] || 'FPHS Apps'
+  TwoFactorAuthIssuer = ENV['FPHS_2FA_APP'] || 'ReStructure'
   # Number of seconds to use for 2FA token drift (the older it is allowed to be and still be valid)
   TwoFactorAuthDrift = (ENV['FPHS_2FA_DRIFT'] || 30).to_i
 
@@ -79,7 +79,7 @@ class Settings
   # using the curly substitution {{base_url}}
   BaseUrl = ENV['BASE_URL'] || '(not set)'
   # title tag page title, appears in tab or browser heading
-  PageTitle = ENV['PAGE_TITLE'] || 'FPHS'
+  PageTitle = ENV['PAGE_TITLE'] || 'ReStructure'
 
   # Registration Settings
   # Since passwords have generated upon user creation, we must suppress generating a password
@@ -89,6 +89,9 @@ class Settings
   RegistrationAdminEmail = ENV['REGISTRATION_ADMIN_EMAIL'] || AdminEmail
   # Template user for creating new users. The roles from this user are copied to the new user.
   DefaultUserTemplateEmail = ENV['DEFAULT_USER_TEMPLATE_EMAIL'] || 'registration@template'
+
+  # Admins may be able to create other admins.
+  AllowAdminsToManageAdmins = (ENV['ALLOW_ADMINS_TO_MANAGE_ADMINS'].to_s.downcase == 'true').freeze
 
   # URL to appear on home page for users with login issues to contact
   DefaultLoginIssuesUrl = AllowUsersToRegister ? '/users/password/new' : "mailto: #{AdminEmail}?subject=Login%20Issues"
@@ -199,8 +202,35 @@ class Settings
   # Alternative to blindly using inflector acronyms.
   # This array of acronyms will be enforced for titleize only, avoiding
   # existing expectations around class names being broken
-  CaptionAcronyms = %w[IPA IPAs BHS PI PIs HMS FPHS].freeze
+  CaptionAcronyms = %w[IPA IPAs BHS PI PIs HMS FPHS CO-I].freeze
 
   # Prevent versioning of dynamic definitions
   DisableVDef = ENV.key?('FPHS_DISABLE_VDEF') ? ENV['FPHS_DISABLE_VDEF'] == 'true' : Rails.env.development?
+
+  # Timezones
+  # Use the the country alpha2 code for the country code. For example,
+  # ISO3166::Country.find_country_by_iso_short_name('united states of america').alpha2 == 'US'
+  # If setting more than one country, separate them with a blank-space.
+  # For example, PRIORITY_TIMEZONE_COUNTRY_CODES='us gb au'
+  CountryCodesForTimezones = (ENV['PRIORITY_TIMEZONE_COUNTRY_CODES']&.split || %i[us ie gb de gr au nz]).freeze
+
+  # Use the timezone name or identifier. For example, "London" or "Eastern Time (US & Canada)".
+  # To obtain the timezone identifiers, execute ActiveSupport::TimeZone.country_zones(<country alpha2 code>)
+  # For example, ActiveSupport::TimeZone.country_zones('GB').map(&:name) == ["Edinburgh", "London"]
+  DefaultUserTimezone = (ENV['DEFAULT_TIMEZONE'] || 'Eastern Time (US & Canada)').freeze
+
+  # Date, Time and DateTime formats
+  #
+  # Set DEFAULT_DATE_FORMAT to mm/dd/yyyy or dd/mm/yyyy.
+  DefaultDateFormat = (ENV['DEFAULT_DATE_FORMAT'] || 'mm/dd/yyyy').freeze
+
+  # Set DEFAULT_DATE_TIME_FORMAT to:
+  #   mm/dd/yyyy hh:mm am/pm
+  #   mm/dd/yyyy 24h:mm
+  #   dd/mm/yyyy hh:mm am/pm
+  #   dd/mm/yyyy 24h:mm
+  DefaultDateTimeFormat = (ENV['DEFAULT_DATE_TIME_FORMAT'] || 'mm/dd/yyyy hh:mm am/pm').freeze
+
+  # Set DEFAULT_TIME_FORMAT to hh:mm am/pm or 24h:mm.
+  DefaultTimeFormat = (ENV['DEFAULT_TIME_FORMAT'] || 'hh:mm am/pm').freeze
 end

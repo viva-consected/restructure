@@ -14,6 +14,10 @@
 class Admin::UserRole < Admin::AdminBase
   self.table_name = 'user_roles'
 
+  def self.app_type_not_required
+    true
+  end
+
   include AdminHandler
   include AppTyped
 
@@ -50,7 +54,8 @@ class Admin::UserRole < Admin::AdminBase
       ur_cond = conditions.dup
       ur_cond = conditions[:user_roles] if conditions[:user_roles]
       ur_cond = ur_cond.symbolize_keys
-      unless ur_cond[:id] || ur_cond[:app_type] || ur_cond[:app_type_id]
+      # One of the keys must be present, even if it is nil (which will evaluation to IS NULL in the query)
+      unless ur_cond.key?(:id) || ur_cond.key?(:app_type) || ur_cond.key?(:app_type_id)
         raise FphsException, 'UserRole.where must use app_type condition'
       end
     end
@@ -78,7 +83,11 @@ class Admin::UserRole < Admin::AdminBase
     items = {}
     res.each do |role|
       m = role.app_type
-      n = "#{m.id}/#{m.name}"
+      n = if m
+            "#{m.id}/#{m.name}"
+          else
+            '/'
+          end
       items[n] ||= []
       items[n] << role.role_name unless items[n].include? role.role_name
     end
@@ -148,6 +157,11 @@ class Admin::UserRole < Admin::AdminBase
     end
 
     to_roles
+  end
+
+  # Provide a usable name for viewing
+  def name
+    "#{role_name} #{user&.email}"
   end
 
   private

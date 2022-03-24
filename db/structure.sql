@@ -363,6 +363,60 @@ CREATE FUNCTION ml_app.current_user_id() RETURNS integer
     $$;
 
 
+--
+-- Name: datadic_choice_history_upd(); Type: FUNCTION; Schema: ml_app; Owner: -
+--
+
+CREATE FUNCTION ml_app.datadic_choice_history_upd() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  INSERT INTO datadic_choice_history (
+    source_name, source_type, form_name, field_name, value, label, redcap_data_dictionary_id,
+    disabled,
+    admin_id,
+    created_at,
+    updated_at,
+    datadic_choice_id)
+  SELECT
+    NEW.source_name, NEW.source_type, NEW.form_name, NEW.field_name, NEW.value, NEW.label, NEW.redcap_data_dictionary_id,
+    NEW.disabled,
+    NEW.admin_id,
+    NEW.created_at,
+    NEW.updated_at,
+    NEW.id;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: datadic_variable_history_upd(); Type: FUNCTION; Schema: ml_app; Owner: -
+--
+
+CREATE FUNCTION ml_app.datadic_variable_history_upd() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  INSERT INTO datadic_variable_history (
+    study, source_name, source_type, domain, form_name, variable_name, variable_type, presentation_type, label, label_note, annotation, is_required, valid_type, valid_min, valid_max, multi_valid_choices, is_identifier, is_derived_var, multi_derived_from_id, doc_url, target_type, owner_email, classification, other_classification, multi_timepoints, equivalent_to_id, storage_type, db_or_fs, schema_or_path, table_or_file, storage_varname, redcap_data_dictionary_id, position, section_id, sub_section_id, title,
+    disabled,
+    admin_id,
+    created_at,
+    updated_at,
+    datadic_variable_id)
+  SELECT
+    NEW.study, NEW.source_name, NEW.source_type, NEW.domain, NEW.form_name, NEW.variable_name, NEW.variable_type, NEW.presentation_type, NEW.label, NEW.label_note, NEW.annotation, NEW.is_required, NEW.valid_type, NEW.valid_min, NEW.valid_max, NEW.multi_valid_choices, NEW.is_identifier, NEW.is_derived_var, NEW.multi_derived_from_id, NEW.doc_url, NEW.target_type, NEW.owner_email, NEW.classification, NEW.other_classification, NEW.multi_timepoints, NEW.equivalent_to_id, NEW.storage_type, NEW.db_or_fs, NEW.schema_or_path, NEW.table_or_file, NEW.storage_varname, NEW.redcap_data_dictionary_id, NEW.position, NEW.section_id, NEW.sub_section_id, NEW.title,
+    NEW.disabled,
+    NEW.admin_id,
+    NEW.created_at,
+    NEW.updated_at,
+    NEW.id;
+  RETURN NEW;
+END;
+$$;
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -1642,6 +1696,7 @@ CREATE FUNCTION ml_app.log_nfs_store_container_update() RETURNS trigger
                 name,
                 app_type_id,
                 orig_nfs_store_container_id,
+                created_by_user_id,
                 user_id,
                 created_at,
                 updated_at,
@@ -1652,6 +1707,7 @@ CREATE FUNCTION ml_app.log_nfs_store_container_update() RETURNS trigger
                 NEW.name,
                 NEW.app_type_id,
                 NEW.nfs_store_container_id,
+                NEW.created_by_user_id,
                 NEW.user_id,
                 NEW.created_at,
                 NEW.updated_at,
@@ -2307,6 +2363,60 @@ BEGIN
 
 
 --
+-- Name: redcap_data_dictionary_history_upd(); Type: FUNCTION; Schema: ml_app; Owner: -
+--
+
+CREATE FUNCTION ml_app.redcap_data_dictionary_history_upd() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  INSERT INTO redcap_data_dictionary_history (
+    redcap_project_admin_id, field_count, captured_metadata,
+    disabled,
+    admin_id,
+    created_at,
+    updated_at,
+    redcap_data_dictionary_id)
+  SELECT
+    NEW.redcap_project_admin_id, NEW.field_count, NEW.captured_metadata,
+    NEW.disabled,
+    NEW.admin_id,
+    NEW.created_at,
+    NEW.updated_at,
+    NEW.id;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: redcap_project_admin_history_upd(); Type: FUNCTION; Schema: ml_app; Owner: -
+--
+
+CREATE FUNCTION ml_app.redcap_project_admin_history_upd() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  INSERT INTO redcap_project_admin_history (
+    name, api_key, server_url, captured_project_info, study, transfer_mode, frequency, status, post_transfer_pipeline, notes, dynamic_model_table,
+    disabled,
+    admin_id,
+    created_at,
+    updated_at,
+    redcap_project_admin_id)
+  SELECT
+    NEW.name, NEW.api_key, NEW.server_url, NEW.captured_project_info, NEW.study, NEW.transfer_mode, NEW.frequency, NEW.status, NEW.post_transfer_pipeline, NEW.notes, NEW.dynamic_model_table,
+    NEW.disabled,
+    NEW.admin_id,
+    NEW.created_at,
+    NEW.updated_at,
+    NEW.id;
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: role_description_history_upd(); Type: FUNCTION; Schema: ml_app; Owner: -
 --
 
@@ -2533,49 +2643,22 @@ CREATE FUNCTION ml_app.update_player_contact_ranks(set_master_id integer, set_re
 
 
 --
--- Name: datadic_choice_history_upd(); Type: FUNCTION; Schema: ref_data; Owner: -
+-- Name: user_description_history_upd(); Type: FUNCTION; Schema: ml_app; Owner: -
 --
 
-CREATE FUNCTION ref_data.datadic_choice_history_upd() RETURNS trigger
+CREATE FUNCTION ml_app.user_description_history_upd() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
-  INSERT INTO datadic_choice_history (
-    source_name, source_type, form_name, field_name, value, label, redcap_data_dictionary_id,
+  INSERT INTO user_description_history (
+    app_type_id, role_name, role_template, name, description,
     disabled,
     admin_id,
     created_at,
     updated_at,
-    datadic_choice_id)
+    user_description_id)
   SELECT
-    NEW.source_name, NEW.source_type, NEW.form_name, NEW.field_name, NEW.value, NEW.label, NEW.redcap_data_dictionary_id,
-    NEW.disabled,
-    NEW.admin_id,
-    NEW.created_at,
-    NEW.updated_at,
-    NEW.id;
-  RETURN NEW;
-END;
-$$;
-
-
---
--- Name: datadic_variable_history_upd(); Type: FUNCTION; Schema: ref_data; Owner: -
---
-
-CREATE FUNCTION ref_data.datadic_variable_history_upd() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  INSERT INTO datadic_variable_history (
-    study, source_name, source_type, domain, form_name, variable_name, variable_type, presentation_type, label, label_note, annotation, is_required, valid_type, valid_min, valid_max, multi_valid_choices, is_identifier, is_derived_var, multi_derived_from_id, doc_url, target_type, owner_email, classification, other_classification, multi_timepoints, equivalent_to_id, storage_type, db_or_fs, schema_or_path, table_or_file, storage_varname, redcap_data_dictionary_id, position, section_id, sub_section_id, title,
-    disabled,
-    admin_id,
-    created_at,
-    updated_at,
-    datadic_variable_id)
-  SELECT
-    NEW.study, NEW.source_name, NEW.source_type, NEW.domain, NEW.form_name, NEW.variable_name, NEW.variable_type, NEW.presentation_type, NEW.label, NEW.label_note, NEW.annotation, NEW.is_required, NEW.valid_type, NEW.valid_min, NEW.valid_max, NEW.multi_valid_choices, NEW.is_identifier, NEW.is_derived_var, NEW.multi_derived_from_id, NEW.doc_url, NEW.target_type, NEW.owner_email, NEW.classification, NEW.other_classification, NEW.multi_timepoints, NEW.equivalent_to_id, NEW.storage_type, NEW.db_or_fs, NEW.schema_or_path, NEW.table_or_file, NEW.storage_varname, NEW.redcap_data_dictionary_id, NEW.position, NEW.section_id, NEW.sub_section_id, NEW.title,
+    NEW.app_type_id, NEW.role_name, NEW.role_template, NEW.name, NEW.description,
     NEW.disabled,
     NEW.admin_id,
     NEW.created_at,
@@ -2630,60 +2713,6 @@ BEGIN
     redcap_data_collection_instrument_id)
   SELECT
     NEW.redcap_project_admin_id, NEW.name, NEW.label,
-    NEW.disabled,
-    NEW.admin_id,
-    NEW.created_at,
-    NEW.updated_at,
-    NEW.id;
-  RETURN NEW;
-END;
-$$;
-
-
---
--- Name: redcap_data_dictionary_history_upd(); Type: FUNCTION; Schema: ref_data; Owner: -
---
-
-CREATE FUNCTION ref_data.redcap_data_dictionary_history_upd() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  INSERT INTO redcap_data_dictionary_history (
-    redcap_project_admin_id, field_count, captured_metadata,
-    disabled,
-    admin_id,
-    created_at,
-    updated_at,
-    redcap_data_dictionary_id)
-  SELECT
-    NEW.redcap_project_admin_id, NEW.field_count, NEW.captured_metadata,
-    NEW.disabled,
-    NEW.admin_id,
-    NEW.created_at,
-    NEW.updated_at,
-    NEW.id;
-  RETURN NEW;
-END;
-$$;
-
-
---
--- Name: redcap_project_admin_history_upd(); Type: FUNCTION; Schema: ref_data; Owner: -
---
-
-CREATE FUNCTION ref_data.redcap_project_admin_history_upd() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  INSERT INTO redcap_project_admin_history (
-    name, api_key, server_url, captured_project_info, study, transfer_mode, frequency, status, post_transfer_pipeline, notes, dynamic_model_table,
-    disabled,
-    admin_id,
-    created_at,
-    updated_at,
-    redcap_project_admin_id)
-  SELECT
-    NEW.name, NEW.api_key, NEW.server_url, NEW.captured_project_info, NEW.study, NEW.transfer_mode, NEW.frequency, NEW.status, NEW.post_transfer_pipeline, NEW.notes, NEW.dynamic_model_table,
     NEW.disabled,
     NEW.admin_id,
     NEW.created_at,
@@ -4190,7 +4219,8 @@ CREATE TABLE ml_app.masters (
     created_at timestamp without time zone,
     updated_at timestamp without time zone,
     user_id integer,
-    contact_id integer
+    contact_id integer,
+    created_by_user_id bigint
 );
 
 
@@ -4465,7 +4495,8 @@ CREATE TABLE ml_app.nfs_store_container_history (
     user_id integer,
     created_at timestamp without time zone,
     updated_at timestamp without time zone,
-    nfs_store_container_id integer
+    nfs_store_container_id integer,
+    created_by_user_id bigint
 );
 
 
@@ -4500,7 +4531,8 @@ CREATE TABLE ml_app.nfs_store_containers (
     nfs_store_container_id integer,
     master_id integer,
     created_at timestamp without time zone,
-    updated_at timestamp without time zone
+    updated_at timestamp without time zone,
+    created_by_user_id bigint
 );
 
 
@@ -6084,6 +6116,81 @@ ALTER SEQUENCE ml_app.user_authorizations_id_seq OWNED BY ml_app.user_authorizat
 
 
 --
+-- Name: user_description_history; Type: TABLE; Schema: ml_app; Owner: -
+--
+
+CREATE TABLE ml_app.user_description_history (
+    id bigint NOT NULL,
+    user_description_id bigint,
+    app_type_id bigint,
+    role_name character varying,
+    role_template character varying,
+    name character varying,
+    description character varying,
+    disabled boolean,
+    admin_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: user_description_history_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
+--
+
+CREATE SEQUENCE ml_app.user_description_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: user_description_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
+--
+
+ALTER SEQUENCE ml_app.user_description_history_id_seq OWNED BY ml_app.user_description_history.id;
+
+
+--
+-- Name: user_descriptions; Type: TABLE; Schema: ml_app; Owner: -
+--
+
+CREATE TABLE ml_app.user_descriptions (
+    id bigint NOT NULL,
+    app_type_id bigint,
+    role_name character varying,
+    role_template character varying,
+    name character varying,
+    description character varying,
+    disabled boolean,
+    admin_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: user_descriptions_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
+--
+
+CREATE SEQUENCE ml_app.user_descriptions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: user_descriptions_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
+--
+
+ALTER SEQUENCE ml_app.user_descriptions_id_seq OWNED BY ml_app.user_descriptions.id;
+
+
+--
 -- Name: user_history; Type: TABLE; Schema: ml_app; Owner: -
 --
 
@@ -6140,6 +6247,41 @@ CREATE SEQUENCE ml_app.user_history_id_seq
 --
 
 ALTER SEQUENCE ml_app.user_history_id_seq OWNED BY ml_app.user_history.id;
+
+
+--
+-- Name: user_preferences; Type: TABLE; Schema: ml_app; Owner: -
+--
+
+CREATE TABLE ml_app.user_preferences (
+    id bigint NOT NULL,
+    user_id bigint,
+    date_format character varying,
+    date_time_format character varying,
+    time_format character varying,
+    timezone character varying,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: user_preferences_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
+--
+
+CREATE SEQUENCE ml_app.user_preferences_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: user_preferences_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
+--
+
+ALTER SEQUENCE ml_app.user_preferences_id_seq OWNED BY ml_app.user_preferences.id;
 
 
 --
@@ -6309,17 +6451,15 @@ ALTER SEQUENCE ml_app.users_id_seq OWNED BY ml_app.users.id;
 
 
 --
--- Name: view_users; Type: TABLE; Schema: ml_app; Owner: -
+-- Name: view_users; Type: VIEW; Schema: ml_app; Owner: -
 --
 
-CREATE TABLE ml_app.view_users (
-    id integer NOT NULL,
-    master_id integer,
-    user_id integer,
-    first_name character varying,
-    last_name character varying,
-    disabled boolean
-);
+CREATE VIEW ml_app.view_users AS
+ SELECT users.email,
+    users.first_name,
+    users.last_name,
+    users.disabled
+   FROM ml_app.users;
 
 
 --
@@ -6448,10 +6588,10 @@ CREATE TABLE ref_data.datadic_variable_history (
     sub_section_id integer,
     title character varying,
     storage_varname character varying,
+    user_id bigint,
     contributor_type character varying,
     n_for_timepoints jsonb,
-    notes character varying,
-    user_id bigint
+    notes character varying
 );
 
 
@@ -6708,27 +6848,6 @@ COMMENT ON COLUMN ref_data.datadic_variable_history.storage_varname IS 'Database
 
 
 --
--- Name: COLUMN datadic_variable_history.contributor_type; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variable_history.contributor_type IS 'Type of contributor this variable was provided by';
-
-
---
--- Name: COLUMN datadic_variable_history.n_for_timepoints; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variable_history.n_for_timepoints IS 'For each named timepoint (name:), the population or count of responses (n:), with notes (notes:)';
-
-
---
--- Name: COLUMN datadic_variable_history.notes; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variable_history.notes IS 'Notes';
-
-
---
 -- Name: datadic_variable_history_id_seq; Type: SEQUENCE; Schema: ref_data; Owner: -
 --
 
@@ -6804,7 +6923,7 @@ CREATE TABLE ref_data.datadic_variables (
 -- Name: TABLE datadic_variables; Type: COMMENT; Schema: ref_data; Owner: -
 --
 
-COMMENT ON TABLE ref_data.datadic_variables IS 'Dynamicmodel: User Variables';
+COMMENT ON TABLE ref_data.datadic_variables IS 'Dynamicmodel: Full Data Dictionary';
 
 
 --
@@ -8069,10 +8188,31 @@ ALTER TABLE ONLY ml_app.user_authorizations ALTER COLUMN id SET DEFAULT nextval(
 
 
 --
+-- Name: user_description_history id; Type: DEFAULT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.user_description_history ALTER COLUMN id SET DEFAULT nextval('ml_app.user_description_history_id_seq'::regclass);
+
+
+--
+-- Name: user_descriptions id; Type: DEFAULT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.user_descriptions ALTER COLUMN id SET DEFAULT nextval('ml_app.user_descriptions_id_seq'::regclass);
+
+
+--
 -- Name: user_history id; Type: DEFAULT; Schema: ml_app; Owner: -
 --
 
 ALTER TABLE ONLY ml_app.user_history ALTER COLUMN id SET DEFAULT nextval('ml_app.user_history_id_seq'::regclass);
+
+
+--
+-- Name: user_preferences id; Type: DEFAULT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.user_preferences ALTER COLUMN id SET DEFAULT nextval('ml_app.user_preferences_id_seq'::regclass);
 
 
 --
@@ -8915,11 +9055,35 @@ ALTER TABLE ONLY ml_app.user_authorizations
 
 
 --
+-- Name: user_description_history user_description_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.user_description_history
+    ADD CONSTRAINT user_description_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_descriptions user_descriptions_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.user_descriptions
+    ADD CONSTRAINT user_descriptions_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: user_history user_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
 --
 
 ALTER TABLE ONLY ml_app.user_history
     ADD CONSTRAINT user_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_preferences user_preferences_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.user_preferences
+    ADD CONSTRAINT user_preferences_pkey PRIMARY KEY (id);
 
 
 --
@@ -8952,14 +9116,6 @@ ALTER TABLE ONLY ml_app.users_contact_infos
 
 ALTER TABLE ONLY ml_app.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
-
-
---
--- Name: view_users view_users_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.view_users
-    ADD CONSTRAINT view_users_pkey PRIMARY KEY (id);
 
 
 --
@@ -9078,6 +9234,13 @@ CREATE INDEX delayed_jobs_priority ON ml_app.delayed_jobs USING btree (priority,
 --
 
 CREATE INDEX idx_h_on_role_descriptions_id ON ml_app.role_description_history USING btree (role_description_id);
+
+
+--
+-- Name: idx_h_on_user_descriptions_id; Type: INDEX; Schema: ml_app; Owner: -
+--
+
+CREATE INDEX idx_h_on_user_descriptions_id ON ml_app.user_description_history USING btree (user_description_id);
 
 
 --
@@ -9445,6 +9608,13 @@ CREATE INDEX index_item_flags_on_user_id ON ml_app.item_flags USING btree (user_
 
 
 --
+-- Name: index_masters_on_created_by_user_id; Type: INDEX; Schema: ml_app; Owner: -
+--
+
+CREATE INDEX index_masters_on_created_by_user_id ON ml_app.masters USING btree (created_by_user_id);
+
+
+--
 -- Name: index_masters_on_msid; Type: INDEX; Schema: ml_app; Owner: -
 --
 
@@ -9585,6 +9755,13 @@ CREATE INDEX index_nfs_store_archived_files_on_nfs_store_stored_file_id ON ml_ap
 
 
 --
+-- Name: index_nfs_store_container_history_on_created_by_user_id; Type: INDEX; Schema: ml_app; Owner: -
+--
+
+CREATE INDEX index_nfs_store_container_history_on_created_by_user_id ON ml_app.nfs_store_container_history USING btree (created_by_user_id);
+
+
+--
 -- Name: index_nfs_store_container_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
 --
 
@@ -9603,6 +9780,13 @@ CREATE INDEX index_nfs_store_container_history_on_nfs_store_container_id ON ml_a
 --
 
 CREATE INDEX index_nfs_store_container_history_on_user_id ON ml_app.nfs_store_container_history USING btree (user_id);
+
+
+--
+-- Name: index_nfs_store_containers_on_created_by_user_id; Type: INDEX; Schema: ml_app; Owner: -
+--
+
+CREATE INDEX index_nfs_store_containers_on_created_by_user_id ON ml_app.nfs_store_containers USING btree (created_by_user_id);
 
 
 --
@@ -10110,6 +10294,34 @@ CREATE INDEX index_user_authorization_history_on_user_authorization_id ON ml_app
 
 
 --
+-- Name: index_user_description_history_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
+--
+
+CREATE INDEX index_user_description_history_on_admin_id ON ml_app.user_description_history USING btree (admin_id);
+
+
+--
+-- Name: index_user_description_history_on_app_type_id; Type: INDEX; Schema: ml_app; Owner: -
+--
+
+CREATE INDEX index_user_description_history_on_app_type_id ON ml_app.user_description_history USING btree (app_type_id);
+
+
+--
+-- Name: index_user_descriptions_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
+--
+
+CREATE INDEX index_user_descriptions_on_admin_id ON ml_app.user_descriptions USING btree (admin_id);
+
+
+--
+-- Name: index_user_descriptions_on_app_type_id; Type: INDEX; Schema: ml_app; Owner: -
+--
+
+CREATE INDEX index_user_descriptions_on_app_type_id ON ml_app.user_descriptions USING btree (app_type_id);
+
+
+--
 -- Name: index_user_history_on_app_type_id; Type: INDEX; Schema: ml_app; Owner: -
 --
 
@@ -10121,6 +10333,13 @@ CREATE INDEX index_user_history_on_app_type_id ON ml_app.user_history USING btre
 --
 
 CREATE INDEX index_user_history_on_user_id ON ml_app.user_history USING btree (user_id);
+
+
+--
+-- Name: index_user_preferences_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
+--
+
+CREATE UNIQUE INDEX index_user_preferences_on_user_id ON ml_app.user_preferences USING btree (user_id);
 
 
 --
@@ -10352,6 +10571,13 @@ CREATE INDEX idx_rdcih_on_admin_id ON ref_data.redcap_data_collection_instrument
 --
 
 CREATE INDEX idx_rdcih_on_proj_admin_id ON ref_data.redcap_data_collection_instrument_history USING btree (redcap_project_admin_id);
+
+
+--
+-- Name: index_datadic_variable_history_on_user_id; Type: INDEX; Schema: ref_data; Owner: -
+--
+
+CREATE INDEX index_datadic_variable_history_on_user_id ON ref_data.datadic_variable_history USING btree (user_id);
 
 
 --
@@ -10705,6 +10931,20 @@ CREATE TRIGGER log_role_description_history_update AFTER UPDATE ON ml_app.role_d
 
 
 --
+-- Name: user_descriptions log_user_description_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
+--
+
+CREATE TRIGGER log_user_description_history_insert AFTER INSERT ON ml_app.user_descriptions FOR EACH ROW EXECUTE FUNCTION ml_app.user_description_history_upd();
+
+
+--
+-- Name: user_descriptions log_user_description_history_update; Type: TRIGGER; Schema: ml_app; Owner: -
+--
+
+CREATE TRIGGER log_user_description_history_update AFTER UPDATE ON ml_app.user_descriptions FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.user_description_history_upd();
+
+
+--
 -- Name: message_templates message_template_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
 --
 
@@ -11037,14 +11277,14 @@ CREATE TRIGGER user_role_history_update AFTER UPDATE ON ml_app.user_roles FOR EA
 -- Name: datadic_choices log_datadic_choice_history_insert; Type: TRIGGER; Schema: ref_data; Owner: -
 --
 
-CREATE TRIGGER log_datadic_choice_history_insert AFTER INSERT ON ref_data.datadic_choices FOR EACH ROW EXECUTE FUNCTION ref_data.datadic_choice_history_upd();
+CREATE TRIGGER log_datadic_choice_history_insert AFTER INSERT ON ref_data.datadic_choices FOR EACH ROW EXECUTE FUNCTION ml_app.datadic_choice_history_upd();
 
 
 --
 -- Name: datadic_choices log_datadic_choice_history_update; Type: TRIGGER; Schema: ref_data; Owner: -
 --
 
-CREATE TRIGGER log_datadic_choice_history_update AFTER UPDATE ON ref_data.datadic_choices FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ref_data.datadic_choice_history_upd();
+CREATE TRIGGER log_datadic_choice_history_update AFTER UPDATE ON ref_data.datadic_choices FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.datadic_choice_history_upd();
 
 
 --
@@ -11079,28 +11319,28 @@ CREATE TRIGGER log_redcap_data_collection_instrument_history_update AFTER UPDATE
 -- Name: redcap_data_dictionaries log_redcap_data_dictionary_history_insert; Type: TRIGGER; Schema: ref_data; Owner: -
 --
 
-CREATE TRIGGER log_redcap_data_dictionary_history_insert AFTER INSERT ON ref_data.redcap_data_dictionaries FOR EACH ROW EXECUTE FUNCTION ref_data.redcap_data_dictionary_history_upd();
+CREATE TRIGGER log_redcap_data_dictionary_history_insert AFTER INSERT ON ref_data.redcap_data_dictionaries FOR EACH ROW EXECUTE FUNCTION ml_app.redcap_data_dictionary_history_upd();
 
 
 --
 -- Name: redcap_data_dictionaries log_redcap_data_dictionary_history_update; Type: TRIGGER; Schema: ref_data; Owner: -
 --
 
-CREATE TRIGGER log_redcap_data_dictionary_history_update AFTER UPDATE ON ref_data.redcap_data_dictionaries FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ref_data.redcap_data_dictionary_history_upd();
+CREATE TRIGGER log_redcap_data_dictionary_history_update AFTER UPDATE ON ref_data.redcap_data_dictionaries FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.redcap_data_dictionary_history_upd();
 
 
 --
 -- Name: redcap_project_admins log_redcap_project_admin_history_insert; Type: TRIGGER; Schema: ref_data; Owner: -
 --
 
-CREATE TRIGGER log_redcap_project_admin_history_insert AFTER INSERT ON ref_data.redcap_project_admins FOR EACH ROW EXECUTE FUNCTION ref_data.redcap_project_admin_history_upd();
+CREATE TRIGGER log_redcap_project_admin_history_insert AFTER INSERT ON ref_data.redcap_project_admins FOR EACH ROW EXECUTE FUNCTION ml_app.redcap_project_admin_history_upd();
 
 
 --
 -- Name: redcap_project_admins log_redcap_project_admin_history_update; Type: TRIGGER; Schema: ref_data; Owner: -
 --
 
-CREATE TRIGGER log_redcap_project_admin_history_update AFTER UPDATE ON ref_data.redcap_project_admins FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ref_data.redcap_project_admin_history_upd();
+CREATE TRIGGER log_redcap_project_admin_history_update AFTER UPDATE ON ref_data.redcap_project_admins FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.redcap_project_admin_history_upd();
 
 
 --
@@ -11550,6 +11790,14 @@ ALTER TABLE ONLY ml_app.nfs_store_trash_actions
 
 
 --
+-- Name: masters fk_rails_10869244dc; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.masters
+    ADD CONSTRAINT fk_rails_10869244dc FOREIGN KEY (created_by_user_id) REFERENCES ml_app.users(id);
+
+
+--
 -- Name: users fk_rails_1694bfe639; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
 --
 
@@ -11667,6 +11915,14 @@ ALTER TABLE ONLY ml_app.role_descriptions
 
 ALTER TABLE ONLY ml_app.nfs_store_archived_files
     ADD CONSTRAINT fk_rails_2b59e23148 FOREIGN KEY (nfs_store_stored_file_id) REFERENCES ml_app.nfs_store_stored_files(id);
+
+
+--
+-- Name: user_description_history fk_rails_2cf2ce330f; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.user_description_history
+    ADD CONSTRAINT fk_rails_2cf2ce330f FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
 
 
 --
@@ -11830,6 +12086,14 @@ ALTER TABLE ONLY ml_app.protocol_events
 
 
 --
+-- Name: user_descriptions fk_rails_5a9926bbe8; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.user_descriptions
+    ADD CONSTRAINT fk_rails_5a9926bbe8 FOREIGN KEY (app_type_id) REFERENCES ml_app.app_types(id);
+
+
+--
 -- Name: external_identifier_history fk_rails_5b0628cf42; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
 --
 
@@ -11974,6 +12238,14 @@ ALTER TABLE ONLY ml_app.tracker_history
 
 
 --
+-- Name: user_description_history fk_rails_864938f733; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.user_description_history
+    ADD CONSTRAINT fk_rails_864938f733 FOREIGN KEY (user_description_id) REFERENCES ml_app.user_descriptions(id);
+
+
+--
 -- Name: pro_infos fk_rails_86cecb1e36; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
 --
 
@@ -11995,6 +12267,14 @@ ALTER TABLE ONLY ml_app.config_library_history
 
 ALTER TABLE ONLY ml_app.app_types
     ADD CONSTRAINT fk_rails_8be93bcf4b FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
+
+
+--
+-- Name: user_description_history fk_rails_8f99de6d81; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.user_description_history
+    ADD CONSTRAINT fk_rails_8f99de6d81 FOREIGN KEY (app_type_id) REFERENCES ml_app.app_types(id);
 
 
 --
@@ -12059,6 +12339,14 @@ ALTER TABLE ONLY ml_app.addresses
 
 ALTER TABLE ONLY ml_app.model_references
     ADD CONSTRAINT fk_rails_a4eb981c4a FOREIGN KEY (from_record_master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: user_preferences fk_rails_a69bfcfd81; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.user_preferences
+    ADD CONSTRAINT fk_rails_a69bfcfd81 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
 
 
 --
@@ -12214,6 +12502,14 @@ ALTER TABLE ONLY ml_app.user_action_logs
 
 
 --
+-- Name: user_descriptions fk_rails_d15f63d454; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.user_descriptions
+    ADD CONSTRAINT fk_rails_d15f63d454 FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
+
+
+--
 -- Name: message_notifications fk_rails_d3566ee56d; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
 --
 
@@ -12227,6 +12523,14 @@ ALTER TABLE ONLY ml_app.message_notifications
 
 ALTER TABLE ONLY ml_app.player_contacts
     ADD CONSTRAINT fk_rails_d3c0ddde90 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: nfs_store_container_history fk_rails_d6593e5c9d; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.nfs_store_container_history
+    ADD CONSTRAINT fk_rails_d6593e5c9d FOREIGN KEY (created_by_user_id) REFERENCES ml_app.users(id);
 
 
 --
@@ -12307,6 +12611,14 @@ ALTER TABLE ONLY ml_app.external_links
 
 ALTER TABLE ONLY ml_app.nfs_store_archived_files
     ADD CONSTRAINT fk_rails_ecfa3cb151 FOREIGN KEY (nfs_store_container_id) REFERENCES ml_app.nfs_store_containers(id);
+
+
+--
+-- Name: nfs_store_containers fk_rails_ee25fc60fa; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.nfs_store_containers
+    ADD CONSTRAINT fk_rails_ee25fc60fa FOREIGN KEY (created_by_user_id) REFERENCES ml_app.users(id);
 
 
 --
@@ -12574,14 +12886,6 @@ ALTER TABLE ONLY ref_data.datadic_variable_history
 
 
 --
--- Name: datadic_variables fk_rails_5578e37430; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
---
-
-ALTER TABLE ONLY ref_data.datadic_variables
-    ADD CONSTRAINT fk_rails_5578e37430 FOREIGN KEY (redcap_data_dictionary_id) REFERENCES ref_data.redcap_data_dictionaries(id);
-
-
---
 -- Name: datadic_choice_history fk_rails_63103b7cf7; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
 --
 
@@ -12595,14 +12899,6 @@ ALTER TABLE ONLY ref_data.datadic_choice_history
 
 ALTER TABLE ONLY ref_data.datadic_choices
     ADD CONSTRAINT fk_rails_67ca4d7e1f FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
-
-
---
--- Name: datadic_variable_history fk_rails_6ba6ab1e1f; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
---
-
-ALTER TABLE ONLY ref_data.datadic_variable_history
-    ADD CONSTRAINT fk_rails_6ba6ab1e1f FOREIGN KEY (redcap_data_dictionary_id) REFERENCES ref_data.redcap_data_dictionaries(id);
 
 
 --
@@ -12678,14 +12974,6 @@ ALTER TABLE ONLY ref_data.redcap_data_collection_instrument_history
 
 
 --
--- Name: datadic_choice_history fk_rails_cb8a1e9d10; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
---
-
-ALTER TABLE ONLY ref_data.datadic_choice_history
-    ADD CONSTRAINT fk_rails_cb8a1e9d10 FOREIGN KEY (redcap_data_dictionary_id) REFERENCES ref_data.redcap_data_dictionaries(id);
-
-
---
 -- Name: redcap_data_collection_instrument_history fk_rails_ce6075441d; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
 --
 
@@ -12702,11 +12990,11 @@ ALTER TABLE ONLY ref_data.datadic_variable_history
 
 
 --
--- Name: datadic_choices fk_rails_f5497a3583; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
+-- Name: datadic_variable_history fk_rails_ef47f37820; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
 --
 
-ALTER TABLE ONLY ref_data.datadic_choices
-    ADD CONSTRAINT fk_rails_f5497a3583 FOREIGN KEY (redcap_data_dictionary_id) REFERENCES ref_data.redcap_data_dictionaries(id);
+ALTER TABLE ONLY ref_data.datadic_variable_history
+    ADD CONSTRAINT fk_rails_ef47f37820 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
 
 
 --
@@ -12988,99 +13276,32 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20201111165109'),
 ('20201111165110'),
 ('20201112163129'),
-('20210106205630'),
-('20210106205806'),
-('20210106205944'),
-('20210106210037'),
-('20210106210039'),
-('20210106210041'),
-('20210106210042'),
-('20210106211358'),
-('20210106211400'),
-('20210106211402'),
-('20210106211403'),
 ('20210108085826'),
-('20210109171913'),
-('20210109171915'),
-('20210109171916'),
-('20210109171918'),
-('20210109171919'),
-('20210109172501'),
-('20210109174328'),
-('20210109222647'),
-('20210109222649'),
-('20210109222650'),
-('20210109222652'),
-('20210109222653'),
-('20210109222655'),
-('20210109222656'),
-('20210109222658'),
-('20210109222659'),
-('20210109222701'),
-('20210109222702'),
-('20210109222704'),
-('20210109222705'),
-('20210109222707'),
-('20210109222708'),
-('20210109222710'),
-('20210109222712'),
-('20210109222713'),
-('20210109222715'),
-('20210109222716'),
-('20210109222718'),
-('20210109222719'),
-('20210109222721'),
-('20210109222722'),
-('20210109222724'),
-('20210109222725'),
-('20210109222727'),
-('20210109222728'),
-('20210109222730'),
-('20210109222731'),
-('20210109222733'),
-('20210109222734'),
-('20210109222736'),
-('20210109222738'),
-('20210109222739'),
-('20210109222741'),
-('20210109222742'),
-('20210109222744'),
-('20210109222746'),
-('20210109222747'),
-('20210109223313'),
-('20210109223314'),
-('20210109223316'),
-('20210109223318'),
-('20210109223319'),
-('20210109223321'),
-('20210109223323'),
-('20210109224159'),
-('20210109224201'),
-('20210109224203'),
-('20210109224205'),
-('20210109224207'),
-('20210110141352'),
-('20210110142129'),
-('20210110142304'),
-('20210110142447'),
-('20210110142552'),
-('20210110171032'),
-('20210110172647'),
-('20210110173817'),
-('20210110174038'),
-('20210110174040'),
-('20210110174043'),
-('20210110174044'),
-('20210110174046'),
-('20210110174047'),
-('20210110175857'),
-('20210110180315'),
-('20210110180348'),
-('20210110180351'),
-('20210110180353'),
-('20210110181159'),
-('20210110181200'),
-('20210110181202'),
+('20210110191022'),
+('20210110191023'),
+('20210110191024'),
+('20210110191026'),
+('20210110191028'),
+('20210110191029'),
+('20210110191030'),
+('20210110191031'),
+('20210110191033'),
+('20210124185731'),
+('20210124185733'),
+('20210124185959'),
+('20210124190000'),
+('20210124190034'),
+('20210124190035'),
+('20210124190150'),
+('20210124190152'),
+('20210124190153'),
+('20210124190155'),
+('20210124190905'),
+('20210124190907'),
+('20210124190908'),
+('20210124190909'),
+('20210124190911'),
+('20210124190912'),
 ('20210128180947'),
 ('20210129150044'),
 ('20210129154600'),
@@ -13105,24 +13326,182 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20210712152134'),
 ('20210809151207'),
 ('20210816170804'),
+('20211020183551'),
 ('20211031152538'),
+('20211031183210'),
+('20211031183429'),
 ('20211041105001'),
 ('20211115141001'),
 ('20211117180701'),
 ('20211124120038'),
 ('20211126152918'),
-('20211214002433'),
-('20211214002436'),
-('20211214002531'),
-('20211214002652'),
-('20211214002655'),
-('20211214002658'),
-('20211214002659'),
-('20211214002701'),
-('20211214002904'),
-('20211214002907'),
-('20211214002908'),
-('20211214002910'),
-('20211231113457');
+('20211206102025'),
+('20211206102028'),
+('20211206102030'),
+('20211206102244'),
+('20211206102249'),
+('20211206160502'),
+('20211220122834'),
+('20211220122835'),
+('20211220122837'),
+('20211220122840'),
+('20211220123345'),
+('20211220123347'),
+('20211220123348'),
+('20211220123518'),
+('20211220123519'),
+('20211220124525'),
+('20211220124527'),
+('20211220124611'),
+('20211220124612'),
+('20211220125302'),
+('20211220125303'),
+('20211220125327'),
+('20211220125329'),
+('20211220125410'),
+('20211220125411'),
+('20211220125452'),
+('20211220125454'),
+('20211220125821'),
+('20211220125823'),
+('20211220130316'),
+('20211220130318'),
+('20211220130532'),
+('20211220130534'),
+('20211220130655'),
+('20211220130656'),
+('20211220130659'),
+('20211222111016'),
+('20211222111721'),
+('20211222134557'),
+('20211222134602'),
+('20211222135634'),
+('20211222135957'),
+('20211222140008'),
+('20211222140019'),
+('20211231113457'),
+('20220121143719'),
+('20220131111232'),
+('20220131121830'),
+('20220131121831'),
+('20220131121833'),
+('20220131121834'),
+('20220131121835'),
+('20220131123017'),
+('20220131123100'),
+('20220131131244'),
+('20220131132533'),
+('20220131135242'),
+('20220131135349'),
+('20220131135547'),
+('20220131135600'),
+('20220131140353'),
+('20220131140521'),
+('20220131143324'),
+('20220131155227'),
+('20220131155229'),
+('20220131171632'),
+('20220131172554'),
+('20220131172618'),
+('20220131182607'),
+('20220131184011'),
+('20220131184041'),
+('20220131184511'),
+('20220201102247'),
+('20220201102549'),
+('20220201173928'),
+('20220201174829'),
+('20220202175848'),
+('20220202190849'),
+('20220202190931'),
+('20220202193750'),
+('20220203193018'),
+('20220203201903'),
+('20220214120443'),
+('20220214122255'),
+('20220214124934'),
+('20220214125216'),
+('20220214125928'),
+('20220214130001'),
+('20220214140459'),
+('20220214154149'),
+('20220216145207'),
+('20220217092246'),
+('20220217144044'),
+('20220218171203'),
+('20220218171455'),
+('20220221101714'),
+('20220221102030'),
+('20220221113950'),
+('20220221120737'),
+('20220221123203'),
+('20220222112229'),
+('20220222112301'),
+('20220223113931'),
+('20220223113932'),
+('20220223113934'),
+('20220223114443'),
+('20220223114445'),
+('20220223114447'),
+('20220223114848'),
+('20220223114849'),
+('20220223114851'),
+('20220223114919'),
+('20220223114920'),
+('20220223114922'),
+('20220223115250'),
+('20220223115252'),
+('20220223115253'),
+('20220223120331'),
+('20220223120333'),
+('20220223120335'),
+('20220223121351'),
+('20220223121353'),
+('20220223121355'),
+('20220223121713'),
+('20220223121714'),
+('20220223121716'),
+('20220224020931'),
+('20220224023446'),
+('20220224114432'),
+('20220224115009'),
+('20220224135435'),
+('20220224135635'),
+('20220224141444'),
+('20220224143222'),
+('20220225122155'),
+('20220301093010'),
+('20220301093041'),
+('20220301093304'),
+('20220301120158'),
+('20220301120734'),
+('20220301120755'),
+('20220301201512'),
+('20220303112202'),
+('20220304115824'),
+('20220304115826'),
+('20220304115827'),
+('20220304115830'),
+('20220304115836'),
+('20220304115838'),
+('20220304115839'),
+('20220304115841'),
+('20220304120359'),
+('20220304120401'),
+('20220304120404'),
+('20220304120557'),
+('20220304120558'),
+('20220304120600'),
+('20220304120602'),
+('20220304120604'),
+('20220304120605'),
+('20220307144639'),
+('20220307153310'),
+('20220307154248'),
+('20220307162856'),
+('20220307162929'),
+('20220307163124'),
+('20220307164817'),
+('20220307164959');
 
 
