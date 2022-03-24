@@ -70,4 +70,64 @@ RSpec.describe 'Activity Log implementation', type: :model do
 
     expect { al.as_json }.to raise_error FphsException
   end
+
+  context 'has extra log types defined' do
+    before do
+      al_def = ActivityLog::PlayerContactPhone.definition
+      al_def.extra_log_types = <<~ENDDEF
+        step_1:
+          label: Step 1
+          fields:
+            - select_call_direction
+            - select_who
+
+        step_2:
+          label: Step 2
+          fields:
+            - select_call_direction
+            - extra_text
+
+      ENDDEF
+
+      al_def.current_admin = @admin
+      al_def.save!
+      setup_access :activity_log__player_contact_phone__step_1, resource_type: :activity_log_type, access: :create, user: @user
+      setup_access :activity_log__player_contact_phone__step_2, resource_type: :activity_log_type, access: :create, user: @user
+      al_def.reload
+      al_def.option_type_config_for :step_1
+      al_def.option_type_config_for :step_2
+      al_def.add_master_association
+    end
+
+    it 'has a set of master associations pointing to the full table and individual extra log types' do
+      data = @player_contact.data
+      master = @player_contact.master
+      expect(master).not_to be nil
+      @player_contact.master.current_user = @user
+
+      expect(master.activity_log__player_contact_phones.count).to eq 0
+      expect(master.activity_log__player_contact_phone__primary.count).to eq 0
+      expect(master.activity_log__player_contact_phone__step_1.count).to eq 0
+      expect(master.activity_log__player_contact_phone__step_2.count).to eq 0
+
+      @player_contact.activity_log__player_contact_phones.create!(select_call_direction: 'from player',
+                                                                  select_who: 'user',
+                                                                  master: @player_contact.master)
+
+      expect(master.activity_log__player_contact_phones.count).to eq 1
+      expect(master.activity_log__player_contact_phone__primary.count).to eq 1
+      expect(master.activity_log__player_contact_phone__step_1.count).to eq 0
+      expect(master.activity_log__player_contact_phone__step_2.count).to eq 0
+
+      al = @player_contact.activity_log__player_contact_phones.create!(select_call_direction: 'from player',
+                                                                       select_who: 'user',
+                                                                       extra_log_type: 'step_1',
+                                                                       master: @player_contact.master)
+
+      expect(master.activity_log__player_contact_phones.count).to eq 2
+      expect(master.activity_log__player_contact_phone__primary.count).to eq 1
+      expect(master.activity_log__player_contact_phone__step_1.count).to eq 1
+      expect(master.activity_log__player_contact_phone__step_2.count).to eq 0
+    end
+  end
 end
