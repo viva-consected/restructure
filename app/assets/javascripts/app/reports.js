@@ -407,6 +407,67 @@ _fpa.reports = {
       });
 
     });
+  },
+
+  // Show a table as a tree. The attribute data-tt-parent-cols 
+  // defines the set of columns to use for grouping (JSON array)
+  // param $table - jQuery reference to table
+  show_table_as_tree: function ($table) {
+
+    if ($table.hasClass('jsTree')) return;
+
+    var prev_id = null;
+    $table.addClass('added-tree-table');
+
+    var par_cols = $table.attr('data-tt-parent-cols');
+    if (par_cols)
+      par_cols = JSON.parse(par_cols);
+    else
+      par_cols = [];
+
+    $table.find('thead th[data-col-type]').each(function () {
+      if (par_cols.indexOf($(this).attr('data-col-type')) >= 0) {
+        $(this).addClass('is-parent-col')
+      }
+      else {
+        $(this).addClass('is-not-parent-col')
+      }
+    });
+
+    var rows = $table.find('tbody tr');
+
+    rows.each(function () {
+      var id = $(this).find('[data-col-type="id"]').text();
+      var tp_id = $(this).find('[data-col-type="tp_id"]').text();
+      if (id != prev_id) {
+        var $par = $(this).clone();
+
+        $par.find('[data-col-type]').each(function () {
+          if (par_cols.indexOf($(this).attr('data-col-type')) < 0) {
+            $(this).addClass('is-not-parent-col').html('')
+          }
+        });
+
+        $par.attr('data-tt-id', `${id}`);
+        $(this).before($par);
+      }
+
+      $(this).find('[data-col-type]').each(function () {
+        if (par_cols.indexOf($(this).attr('data-col-type')) >= 0) {
+          $(this).addClass('is-parent-col').html('')
+        }
+      });
+
+
+      $(this).attr('data-tt-id', `${id}-${tp_id}`);
+      $(this).attr('data-tt-parent-id', id);
+
+      prev_id = id;
+    });
+
+    com_github_culmat_jsTreeTable.treeTable($table);
+    $table.expandLevel(0);
+
   }
 
 
