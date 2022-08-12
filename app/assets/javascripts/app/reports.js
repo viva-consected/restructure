@@ -425,6 +425,8 @@ _fpa.reports = {
     else
       par_cols = [];
 
+    var num_par_cols = par_cols.length;
+
     $table.find('thead th[data-col-type]').each(function () {
       if (par_cols.indexOf($(this).attr('data-col-type')) >= 0) {
         $(this).addClass('is-parent-col')
@@ -434,19 +436,29 @@ _fpa.reports = {
       }
     });
 
+    // Run through the rows to add an extra row above a group of rows with the same ID,
+    // to act as the parent tree row for that group of data.
+    // The primary columns that appear in each of these group headers are blanked in the
+    // subsequent data rows to avoid repetition and provide a tree view
     var rows = $table.find('tbody tr');
+    var num_cols = rows.first().find('[data-col-type]').length;
+    var num_child_cols = num_cols - num_par_cols;
+
 
     rows.each(function () {
       var id = $(this).find('[data-col-type="id"]').text();
       var tp_id = $(this).find('[data-col-type="tp_id"]').text();
       if (id != prev_id) {
+        // A new id, so add the parent row for it
         var $par = $(this).clone();
 
         $par.find('[data-col-type]').each(function () {
           if (par_cols.indexOf($(this).attr('data-col-type')) < 0) {
-            $(this).addClass('is-not-parent-col').html('')
+            $(this).remove();
           }
         });
+
+        $par.find('[data-col-type]').last().attr('colspan', num_child_cols + 1);
 
         $par.attr('data-tt-id', `${id}`);
         $(this).before($par);

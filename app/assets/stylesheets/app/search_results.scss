@@ -409,6 +409,10 @@ table.table.tree-table {
       border-right: 0px;
       background: none;
     }
+
+    &.report-el[colspan] pre {
+      max-width: 100%;
+    }
   }
 
   tr[data-tt-level="1"] td {
@@ -425,7 +429,6 @@ table.table.tree-table {
     }
 
   }
-  
 }
 
 .collapsed span.badge {
