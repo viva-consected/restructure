@@ -195,6 +195,7 @@ module Redcap
                                                  returnFormat]
 
     configure :metadata_request_options, with: %i[returnFormat]
+    configure :data_options, with: %i[add_multi_choice_summary_fields]
     configure_attributes :data_dictionary_version
 
     #

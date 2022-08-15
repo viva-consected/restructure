@@ -41,6 +41,12 @@ module Redcap
         fields[survey_identifier_field_name] = survey_identifier_field(data_dictionary)
       end
 
+      def self.add_summary_fields(fields, form)
+        fields.select { |f| f == :checkbox }.each do |f|
+          fields[f.chosen_array_field_name] = checkbox_chosen_array_field(form, f)
+        end
+      end
+
       # The full record may have a redcap_survey_identifier field if project admin
       # attribute #records_request_options has exportSurveyFields: true
       # @return [Symbol]
@@ -133,6 +139,14 @@ module Redcap
           field_type: 'repeat'
         }
         Field.new(nil, field_metadata, data_dictionary: data_dictionary)
+      end
+
+      def self.checkbox_chosen_array_field(form, cb_field)
+        field_metadata = {
+          field_name: cb_field.chosen_array_field_name,
+          field_type: 'checkbox_chosen_array'
+        }
+        Field.new(form, field_metadata, data_dictionary: form.data_dictionary)
       end
     end
   end

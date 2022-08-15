@@ -182,9 +182,17 @@ module Dynamic
       @db_columns = {}
 
       field_types.each do |field_name, field_type|
-        @db_columns[field_name] = {
-          type: field_type.to_s
+        ft = field_type.to_s
+        config = {
+          type: ft
         }
+
+        if ft.end_with? '_array'
+          ft = ft.sub(/_array$/, '')
+          config[:array] = true
+        end
+
+        @db_columns[field_name] = config
       end
 
       @db_columns

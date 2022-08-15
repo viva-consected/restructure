@@ -48,7 +48,7 @@ module Redcap
     # @return [Hash]
     def field_types
       @field_types = {}
-      data_dictionary&.all_retrievable_fields&.each do |field_name, field|
+      data_dictionary&.all_retrievable_fields(summary_fields: true)&.each do |field_name, field|
         @field_types[field_name] = field.field_type.database_type.to_s
       end
 
@@ -95,6 +95,16 @@ module Redcap
         ccf = field.field_choices&.choices_plain_text
         next unless ccf.present?
 
+        if project_admin.data_options.add_multi_choice_summary_fields
+          byebug
+          # Create a "chosen array" is the project configuration requires a summary field
+          # to capture all of the multiple choice values in one place
+          @fields[field.chosen_array_field_name] = {
+            caption: field.label
+          }
+        end
+
+        # Create a field for each multiple choice value
         ccf.each do |arr|
           fname = arr.first
           label = arr.last

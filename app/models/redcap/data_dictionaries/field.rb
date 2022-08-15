@@ -169,8 +169,9 @@ module Redcap
       # Checkbox choice fields, with checkbox_field___choice style appear in the results, and the
       # base checkbox_field without the suffix does not appear, since it is not a field actually retrieved.
       # @param [Form] form
+      # @param [true | false] summary_fields - include the summary fields (such as the chosen arrays for checkboxes)
       # @return [Hash{Symbol => Field}]
-      def self.all_retrievable_fields(in_form)
+      def self.all_retrievable_fields(in_form, summary_fields: false)
         new_set = {}
 
         all_from(in_form).each do |field_name, field|
@@ -178,6 +179,9 @@ module Redcap
 
           ccf = field.checkbox_choice_fields
           if ccf
+
+            SpecialFields.add_summary_fields(new_set, in_form) if summary_fields
+
             ccf.each do |c|
               field.field_type.name = :checkbox_choice
               new_set[c] = field
@@ -212,6 +216,14 @@ module Redcap
       # @return [String]
       def choice_field_name(value)
         "#{name}___#{value}"
+      end
+
+      #
+      # Generate the field name for a summary array field to hold all the
+      # individual checkbox choices in a single place
+      # @return [String]
+      def chosen_array_field_name
+        "#{name}_chosen_array"
       end
 
       #
