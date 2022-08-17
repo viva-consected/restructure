@@ -156,6 +156,101 @@ describe('show_if', function () {
   });
 
 
+  it("allows for a condition to be specified", function () {
+
+    var res
+
+    var field_def_init = {
+      all: {
+        field_a: 2,
+        field_b: {
+          condition: '<>',
+          value: 'a value'
+        },
+        field_c: 'something'
+      }
+    }
+
+    var data = {
+      field_a: 2,
+      field_b: 'bad value',
+      field_c: 'something'
+    }
+
+    res = _fpa.show_if.methods.calc_conditions(field_def_init, data)
+    expect(res).toBe(true)
+
+    var data = {
+      field_a: 2,
+      field_b: 'a value',
+      field_c: 'something'
+    }
+
+    res = _fpa.show_if.methods.calc_conditions(field_def_init, data)
+    expect(res).toBe(false)
+
+
+    var field_def_init = {
+      all: {
+        field_a: 2,
+        field_b: {
+          condition: '>=',
+          value: 10
+        },
+        field_c: 'something'
+      }
+    }
+
+    var data = {
+      field_a: 2,
+      field_b: 9,
+      field_c: 'something'
+    }
+
+    res = _fpa.show_if.methods.calc_conditions(field_def_init, data)
+    expect(res).toBe(false)
+
+
+    var data = {
+      field_a: 2,
+      field_b: 10,
+      field_c: 'something'
+    }
+
+    res = _fpa.show_if.methods.calc_conditions(field_def_init, data)
+    expect(res).toBe(true)
+
+    var field_def_init = {
+      all: {
+        field_a: 2,
+        field_b: {
+          condition: '=',
+          value: 10
+        },
+        field_c: 'something'
+      }
+    }
+
+    var data = {
+      field_a: 2,
+      field_b: 9,
+      field_c: 'something'
+    }
+
+    res = _fpa.show_if.methods.calc_conditions(field_def_init, data)
+    expect(res).toBe(false)
+
+    var data = {
+      field_a: 2,
+      field_b: 10,
+      field_c: 'something'
+    }
+
+    res = _fpa.show_if.methods.calc_conditions(field_def_init, data)
+    expect(res).toBe(true)
+  });
+
+
   it("allows for nested conditions", function () {
 
     var res
