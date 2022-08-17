@@ -1,9 +1,6 @@
 # frozen_string_literal: true
 
 Rails.application.routes.draw do
-  # Provide Javascript testing in the browser, only in the development / test environment
-  mount JasmineRails::Engine => '/specs' if defined?(JasmineRails) && (Rails.env.development? || Rails.env.test?)
-
   resources :page_layouts, only: %i[show index]
   get '/content/:id/:master_id/:secondary_key', to: 'page_layouts#show_content'
   get '/content/:id/:master_type/:master_id/:secondary_key', to: 'page_layouts#show_content'
