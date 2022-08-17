@@ -180,7 +180,8 @@ module Redcap
           ccf = field.checkbox_choice_fields
           if ccf
 
-            SpecialFields.add_summary_fields(new_set, in_form) if summary_fields
+            # If there are multiple possible values for the checkbox field, add a summary field to collect them as an array
+            SpecialFields.add_summary_fields(new_set, in_form, field) if summary_fields && ccf.length > 1
 
             ccf.each do |c|
               field.field_type.name = :checkbox_choice
@@ -223,7 +224,14 @@ module Redcap
       # individual checkbox choices in a single place
       # @return [String]
       def chosen_array_field_name
-        "#{name}_chosen_array"
+        "#{name}_chosen_array".to_sym
+      end
+
+      #
+      # Generate the original field name for a summary array field
+      # @return [String]
+      def chosen_array_original_field_name
+        name.to_s.sub(/_chosen_array$/, '').to_sym
       end
 
       #

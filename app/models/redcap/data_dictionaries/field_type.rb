@@ -124,7 +124,7 @@ module Redcap
       VariableTypesToDatabaseTypes = {
         'dichotomous' => :boolean,
         'dichotomous item' => :boolean,
-        'categorical array' => :string_array,
+        'categorical array' => :string,
         'integer' => :integer,
         'numeric' => :decimal,
         'date' => :date,
@@ -133,6 +133,11 @@ module Redcap
         'redcap status' => :integer,
         'redcap completion timestamp' => :timestamp
       }.freeze
+
+      # Types that are array fields
+      VariableTypesToDatabaseArrays = {
+        'categorical array' => true
+      }
 
       attr_accessor :name, :field
 
@@ -195,6 +200,13 @@ module Redcap
       # @return [Symbol]
       def database_type
         VariableTypesToDatabaseTypes[default_variable_type] || :string
+      end
+
+      #
+      # Is an array field in the study database?
+      # @return [true|false]
+      def database_array?
+        VariableTypesToDatabaseArrays[default_variable_type]
       end
 
       #

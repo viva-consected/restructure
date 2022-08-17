@@ -42,6 +42,7 @@ module Redcap
     # This is only intended to be called from a background job.
     def retrieve_validate_store
       retrieve
+      summarize_fields
       validate
       store
     end
@@ -49,9 +50,31 @@ module Redcap
     #
     # Immediately retrieve records from REDCap.
     # This is only intended to be called from a background job.
+    # Each record is a Hash, keyed by a symbol
     # @return [Array{Hash}]
     def retrieve
       self.records = project_admin.api_client.records
+    end
+
+    #
+    # Summarize the multiple choice fields if the project requests it
+    def summarize_fields
+      return unless project_admin.data_options.add_multi_choice_summary_fields
+
+      all_rf = data_dictionary.all_retrievable_fields(summary_fields: true)
+      all_rf.each do |name, field|
+        next if field.field_type.name == :checkbox_chosen_array
+
+        orig_name = field.chosen_array_original_field_name
+        choice_field = all_rf[orig_name]
+        records.each do |rec|
+          vals = []
+          choice_field.checkbox_choice_fields.each do |ccf|
+            vals << ccf.sub(/^#{orig_name}___/) if rec[ccf.to_sym]
+          end
+          rec[name] = vals
+        end
+      end
     end
 
     #

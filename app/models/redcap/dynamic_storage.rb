@@ -55,6 +55,15 @@ module Redcap
       @field_types
     end
 
+    def array_fields
+      @array_fields = {}
+      data_dictionary&.all_retrievable_fields(summary_fields: true)&.each do |field_name, field|
+        @array_fields[field_name] = field.field_type.database_array?
+      end
+
+      @array_fields
+    end
+
     #
     # Configuration of fields used by the model generator
     # @return [Hash{String => String}]
@@ -65,6 +74,8 @@ module Redcap
       all_retrievable_fields = data_dictionary.all_retrievable_fields
 
       data_dictionary.all_fields.each do |field_name, field|
+        choices = nil
+
         if placeholder_fields.value?("placeholder_#{field_name}__title")
           @fields["placeholder_#{field_name}__title"] = {
             caption: field.title
@@ -95,12 +106,17 @@ module Redcap
         ccf = field.field_choices&.choices_plain_text
         next unless ccf.present?
 
-        if project_admin.data_options.add_multi_choice_summary_fields
-          byebug
-          # Create a "chosen array" is the project configuration requires a summary field
+        if project_admin.data_options.add_multi_choice_summary_fields && ccf.length > 1
+          # Create a "chosen array" if the project configuration requires a summary field
           # to capture all of the multiple choice values in one place
+          # But only do this if the number of choices is greater than 1, since we don't want this
+          # for standalone checkboxes
+          choices ||= field.field_choices&.choices(plain_text: true, rails_format: true)
+
           @fields[field.chosen_array_field_name] = {
-            caption: field.label
+            caption: field.label,
+            edit_options: choices.to_h,
+            edit_field_type: "tag_select_#{field.chosen_array_field_name}"
           }
         end
 

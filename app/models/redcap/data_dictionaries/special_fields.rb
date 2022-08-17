@@ -26,7 +26,7 @@ module Redcap
 
       #
       # Add redcap_repeat_instrument and redcap_repeat_instance fields to the hash of fields in this form
-      # @param [Hash] fields <description>
+      # @param [Hash] fields
       # @param [Redcap::DataDictionary] in_form
       def self.add_repeat_instrument_fields(fields, data_dictionary)
         fields[:redcap_repeat_instrument] = repeat_instrument_field(data_dictionary)
@@ -41,10 +41,15 @@ module Redcap
         fields[survey_identifier_field_name] = survey_identifier_field(data_dictionary)
       end
 
-      def self.add_summary_fields(fields, form)
-        fields.select { |f| f == :checkbox }.each do |f|
-          fields[f.chosen_array_field_name] = checkbox_chosen_array_field(form, f)
-        end
+      #
+      # Add summary fields for multiple choice checkbox field definition
+      # @param [Hash] fields
+      # @param [Redcap::DataDictionaries::Form] form
+      # @param [Redcap::DataDictionaries::Field] field
+      def self.add_summary_fields(fields, form, field)
+        return unless field.field_type.name == :checkbox
+
+        fields[field.chosen_array_field_name] = checkbox_chosen_array_field(form, field)
       end
 
       # The full record may have a redcap_survey_identifier field if project admin
