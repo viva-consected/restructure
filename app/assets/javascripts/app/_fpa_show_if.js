@@ -93,7 +93,7 @@ _fpa.show_if.methods = {
 
     // Valid condition types
     const cond_types = ['all', 'any', 'not_all', 'not_any'];
-    const binary_conds = ['=', '<', '>', '<>', '<=', '>='];
+    // valid binary_conds = ['=', '<', '>', '<>', '<=', '>='];
     var cond_success = true;
 
     // Iterate through each top level rule
@@ -207,6 +207,9 @@ _fpa.show_if.methods = {
                   break;
                 case '<>':
                   matches = (exp_field_value != exp_value);
+                  break;
+                default:
+                  console.log(`The specified 'condition' '${explicit_cond}' is not valid.`)
                   break;
               }
             }
