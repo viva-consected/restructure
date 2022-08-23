@@ -300,7 +300,7 @@ RSpec.describe 'Dynamic Model Options', type: :model do
     END_OPT
   end
 
-  it 'generates show_if from show_if_conditions_string' do
+  it 'generates show_if from show_if_condition_strings' do
     dmdef = generate_test_dynamic_model
     opt = <<~END_CONFIG
       _db_columns:
@@ -327,7 +327,8 @@ RSpec.describe 'Dynamic Model Options', type: :model do
           type: datetime
 
       default:
-        show_if_condition_string: '[test] <> "" and [test2] = "hello"'
+        show_if_condition_strings:#{' '}
+          user_id: '[test] <> "" and [test2] = "hello"'
         caption_before:
           all_fields: show before all fields
           test2: has a caption before test2
@@ -335,9 +336,9 @@ RSpec.describe 'Dynamic Model Options', type: :model do
 
     dmdef.update!(options: opt, current_admin: @admin)
 
-    expect(dmdef.default_options.show_if).to be_a Hash
+    expect(dmdef.default_options.show_if[:user_id]).to be_a Hash
 
-    expect(dmdef.default_options.show_if).to eq(
+    expect(dmdef.default_options.show_if[:user_id]).to eq(
       all_0: {
         all_nonblock_0: {
           test: { condition: '<>', value: '' }

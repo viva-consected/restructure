@@ -6,7 +6,7 @@ module Redcap
     # Categorical selection choices for a field
     class BranchingLogic
       attr_accessor :condition_string, :orig_condition_string, :vars, :literals, :blocks, :operators, :comps, :numbers,
-                    :block_hashes, :final_hash_list, :result
+                    :block_hashes, :final_hash_list, :result, :field
 
       def self.clean_string(str)
         str.gsub("[\n\s]+", ' ').strip
@@ -20,13 +20,28 @@ module Redcap
       end
 
       #
-      # Initialize a new branching logic condition, with optional *condition_string*
+      # Initialize a new branching logic condition, with optional *field_or_condition_string*
       # @param [<Type>] condition_string <description>
-      def initialize(condition_string = nil)
+      def initialize(field_or_condition_string = nil)
+        if field_or_condition_string.is_a? Field
+          self.field = field_or_condition_string
+          condition_string = field_branching_logic
+        else
+          condition_string = field_or_condition_string
+        end
+
         reset_scan
 
         self.condition_string = condition_string.dup
         self.orig_condition_string = condition_string.dup
+      end
+
+      #
+      # Return the branching logic from a Field, to use as a condition string
+      # @return [String]
+      def field_branching_logic
+        field_metadata = field.def_metadata
+        field_metadata[:branching_logic]
       end
 
       #

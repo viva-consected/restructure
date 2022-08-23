@@ -15,7 +15,7 @@ module OptionConfigs
         name label config_obj caption_before show_if resource_name resource_item_name save_action view_options
         field_options dialog_before creatable_if editable_if showable_if add_reference_if valid_if
         filestore labels fields button_label orig_config db_configs save_trigger embed references
-        show_if_condition_string
+        show_if_condition_strings
       ]
     end
 
@@ -86,14 +86,19 @@ module OptionConfigs
       self.labels ||= {}
       self.labels = self.labels.symbolize_keys
 
-      if show_if_condition_string.present?
-        # Generate a real show_if hash is a condition string was provided
-        bl = Redcap::DataDictionaries::BranchingLogic.new(show_if_condition_string)
-        sis = bl.generate_show_if
-        self.show_if = sis if sis.present?
+      self.show_if ||= {}
+
+      if show_if_condition_strings.present?
+        show_if_condition_strings.each do |fn, val|
+          # Generate a real show_if hash is a condition string was provided
+          next if val.empty?
+
+          bl = Redcap::DataDictionaries::BranchingLogic.new(val)
+          sis = bl&.generate_show_if
+          self.show_if[fn] = sis if sis.present?
+        end
       end
 
-      self.show_if ||= {}
       self.show_if = self.show_if.symbolize_keys
 
       self.save_action ||= {}
