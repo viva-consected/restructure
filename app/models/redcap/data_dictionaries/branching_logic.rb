@@ -207,6 +207,7 @@ module Redcap
           end
 
           if prev_op.nil? || op_changed
+            key = 'all_no_op_0' if key.blank?
             sub_list << { key => [left] }
           else
             sub_list.last.first.last << left

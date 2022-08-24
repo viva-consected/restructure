@@ -91,7 +91,8 @@ module OptionConfigs
       if show_if_condition_strings.present?
         show_if_condition_strings.each do |fn, val|
           # Generate a real show_if hash is a condition string was provided
-          next if val.empty?
+          # and show if is not already set
+          next if val.empty? || self.show_if[fn]
 
           bl = Redcap::DataDictionaries::BranchingLogic.new(val)
           sis = bl&.generate_show_if

@@ -480,6 +480,22 @@ RSpec.describe 'Redcap::DataDictionaries::BranchingLogic', type: :model do
 
     it 'generates show_if hash' do
       test = <<~ENDSTR.strip
+        [val_instr]='2'
+      ENDSTR
+
+      final_exp = {
+        all_no_op_0: {
+          all_nonblock_0: {
+            val_instr: '2'
+          }
+        }
+      }
+
+      @bl = Redcap::DataDictionaries::BranchingLogic.new(test)
+      final_res = @bl.generate_show_if
+      expect(final_res).to eq final_exp
+
+      test = <<~ENDSTR.strip
         [test] <> "" and [test2] = "hello"
       ENDSTR
 
