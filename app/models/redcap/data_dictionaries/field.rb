@@ -162,6 +162,11 @@ module Redcap
         fields
       end
 
+      def has_checkbox_summary_array?
+        ccf = checkbox_choice_fields
+        ccf && ccf.length > 1
+      end
+
       #
       # Get a Hash of all fields that should be returned in a REDCap record retrieval, which takes into account
       # the checkbox choice fields that are persisted individually. This is based on the latest retrieved REDCap
@@ -217,6 +222,14 @@ module Redcap
       # @return [String]
       def choice_field_name(value)
         "#{name}___#{value}"
+      end
+
+      #
+      # Field value for a choice field name
+      # @param [String|Symbol] name
+      # @return [String]
+      def self.choice_field_value(name)
+        name.to_s.split('___').last
       end
 
       #

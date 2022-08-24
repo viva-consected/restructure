@@ -96,7 +96,7 @@ RSpec.describe Redcap::DynamicStorage, type: :model do
       @projects = setup_redcap_project_admin_configs
       @project = @projects.first
 
-      # Create the first DM without multiple choice summary fields
+      # Create the first DM with multiple choice summary fields
       rc = Redcap::ProjectAdmin.active.first
       rc.data_options.add_multi_choice_summary_fields = true
       rc.current_admin = @admin
@@ -109,11 +109,7 @@ RSpec.describe Redcap::DynamicStorage, type: :model do
     end
 
     before :example do
-      # @bad_admin, = create_admin
-      # @bad_admin.update! disabled: true
       create_admin
-      # @projects = setup_redcap_project_admin_configs
-      # @project = @projects.first
       reset_mocks
     end
 

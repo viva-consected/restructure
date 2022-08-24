@@ -56,6 +56,8 @@ module Redcap
     end
 
     def array_fields
+      return @array_fields if @array_fields
+
       @array_fields = {}
       data_dictionary&.all_retrievable_fields(summary_fields: true)&.each do |field_name, field|
         @array_fields[field_name] = field.field_type.database_array?

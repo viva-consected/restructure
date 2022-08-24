@@ -36,6 +36,7 @@ RSpec.describe Redcap::ProjectUsers, type: :model do
     dr = Redcap::ProjectUsers.new(rc)
 
     dr.retrieve
+    dr.summarize_fields
 
     expect { dr.validate }.not_to raise_error
   end
@@ -46,6 +47,7 @@ RSpec.describe Redcap::ProjectUsers, type: :model do
     dr = Redcap::ProjectUsers.new(rc)
 
     dr.retrieve
+    dr.summarize_fields
     expect { dr.validate }.not_to raise_error
 
     dr.store
@@ -62,6 +64,7 @@ RSpec.describe Redcap::ProjectUsers, type: :model do
     dr = Redcap::ProjectUsers.new(rc)
 
     dr.retrieve
+    dr.summarize_fields
     expect { dr.validate }.not_to raise_error
 
     dr.store
@@ -73,6 +76,7 @@ RSpec.describe Redcap::ProjectUsers, type: :model do
 
     dr = Redcap::ProjectUsers.new(rc)
     dr.retrieve
+    dr.summarize_fields
     expect { dr.validate }.not_to raise_error
 
     dr.store
@@ -89,6 +93,7 @@ RSpec.describe Redcap::ProjectUsers, type: :model do
     dr = Redcap::ProjectUsers.new(rc)
 
     dr.retrieve
+    dr.summarize_fields
     expect { dr.validate }.not_to raise_error
 
     dr.store
@@ -107,6 +112,7 @@ RSpec.describe Redcap::ProjectUsers, type: :model do
 
     dr = Redcap::ProjectUsers.new(rc)
     dr.retrieve
+    dr.summarize_fields
     expect { dr.validate }.not_to raise_error
     dr.store
 
@@ -122,6 +128,7 @@ RSpec.describe Redcap::ProjectUsers, type: :model do
     dr = Redcap::ProjectUsers.new(rc)
 
     dr.retrieve
+    dr.summarize_fields
     expect { dr.validate }.not_to raise_error
 
     dr.store
@@ -140,6 +147,7 @@ RSpec.describe Redcap::ProjectUsers, type: :model do
 
     dr = Redcap::ProjectUsers.new(rc)
     dr.retrieve
+    dr.summarize_fields
     expect { dr.validate }.not_to raise_error
     dr.store
 

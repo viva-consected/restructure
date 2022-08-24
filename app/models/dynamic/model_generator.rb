@@ -35,7 +35,6 @@ module Dynamic
       self.parent = parent
       self.qualified_table_name = qualified_table_name
       self.category ||= self.class.default_category
-      self.array_fields ||= {}
     end
 
     #
@@ -188,7 +187,7 @@ module Dynamic
           type: ft
         }
 
-        config[:array] = true if array_fields[field_name]
+        config[:array] = true if array_fields&.dig(field_name)
 
         @db_columns[field_name] = config
       end

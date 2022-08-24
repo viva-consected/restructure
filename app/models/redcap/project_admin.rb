@@ -209,6 +209,10 @@ module Redcap
       super(attrs)
     end
 
+    def secondary_key
+      name
+    end
+
     def config_text
       options
     end
