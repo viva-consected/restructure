@@ -83,8 +83,8 @@ module Redcap
           pos += 1
         end
 
-        re = /\[([a-zA-Z0-9_]+)\(([0-9+])\)\]/
-        # checkbox choice varname abc(1) -> abc___1
+        re = /\[([a-zA-Z0-9_]+)\(([a-zA-Z0-9]+)\)\]/
+        # checkbox choice varname abc(1) -> abc___1 or smoketime(pnfl) smoketime___pnfl
         condition_string.scan(re).each do |match|
           vars << match.join('___')
           condition_string.sub!(re, "%%VAR#{pos}%%")
@@ -279,6 +279,8 @@ module Redcap
 
       def final_condition(condition)
         tokens = condition.split(' ')
+        raise FphsException, "Incorrect number of tokens #{tokens} for: #{condition_string}" if tokens.length != 3
+
         num = self.class.get_token_num('VAR', tokens[0])
         var = vars[num]
         num = self.class.get_token_num('COMP', tokens[1])
