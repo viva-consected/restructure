@@ -105,6 +105,7 @@ Rails.application.routes.draw do
         post :request_users
         post :request_data_collection_instruments
         post :force_reconfig
+        post :update_dynamic_model
       end
     end
     resources :data_dictionaries, except: %i[show destroy]
