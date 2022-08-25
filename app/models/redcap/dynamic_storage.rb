@@ -55,6 +55,11 @@ module Redcap
       @field_types
     end
 
+    #
+    # Return a hash of all fields, with a value true if they are to berepresented as an array
+    # in the database. Used alongside #field_types a full definition of the field can be made
+    # for migrations.
+    # @return [Hash]
     def array_fields
       return @array_fields if @array_fields
 
@@ -120,6 +125,10 @@ module Redcap
             edit_options: choices.to_h,
             edit_field_type: "tag_select_#{field.chosen_array_field_name}"
           }
+          # NOTE: we use a full tag_select_... field name to ensure the values can be looked up correctly
+          # This requires display of the field to look for
+          # "name_starts_with_redcap_tag_select" rather than an exact match
+          # on the redcap_tag_select field type.
         end
 
         # Create a field for each multiple choice value

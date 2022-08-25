@@ -162,6 +162,10 @@ module Redcap
         fields
       end
 
+      #
+      # Does a checkbox field have more than one choice field and therefore
+      # have a summary array field (if the project requires it)
+      # @return [true|false]
       def has_checkbox_summary_array?
         ccf = checkbox_choice_fields
         ccf && ccf.length > 1

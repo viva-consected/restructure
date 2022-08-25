@@ -57,7 +57,16 @@ module Redcap
     end
 
     #
-    # Summarize the multiple choice fields if the project requests it
+    # Summarize the multiple choice checkbox fields into _chosen_array fields
+    # if the project requests it
+    # The method runs through each of the columns, and for any fields requiring
+    # summarization adds them to all the records in the current @records set.
+    # At this point, prior to storage, the individual checkbox fields return a string
+    # value "1" checked, or "0" unchecked. We check for "1" and add the
+    # field value represented by that checkbox to the array. Subsequent tag_select UI field
+    # processing can display these options appropriately, and SQL can make comparisons
+    # against this single field without needing knowledge of additional options that may be
+    # added in the future.
     def summarize_fields
       return unless project_admin.data_options.add_multi_choice_summary_fields
 

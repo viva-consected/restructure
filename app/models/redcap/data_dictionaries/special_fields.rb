@@ -124,7 +124,7 @@ module Redcap
       # A redcap_repeat_instrument field representation to support the extra field
       # that Redcap adds for repeating instruments
       # @param [Redcap::DataDictionaries::Form] form
-      # @return [Redcap::DataDictionary]
+      # @return [Redcap::DataDictionaries::Field]
       def self.repeat_instrument_field(data_dictionary)
         field_metadata = {
           field_name: :redcap_repeat_instrument,
@@ -137,7 +137,7 @@ module Redcap
       # A redcap_repeat_instrument field representation to support the extra field
       # that Redcap adds for repeating instruments
       # @param [Redcap::DataDictionaries::Form] form
-      # @return [Redcap::DataDictionary]
+      # @return [Redcap::DataDictionaries::Field]
       def self.repeat_instance_field(data_dictionary)
         field_metadata = {
           field_name: :redcap_repeat_instance,
@@ -146,6 +146,12 @@ module Redcap
         Field.new(nil, field_metadata, data_dictionary: data_dictionary)
       end
 
+      #
+      # A summary chosen array field for projects that have summary fields to
+      # capture all the responses from individual multiple choice columns
+      # @param [Redcap::DataDictionaries::Form] form
+      # @param [Redcap::DataDictionaries::Field] cb_field
+      # @return [Redcap::DataDictionaries::Field]
       def self.checkbox_chosen_array_field(form, cb_field)
         field_metadata = {
           field_name: cb_field.chosen_array_field_name,
