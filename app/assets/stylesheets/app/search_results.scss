@@ -420,6 +420,10 @@ table.table.tree-table {
     // border-top-color: rgb(230, 230, 230);
     // border-bottom-color: rgb(230, 230, 230);
       
+    
+  }
+  
+  tr[data-tt-level] td {
     &.is-parent-col {
       border-top: 0px;
       border-bottom: 0;
@@ -427,7 +431,6 @@ table.table.tree-table {
       border-right: 0px;
       background: rgb(242, 242, 242);
     }
-
   }
 }
 

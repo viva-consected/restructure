@@ -325,6 +325,6 @@ table .report-cb-inner {
 
 }
 
-table.jsTT td[data-col-type="id"]:hover {
+table.jsTT td.tt-expander-cell:hover {
   cursor: pointer;
 }
