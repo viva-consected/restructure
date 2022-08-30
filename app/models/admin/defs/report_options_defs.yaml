@@ -87,7 +87,9 @@ tree_view_options:
   # A query must return an "id" field to operate, even if it is random.
   # For each level (except lowest level), provide list of column names to use as
   # the parent columns in the tree view
+  # Expand the tree by default to the value set in *expand_level:*
   num_levels: 3
+  expand_level: 1
   column_levels:
     -
       - col1

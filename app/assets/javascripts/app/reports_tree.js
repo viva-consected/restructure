@@ -25,6 +25,7 @@ _fpa.reports_tree = class {
     this.$table.addClass('added-tree-table');
     const col_levels = this.$table.attr('data-tt-tree-cols');
     const num_levels = this.$table.attr('data-tt-tree-num-levels');
+    const default_expand = this.$table.attr('data-tt-tree-expand-level');
 
     if (col_levels)
       this.col_levels = JSON.parse(col_levels);
@@ -35,6 +36,11 @@ _fpa.reports_tree = class {
       this.num_levels = parseInt(num_levels);
     else
       this.num_levels = 2;
+
+    if (default_expand)
+      this.default_expand = parseInt(default_expand);
+    else
+      this.default_expand = 0;
 
     if (this.col_levels.length != this.num_levels - 1) {
       console.log("ERROR - the number of levels specified for the tree does not correspond to the column levels specified");
@@ -121,23 +127,27 @@ _fpa.reports_tree = class {
   finalize() {
     const this_class = this;
     com_github_culmat_jsTreeTable.treeTable(this_class.$table);
-    this_class.$table.expandLevel(0);
+    this_class.$table.expandLevel(this_class.default_expand);
   }
 
   handle_row_level($row, curr_level) {
     const this_class = this;
 
     const $id = $row.find(`[data-col-type="id${curr_level}"]`)
-    const id = $id.text();
+    const id = $id.text() || `(no parent ID-${curr_level} set)`;
     const $next_level_id = $row.find(`[data-col-type="id${curr_level + 1}"]`);
-    const next_level_id = $next_level_id.text();
+    const next_level_id = $next_level_id.text() || `(no ID-${curr_level + 1} set)`;
     const this_level_cols = this_class.col_levels[curr_level];
     const num_this_level_cols = this_level_cols.length;
 
     // Hide other ids. Show this one, unless we are at the deepest level
     for (let i = 0; i < this_class.num_levels; i++) {
       let vis = (curr_level == i) ? 'visible' : 'hidden';
-      $row.find(`[data-col-type="id${i}"]`).css({ visibility: vis });
+      let $cell = $row.find(`[data-col-type="id${i}"]`);
+      $cell.css({ visibility: vis });
+      let idval = $cell.text() || `(no ID-${i} set)`;
+
+      $cell.html(`<treeid>${idval}</treeid>`)
     }
     $id.show();
 
