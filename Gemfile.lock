@@ -95,11 +95,11 @@ GEM
     attr_encrypted (3.1.0)
       encryptor (~> 3.0.0)
     aws-eventstream (1.2.0)
-    aws-partitions (1.652.0)
-    aws-sdk-cloudwatchlogs (1.54.0)
+    aws-partitions (1.658.0)
+    aws-sdk-cloudwatchlogs (1.56.0)
       aws-sdk-core (~> 3, >= 3.165.0)
       aws-sigv4 (~> 1.1)
-    aws-sdk-core (3.166.0)
+    aws-sdk-core (3.167.0)
       aws-eventstream (~> 1, >= 1.0.2)
       aws-partitions (~> 1, >= 1.651.0)
       aws-sigv4 (~> 1.5)
@@ -150,7 +150,7 @@ GEM
       rexml
     crass (1.0.6)
     daemons (1.4.1)
-    dalli (3.2.2)
+    dalli (3.2.3)
     database_cleaner (2.0.1)
       database_cleaner-active_record (~> 2.0.0)
     database_cleaner-active_record (2.0.1)
@@ -333,7 +333,7 @@ GEM
       rspec-mocks (~> 3.11)
       rspec-support (~> 3.11)
     rspec-support (3.12.0)
-    rubocop (1.37.1)
+    rubocop (1.38.0)
       json (~> 2.3)
       parallel (~> 1.10)
       parser (>= 3.1.2.1)
@@ -379,7 +379,6 @@ GEM
       terminal-table
     simplecov-html (0.12.3)
     simplecov_json_formatter (0.1.4)
-    sixarm_ruby_unaccent (1.2.0)
     solargraph (0.47.2)
       backport (~> 1.2)
       benchmark
@@ -448,7 +447,7 @@ GEM
       nokogiri (~> 1.8)
     yard (0.9.28)
       webrick (~> 1.7.0)
-    zeitwerk (2.6.1)
+    zeitwerk (2.6.6)
 
 PLATFORMS
   arm64-darwin-20
