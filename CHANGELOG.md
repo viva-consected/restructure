@@ -16,7 +16,140 @@ The [Unreleased](#unreleased) section collects notes for unreleased changes and 
 Note that not every tagged version may be suitable for production use. A Github
 release will be created for any release tested in production, and may be marked below with the tag [Release]
 
-## Unreleased
+## [8.2.65] - 2023-08-24
+
+- [Fixed] uncollapse-target-parents UI option
+
+## [8.2.64] - 2023-08-24
+
+- [Added] ability to address !last element when using hash toggles
+- [Fixed] UI error when reloading a page
+
+## [8.2.63] - 2023-08-24
+
+- [Updated] gems to address CVEs: Puma - CVE-2023-40175; Rails - CVE-2023-38037
+- [Fixed] css double border on certain blocks in activity logs
+- [Added] tab caption to activity log definitions
+- [Fixed] issue with data-open-tab-before-request if the panel had already opened
+- [Changed] mr-expander link hashes to use the context of the current activity log outer block, and to only expand if not already expanded
+
+## [8.2.61] - 2023-08-17
+
+- [Fixed] "if" substitution conditions not recognizing integers as existing
+- [Added] javascript spec tests for conditional substitutions and current_user_roles
+
+## [8.2.58] - 2023-08-14
+
+- [Fixed] create_reference trigger to write user_id correctly if force_create is set
+- [Fixed] user profile to check against created_by_user_id if it exists in a resource
+- [Added] more information to debug user not able to access a container
+- [Added] information to manage users page with links to user self-registration and invite code
+- [Fixed] jump to bad CSS link
+
+## [8.2.57] - 2023-07-25
+
+- [Fixed] UI current_user_roles
+- [Fixed] id_hyphenate in UI
+
+## [8.2.55] - 2023-07-25
+
+- [Fixed] scrolling issue
+- [Added] simple mr-expander link hash toggle
+- [Added] styling for static model reference captions and new form blocks
+
+## [8.2.54] - 2023-07-25
+
+- [Added] substitution for user roles to allow #if evaluations
+- [Added] invitation code to substitutions
+- [Fixed] specs for xhr 404 results
+- [Fixed] user login instructions for no MFA
+
+## [8.2.53] - 2023-07-24
+
+- [Updated] gems and javascript modules
+- [Fixed] loading of sample form in activity log admin when using a temporary master id
+- [Fixed] issue with record labels if no config available
+
+## [8.2.52] - 2023-07-12
+
+- [Added] result_label option to references config, documented also_disable_record, and added id to markup for reference result caret
+- [Changed] handling of errors in notifications during sign-up
+- [Added] master_id handling to embedded_report_ substitution
+- [Added] link hash handling of toggle-target- and click-target- for smart links
+- [Changed] default handling of BASE_URL
+
+## [8.2.51] - 2023-07-11
+
+- [Added] field_options blank_value dynamic definition option to allow persisted blank field values to be set
+- [Fixed] report admin not allowing configurations to be submitted
+- [Fixed] padding in help sidebar using study info content
+
+## [8.2.50] - 2023-07-05
+
+- [Fixed] cleanup issues converting html to markdown
+- [Fixed] issue preventing navigate away from page if files were uploaded to a container
+- [Changed] handling of 404 errors to show nice custom page
+
+## [8.2.49] - 2023-07-04
+
+- [Added] contact information to static error pages
+- [Added] 502 specific error page
+
+## [8.2.48] - 2023-07-04
+
+- [Changed] email address used to notify of user registration events
+
+## [8.2.47] - 2023-07-04
+
+- [Fixed] notify_failure bug in ApplicationJob
+- [Changed] handling of missing batch user in message notifications
+
+## [8.2.46] - 2023-06-27
+
+### Transferred from ReStructure @8.2.44 - 2023-06-27
+
+#### [8.2.44] - 2023-06-26
+
+- [Added] user self-registration checkbox to agree to GDPR and non-GDPR terms of use
+
+#### [8.2.43] - 2023-06-15
+
+- [Added] tracker notes display line breaks
+- [Added] batch_trigger run_at and run once
+- [Added] bad configuration protection for calc_action condition
+- [Changed] rspec tests for reliability
+- [Changed] creation of external id search reports to provide a better UI and correct category
+- [Fixed] notification of password expiration to include the correct time in the email
+- [Fixed] and documented password expiration notifications tests
+- [Fixed] bugs in app import and model generation
+- [Fixed] handling of failures in background and batch jobs
+- [Fixed] bugs in report admin criteria definer UI
+- [Fixed] issue showing generated reports (null description was not handled)
+- [Fixed] report criteria labels to avoid incorrect capitalization and HTML markup
+
+#### [8.2.42] - 2023-06-12
+
+- [Fixed] file report failing to download multiple files
+- [Fixed] label markup issues
+- [Fixed] incorrect message telling user they are not authorized to download files
+
+#### [8.2.41] - 2023-06-01
+
+- [Added] ability to traverse element through arrays in calc actions
+
+#### [8.2.40] - 2023-04-24
+
+- [Fixed] issue attempting to save results of pull_external_data if there is nothing to save
+- [Added] set of conditions for this and element comparison
+- [Added] success_if option to pull_external_data trigger
+
+## [8.2.37] - 2023-05-23
+
+- [Fixed] date and time formatters and provided consistent spec tests
+- [Fixed] issues showing and editing tag select fields
+- [Fixed] calculation that incorrectly showed an edit button even if the dynamic model user access controls did not allow editing
+
+## [8.2.36] - 2023-05-18
 
 ### Transferred from ReStructure @8.2.35 - 2023-05-18
 
