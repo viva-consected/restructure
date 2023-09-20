@@ -33,6 +33,7 @@ less -r tmp/failing_specs.log
 ```
 
 - Clean assets: `FPHS_LOAD_APP_TYPES=1 bundle exec rake assets:clobber`
+- Commit the merge: `git commit -a -m "Merge branch develop into rolling branch"`
 - Update the _CHANGELOG.md_ to include the appropriate changes
 - Commit the changes: `git commit -a -m 'Updated CHANGELOG'`
 - Push the branch
@@ -66,4 +67,4 @@ less -r tmp/failing_specs.log
 - Commit the changes: `git commit -a -m 'Updated CHANGELOG'`
 - Push the branch
 - Checkout **develop** branch: `git checkout develop ; git pull`
-- Merge the transfer branch back into **develop**: `git merge tx-restructure-rolling -m "Transferred from ${OTHER_REPO} @${RESTR_VERSION}"`
+- Merge the transfer branch back into **develop**: `git merge tx-restructure-rolling -m "Transferred from ReStructure @${RESTR_VERSION}"`

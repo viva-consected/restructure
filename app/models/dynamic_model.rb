@@ -155,25 +155,26 @@ class DynamicModel < ActiveRecord::Base
     failed = false
     @regenerate = nil
 
-    if enabled? && !failed
+    if ready_to_generate? && !failed
       begin
         definition = self
         definition_id = id
         def_table_name = table_name
         self.class.definition_cache[definition_id] = self
 
-        if prevent_regenerate_model
+        got_model = prevent_regenerate_model
+        if got_model
           logger.info "Already defined class #{model_class_name}."
-          # Refresh the definition in the implementation class
-          # implementation_class.definition = definition
+          # Re-add the model to the list to pick up new extra log types
+          add_model_to_list got_model
           return
         end
 
         # Main implementation class
         a_new_class = Class.new(Dynamic::DynamicModelBase) do
-
           class << self
             attr_accessor :definition_id, :def_table_name
+
             def definition
               DynamicModel.definition_cache[definition_id]
             end
@@ -181,9 +182,9 @@ class DynamicModel < ActiveRecord::Base
             # Add definition here, since UserHandler relies on it during include
             def no_master_association
               definition.foreign_key_name.blank?
-            end            
+            end
           end
-          
+
           self.definition_id = definition_id
           # Force the table_name, since it doesn't include external_identifer_ as a prefix, which is the Rails convention for namespaced models
           self.table_name = def_table_name
@@ -233,7 +234,7 @@ class DynamicModel < ActiveRecord::Base
       end
     end
 
-    if failed || !enabled?
+    if failed || !ready_to_generate?
       remove_model_from_list
     elsif res
       add_model_to_list res

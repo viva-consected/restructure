@@ -55,6 +55,7 @@ body#body-top {
   // .sessions represents the Devise sessions controller (sign in)
   // .registrations represents the Devise registrations controller (self registration)
   &.status-compiled,
+  &.status-failed-compilation,
   &.sessions,
   &.confirmations,
   &.passwords,
@@ -293,6 +294,7 @@ a.add-icon[data-show-modal] {
   color: red;
 }
 
+.glyphicon-edit,
 a.glyphicon.show-entity,
 a.glyphicon.edit-entity,
 a.close-entity {
@@ -348,6 +350,13 @@ a.glyphicon.glyphicon-remove-sign {
   &:hover {
     background-color: #ff0000;
   }
+}
+
+.close {
+  color: #900;
+  filter: none;
+  opacity: 1;
+  font-size: 28px;
 }
 
 .caret {

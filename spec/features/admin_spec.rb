@@ -269,6 +269,7 @@ describe 'admin sign in process', driver: :app_firefox_driver do
     admin_sign_in_with_2fa
 
     click_link 'App Types'
+    has_css? '#body-top:not(.initial-compiling)'
 
     expect(page).to have_css 'body.app_types'
 
@@ -276,6 +277,8 @@ describe 'admin sign in process', driver: :app_firefox_driver do
     f = find("a[href='/admin/app_types/#{id}?show_components=true']")
     new_window = window_opened_by { f.click }
     switch_to_window new_window
+    have_css('body')
+    using_wait_time(60) { has_css?('body.status-compiled') }
     expect(page).to have_css('#app-type-component-heading--user-roles')
   end
 end

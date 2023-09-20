@@ -13,7 +13,7 @@ module Dynamic
       after_save :reset_active_model_configurations!
 
       after_commit :update_tracker_events, if: -> { @regenerate }
-      after_commit :restart_server, if: -> { @regenerate }
+      after_commit :clean_schema, if: -> { @regenerate }
       after_commit :other_regenerate_actions
       after_commit :handle_disabled, if: -> { disabled }
 
@@ -109,6 +109,11 @@ module Dynamic
           u = d.updated_at
           m = Resources::Models.find_by(resource_name: rn)&.model&.definition
 
+          unless d.table_or_view_ready?
+            Rails.logger.warn "refresh_outdated dynamic def #{d.class.name} table or view is not ready"
+            next
+          end
+
           klass = if d.is_a? ExternalIdentifier
                     Object
                   else
@@ -177,6 +182,10 @@ module Dynamic
       return false unless res
 
       begin
+        unless table_or_view_ready?
+          raise FphsException, "Won't try to get class #{icn} - table or view not ready #{table_name}"
+        end
+
         # Check if it can be instantiated correctly - if it can't, allow it to raise an exception
         # since this is seriously unexpected
         klass.new
@@ -443,10 +452,11 @@ module Dynamic
     end
 
     # If we have forced a regeneration of classes, for example if a new DB table
-    # has been created, restart the server.
+    # has been created, don't restart the server, just clear the schema cache
     # This is called from an after_commit trigger
-    def restart_server
-      AppControl.restart_server # if Rails.env.production?
+    def clean_schema
+      # AppControl.restart_server # if Rails.env.production?
+      ActiveRecord::Base.connection.schema_cache.clear!
     end
 
     # Get a complete set of all tables to be accessed by model reference configurations,

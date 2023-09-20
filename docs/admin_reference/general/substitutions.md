@@ -128,6 +128,10 @@ In addition to the attributes within the current record, the following are avail
   - current_user_app_type_name
   - current_user_app_type_label
 
+- Additionally, for the current user, a tag will be added to allow conditional substitutions based on roles the user has:
+  - current_user_roles.[each role name underscored]
+    for example: current_user_roles.reviewer___special_task for "reviewer - special task" role name
+
 - Master record related to item:
   - master (full instance)
   - master_id
@@ -213,8 +217,10 @@ Use the following structure `\{\{some_attribute::formatter\}\}`, where formatter
 - date
 - date_time
 - date_time_with_zone
+- date_time_show_zone
 - time
 - time_with_zone
+- time_show_zone
 - time_sec
 - dicom_datetime
 - dicom_date

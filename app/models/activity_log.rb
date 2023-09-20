@@ -22,6 +22,8 @@ class ActivityLog < ActiveRecord::Base
 
   after_save :handle_placeholder_fields
 
+  MaxLengthViewName = 63
+
   def resource_name
     full_item_types_name
   end
@@ -562,16 +564,17 @@ class ActivityLog < ActiveRecord::Base
     failed = false
     @regenerate = nil
 
-    if enabled? && !failed
+    if ready_to_generate? && !failed
       begin
         definition = self
         definition_id = id
         self.class.definition_cache[definition_id] = self
 
-        if prevent_regenerate_model
+        got_model = prevent_regenerate_model
+        if got_model
           logger.info "Already defined class #{model_class_name}."
           # Re-add the model to the list to pick up new extra log types
-          add_model_to_list implementation_class
+          add_model_to_list got_model
           return
         end
 
@@ -625,7 +628,7 @@ class ActivityLog < ActiveRecord::Base
       end
     end
 
-    if failed || !enabled?
+    if failed || !ready_to_generate?
       remove_model_from_list
     else
       # Check that the implementation has been successful
@@ -709,7 +712,11 @@ class ActivityLog < ActiveRecord::Base
   # These are based on references being defined and not being set with the reference option without_reference: true
   # @return [Array]
   def all_reference_views
-    all_referenced_tables.map { |t| reference_view_name(t[:to_table_name]) unless t[:without_reference] }.compact.uniq
+    all_referenced_tables
+      .map { |t| reference_view_name(t[:to_table_name]) unless t[:without_reference] }
+      .compact
+      .uniq
+      .map { |v| v[0..(MaxLengthViewName - 1)] }
   end
 
   #

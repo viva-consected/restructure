@@ -146,9 +146,15 @@ class ReportSearchAttrsUi {
       var name = $('#search_attrs_name').val();
       var type = $('#search_attrs_type').val();
 
-      if (!name || !type) {
+      if (!name) {
         $.scrollTo('#search_attr_definer');
         $('#search_attrs_name').fadeOut().fadeIn();
+        return;
+      }
+
+      if (!type) {
+        $.scrollTo('#search_attr_definer');
+        $('#search_attrs_type').fadeOut().fadeIn();
         return;
       }
 
@@ -172,7 +178,7 @@ class ReportSearchAttrsUi {
       // Set up the YAML
       var rsa = rsas.add_item(name, type, { allow_replace: true });
       rsa.label = label;
-      rsa.multiple = multi;
+      rsa.multiple = multi || 'single';
       rsa.hidden = hidden_field;
       rsa.resource_name = resource_name;
       rsa.selections = rsa.load_value_hash(selections_yaml);
@@ -238,5 +244,14 @@ class ReportSearchAttrsUi {
           $(this)[0].CodeMirror && $(this)[0].CodeMirror.refresh();
         });
     });
+
+    $('#report-admin-search-attr-add-block [required]').attr('disabled', true);
+
+    $('#report-admin-search-attr-add-block').on('hidden.bs.collapse', function () {
+      $(this).find('[required]').attr('disabled', true)
+    }).on('shown.bs.collapse', function () {
+      $(this).find('[required]').attr('disabled', null)
+    })
+      ;
   }
 }
