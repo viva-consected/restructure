@@ -10,9 +10,9 @@ class NotificationMailer < ActionMailer::Base
   # Emails that do not match users are always acceptable, since we have no record of their preferences
   # and filtering must have been performed elsewhere
   # @param [Messaging::MessageNotification] notify
-  # @param [Logger] logger - Rails logger
   # @return [Mail::Message]
-  def send_message_notification(notify, logger: Rails.logger)
+  def send_message_notification(notify)
+    logger = Rails.logger
     logger.info "Sending email for #{notify.id}"
     messages = []
 

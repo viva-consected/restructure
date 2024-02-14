@@ -10,11 +10,22 @@ unset QUICK
 if [ "${NO_BRAKEMAN}" != 'true' ] && [ "${SKIP_BRAKEMAN}" != 'true' ]; then
   echo "Running brakeman"
   bin/brakeman -q --summary > /tmp/fphs-brakeman-summary.txt
-  cat /tmp/fphs-brakeman-summary.txt
+  if [ "$?" == 0 ]; then
+    echo "Brakeman OK"
+  else
+    cat /tmp/fphs-brakeman-summary.txt
+    echo "Brakeman Failed"
+    exit 1
+  fi
 fi
 
 echo "Setup filestore"
 app-scripts/setup-dev-filestore.sh
+res=$?
+if [ "${res}" != 0 ]; then
+  echo "setup-dev-filestore.sh failed with code: ${res}"
+  exit 17
+fi
 
 if [ "${SKIP_ZEITWERK}" != 'true' ]; then
   # Check zeitwerk before continuing
