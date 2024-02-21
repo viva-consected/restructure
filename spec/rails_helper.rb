@@ -15,7 +15,7 @@ def expect_to_be_bad_route(for_request)
   method = for_request.first.first
   path = for_request.first.last
   path = path.split('/').select(&:present?).join('/')
-  expect(for_request).to route_to(controller: 'bad_route', action: 'not_routed', path:)
+  expect(for_request).to route_to(controller: 'bad_route', action: 'not_routed', path: path)
 end
 
 put_now 'Starting rspec'

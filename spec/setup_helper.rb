@@ -166,7 +166,7 @@ module SetupHelper
       next if res.length <= 1
 
       id = res.first.id
-      clean = res.where.not(id:)
+      clean = res.where.not(id: id)
       puts "cleaning conflicting activity logs: #{clean.pluck(:id, :name, :item_type, :rec_type, :process_name)}"
       clean.update_all(disabled: true)
     end
@@ -242,9 +242,9 @@ module SetupHelper
     end
 
     res = ActivityLog.find_or_initialize_by(
-      name:, item_type:,
-      rec_type:,
-      process_name:,
+      name: name, item_type: item_type,
+      rec_type: rec_type,
+      process_name: process_name,
       disabled: false,
       action_when_attribute: 'called_when',
       field_list: 'data, select_call_direction, select_who, called_when, select_result, select_next_step,'\
@@ -261,13 +261,13 @@ module SetupHelper
       app_type = Admin::AppType.active.first
       # Ensure there is at least one user access control, otherwise we won't re-enable the process on future loads
       res.other_regenerate_actions
-      res.add_user_access_controls(force: true, app_type:)
+      res.add_user_access_controls(force: true, app_type: app_type)
       res.update_tracker_events
       reload_configs
     end
 
     # Check implementation
-    test = ActivityLog.active.where(name:).count == 1
+    test = ActivityLog.active.where(name: name).count == 1
     raise "Failed setup of activity log #{name}" unless test
 
     begin
@@ -398,15 +398,15 @@ module SetupHelper
   def self.setup_app_from_import(name, config_dir, config_fn)
     admin = auto_admin
 
-    als = ActivityLog.active.where(name:)
+    als = ActivityLog.active.where(name: name)
     als.where('id <> ?', als.first&.id).update_all(disabled: true) if als.count != 1
 
     format = config_fn.split('.').last.to_sym
 
     res = Admin::AppTypeImport.import_config(File.read(Rails.root.join(config_dir, config_fn)),
                                              admin,
-                                             name:,
-                                             format:)
+                                             name: name,
+                                             format: format)
 
     reload_configs
 
