@@ -18,20 +18,24 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## [8.4.9] - 2024-02-13
 
-- [Fixed] incorrect updated_at date being used in admin panel index lists
-- [Added] paging to redcap record storage, improved job logging and link back to job from Redcap admin panel, - fixes #269 #268 #267
-
 ### From upstream
 
 - [Fixed] incorrect updated_at date being used in admin panel index lists
 - [Added] paging to redcap record storage, improved job logging and link back to job from Redcap admin panel, - fixes #269 #268 #267
+- [Fixed] specs with Spring
+- [Added] notes about contributing pull requests
+- [Fixed] add_tracker trigger failing in confusing way if there is no master record to add the tracker to - fixes #260
+- [Updated] gems to address CVE-2024-25062
 - [Fixed] background Job failures still not notifying the admin via email - fixes #258
 - [Added] splitting to chunks for large files uploaded through API
 - [Added] improved handling of chunk uploads to check for and handle failures
 - [Fixed] Filestore reporting of chunk upload failures
+- [Fixed] error not showing external identifiers in standard master record view
 
 ## [8.4.8] - 2024-01-30
 
+- [Fixed] incorrect updated_at date being used in admin panel index lists
+- [Added] paging to redcap record storage, improved job logging and link back to job from Redcap admin panel, - fixes #269 #268 #267
 - [Changed] (again) handling of JSON and string output for time fields
 
 ## [8.4.7] - 2024-01-30
