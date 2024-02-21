@@ -81,6 +81,12 @@ class SaveTriggers::Notify < SaveTriggers::SaveTriggersBase
     @message_type = config[:type]
     @run_if = config[:if]
     @alt_batch_user = DynamicModel.user_for_conf_snippet(config)
+
+    # Clear memos for the following
+    @extra_substitutions = nil
+    @subject = nil
+    @content_template_text = nil
+    @importance = nil
   end
 
   #
@@ -287,8 +293,6 @@ class SaveTriggers::Notify < SaveTriggers::SaveTriggersBase
   end
 
   def queue_job
-    return job if job
-
     # Queue the job.
     self.job = HandleMessageNotificationJob
     # For testing and debugging mostly, allow this to run immediately inline
