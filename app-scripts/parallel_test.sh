@@ -5,6 +5,8 @@ echo > tmp/working_failing_specs.log
 
 # Clear a variable that is often set in the session
 unset QUICK
+export DISABLE_SPRING=1
+spring stop
 
 # First, run brakeman
 if [ "${NO_BRAKEMAN}" != 'true' ] && [ "${SKIP_BRAKEMAN}" != 'true' ]; then
