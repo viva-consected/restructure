@@ -12,22 +12,45 @@ Note that not every tagged version may be suitable for production use. A Github 
 
 Since [version 8.4.0](#840---2024-01-10) the convention is that releases made within forked repositories should be up-versioned with a patch release, *x.y.z+1*. When changes are incorporated back into the primary repo [consected/restructure](https://github.com/consected/restructure) a new minor release will be created, *x.y+1,0*.
 
+## Unreleased
+
+- [Added] cleanup of test dynamic models
+- [Fixed] parallel test cleanups
+- [Fixed] spec setup regression
+- [Added] tally of rspec test setups completed in the database for faster testing
+- [Fixed] checking of deleted records in tests
+- [Fixed] Message notifications sending to a role shows users that have been disabled or are templates or are set to no email - fixes #234
+- [Changed] message notifications to show date/time sent using user preference and to make it clear when a message has not been sent yet - fixes #239
+- [Added] simpler date time formatting within the user's timezone
+- [Fixed] notify save trigger with a list of notifications incorrectly sends the first one to all roles and users - fixes #281
+
+### From Harvard
+
+- [Fixed] add_tracker trigger failing in confusing way if there is no master record to add the tracker to - fixes #260
+- [Changed] code to support Ruby 3.2.2
+- [Changed] email notification of job failure to link to the job
+- [Added] delete failed jobs and find job in admin form
+- [Refactored] implementation of job searches and Delayed::Job initialization
+- [Bumped] version
+
 ## [8.4.9] - 2024-02-13
 
-- [Fixed] incorrect updated_at date being used in admin panel index lists
-- [Added] paging to redcap record storage, improved job logging and link back to job from Redcap admin panel, - fixes #269 #268 #267
+### From Harvard
 
-### From upstream
-
-- [Fixed] incorrect updated_at date being used in admin panel index lists
-- [Added] paging to redcap record storage, improved job logging and link back to job from Redcap admin panel, - fixes #269 #268 #267
+- [Fixed] specs with Spring
+- [Added] notes about contributing pull requests
+- [Fixed] add_tracker trigger failing in confusing way if there is no master record to add the tracker to - fixes #260
+- [Updated] gems to address CVE-2024-25062
 - [Fixed] background Job failures still not notifying the admin via email - fixes #258
 - [Added] splitting to chunks for large files uploaded through API
 - [Added] improved handling of chunk uploads to check for and handle failures
 - [Fixed] Filestore reporting of chunk upload failures
+- [Fixed] error not showing external identifiers in standard master record view
 
 ## [8.4.8] - 2024-01-30
 
+- [Fixed] incorrect updated_at date being used in admin panel index lists
+- [Added] paging to redcap record storage, improved job logging and link back to job from Redcap admin panel, - fixes #269 #268 #267
 - [Changed] (again) handling of JSON and string output for time fields
 
 ## [8.4.7] - 2024-01-30
