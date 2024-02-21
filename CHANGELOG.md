@@ -14,14 +14,29 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
+- [Added] cleanup of test dynamic models
+- [Fixed] parallel test cleanups
+- [Fixed] spec setup regression
+- [Added] tally of rspec test setups completed in the database for faster testing
+- [Fixed] checking of deleted records in tests
+- [Fixed] Message notifications sending to a role shows users that have been disabled or are templates or are set to no email - fixes #234
+- [Changed] message notifications to show date/time sent using user preference and to make it clear when a message has not been sent yet - fixes #239
+- [Added] simpler date time formatting within the user's timezone
+- [Fixed] notify save trigger with a list of notifications incorrectly sends the first one to all roles and users - fixes #281
+
+### From Harvard
+
+- [Fixed] add_tracker trigger failing in confusing way if there is no master record to add the tracker to - fixes #260
+- [Changed] code to support Ruby 3.2.2
+- [Changed] email notification of job failure to link to the job
+- [Added] delete failed jobs and find job in admin form
+- [Refactored] implementation of job searches and Delayed::Job initialization
 - [Bumped] version
 
 ## [8.4.9] - 2024-02-13
 
-### From upstream
+### From Harvard
 
-- [Fixed] incorrect updated_at date being used in admin panel index lists
-- [Added] paging to redcap record storage, improved job logging and link back to job from Redcap admin panel, - fixes #269 #268 #267
 - [Fixed] specs with Spring
 - [Added] notes about contributing pull requests
 - [Fixed] add_tracker trigger failing in confusing way if there is no master record to add the tracker to - fixes #260
