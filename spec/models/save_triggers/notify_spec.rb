@@ -50,7 +50,8 @@ RSpec.describe SaveTriggers::Notify, type: :model do
     # The number of roles is one more than we added due to automatic setup of a template@template item
     expect(Admin::UserRole.joins(:user).where(role_name: 'test', app_type: u1.app_type).where('users.disabled is null or users.disabled = false').count).to eq 4
 
-    @role_user_ids = [u1.id, @user.id, ud.id] + [User.template_user.id]
+    @non_template_user_ids = [u1.id, @user.id, ud.id]
+    @role_user_ids = @non_template_user_ids + [User.template_user.id]
 
     setup_stub(:sns_send_sms)
   end
@@ -75,7 +76,7 @@ RSpec.describe SaveTriggers::Notify, type: :model do
 
     @trigger.perform
 
-    expect(@trigger.receiving_user_ids.sort).to eq @role_user_ids.sort
+    expect(@trigger.receiving_user_ids.sort).to eq @non_template_user_ids.sort
 
     new_mn = MessageNotification.order(id: :desc).first
     # new_dj = Delayed::Job.order(id: :desc).first
@@ -151,7 +152,7 @@ RSpec.describe SaveTriggers::Notify, type: :model do
 
     @trigger.perform
 
-    expect(@trigger.receiving_user_ids.sort).to eq @role_user_ids.sort
+    expect(@trigger.receiving_user_ids.sort).to eq @non_template_user_ids.sort
 
     new_mn = MessageNotification.order(id: :desc).first
     # new_dj = Delayed::Job.order(id: :desc).first
@@ -192,7 +193,7 @@ RSpec.describe SaveTriggers::Notify, type: :model do
 
     @trigger.perform
 
-    expect(@trigger.receiving_user_ids.sort).to eq @role_user_ids.sort
+    expect(@trigger.receiving_user_ids.sort).to eq @non_template_user_ids.sort
 
     new_mn = MessageNotification.order(id: :desc).first
     # new_dj = Delayed::Job.order(id: :desc).first

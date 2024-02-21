@@ -102,6 +102,10 @@ class SaveTriggers::Notify < SaveTriggers::SaveTriggersBase
     ca.calc_action_if
   end
 
+  def email?
+    @message_type.to_s == 'email'
+  end
+
   #
   # Set up the roles and users to get a list of receiving user IDs
   def setup_role_and_users
@@ -124,6 +128,12 @@ class SaveTriggers::Notify < SaveTriggers::SaveTriggersBase
     end
 
     @receiving_user_ids.uniq!
+
+    # Clean up user list to remove users that are set to no-send emails (if an email is being sent)
+    # or are template users
+    rusers = User.active.where(id: @receiving_user_ids)
+    rusers = rusers.reject { |u| u.a_template_or_batch_user? || (email? && u.do_not_email) }
+    @receiving_user_ids = rusers.map(&:id)
   end
 
   def setup_phones
