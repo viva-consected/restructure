@@ -311,7 +311,7 @@ module Dynamic
       logger.info "Removed disabled model #{tn}"
       self.class.models.delete(tn)
       self.class.model_names.delete(tn)
-      Resources::Models.remove(resource_name: resource_name)
+      Resources::Models.remove(resource_name:)
     end
 
     # Dump the old association
@@ -393,7 +393,7 @@ module Dynamic
                                                            app_type,
                                                            :table,
                                                            model_association_name,
-                                                           disabled: disabled
+                                                           disabled:
         end
       rescue StandardError => e
         raise FphsException,
