@@ -146,7 +146,7 @@ module SetupHelper
   def self.reload_configs
     Rails.logger.info 'Reload configs'
     AppControl.define_models
-    DynamicModel.enable_active_configurations
+    DynamicModel.enable_active_configurations disable_on_failure: true
     ItemFlag.enable_active_configurations
     ActivityLog.enable_active_configurations
     ExternalIdentifier.enable_active_configurations
@@ -261,7 +261,7 @@ module SetupHelper
       app_type = Admin::AppType.active.first
       # Ensure there is at least one user access control, otherwise we won't re-enable the process on future loads
       res.other_regenerate_actions
-      res.add_user_access_controls force: true, app_type: app_type
+      res.add_user_access_controls(force: true, app_type: app_type)
       res.update_tracker_events
       reload_configs
     end
@@ -336,11 +336,25 @@ module SetupHelper
     config_dir = Rails.root.join('spec', 'fixtures', 'app_configs', 'config_files')
     config_fn = 'ref-data_config.yaml'
     SetupHelper.setup_app_from_import app_name, config_dir, config_fn
+    setup_ref_data_app_nfs
+  end
 
-    a = Admin::AppType.where(name: app_name).active.first
+  def self.setup_ref_data_app_nfs
+    app_name = 'ref-data'
+    a = Admin::AppType.active.find_by(name: app_name)
+    raise 'No ref-data app to create nfs store directories for' unless a
+
     FileUtils.rm_rf "#{NfsStore::Manage::Filesystem.nfs_store_directory}/gid601/app-type-#{a.id}"
     FileUtils.mkdir_p "#{NfsStore::Manage::Filesystem.nfs_store_directory}/gid601/app-type-#{a.id}/containers"
     a
+  end
+
+  def self.clean_nfs_store_directories
+    FileUtils.rm_rf NfsStore::Manage::Filesystem.nfs_store_directory
+    FileUtils.rm_rf NfsStore::Manage::Filesystem.temp_directory
+    FileUtils.mkdir_p NfsStore::Manage::Filesystem.nfs_store_directory
+    FileUtils.mkdir_p NfsStore::Manage::Filesystem.temp_directory
+    setup_ref_data_app_nfs
   end
 
   # Setup an app from an import configuration (json or yaml)
@@ -389,10 +403,10 @@ module SetupHelper
 
     format = config_fn.split('.').last.to_sym
 
-    res = Admin::AppTypeImport.import_config File.read(Rails.root.join(config_dir, config_fn)),
+    res = Admin::AppTypeImport.import_config(File.read(Rails.root.join(config_dir, config_fn)),
                                              admin,
                                              name: name,
-                                             format: format
+                                             format: format)
 
     reload_configs
 
