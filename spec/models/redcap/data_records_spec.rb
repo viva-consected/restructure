@@ -7,6 +7,16 @@ RSpec.describe Redcap::DataRecords, type: :model do
   include ModelSupport
   include Redcap::RedcapSupport
 
+  before :all do
+    @bad_admin, = create_admin
+    @bad_admin.update! disabled: true
+    create_admin
+    @projects = setup_redcap_project_admin_configs
+    @project = @projects.first
+    @metadata_project = @projects.find { |p| p[:name] == 'metadata' }
+    setup_file_fields
+  end
+
   before :example do
     @bad_admin, = create_admin
     @bad_admin.update! disabled: true
@@ -144,7 +154,7 @@ RSpec.describe Redcap::DataRecords, type: :model do
     rc = Redcap::ProjectAdmin.create! current_admin: @admin,
                                       study: 'Q2',
                                       name: 'q2_demo',
-                                      api_key: api_key,
+                                      api_key:,
                                       server_url: rc.server_url
 
     dr = Redcap::DataRecords.new(rc, dm.implementation_class.name)
@@ -278,7 +288,7 @@ RSpec.describe Redcap::DataRecords, type: :model do
     rc = Redcap::ProjectAdmin.create! current_admin: @admin,
                                       study: 'Q2',
                                       name: 'q2_demo',
-                                      api_key: api_key,
+                                      api_key:,
                                       server_url: rc.server_url
 
     rc.update! current_admin: @admin, dynamic_model_table: dm.implementation_class.table_name.to_s
@@ -329,7 +339,7 @@ RSpec.describe Redcap::DataRecords, type: :model do
     rc = Redcap::ProjectAdmin.create! current_admin: @admin,
                                       study: 'Q2',
                                       name: 'q2_demo',
-                                      api_key: api_key,
+                                      api_key:,
                                       server_url: rc.server_url
 
     rc.update! current_admin: @admin, dynamic_model_table: dm.implementation_class.table_name.to_s
@@ -417,11 +427,16 @@ RSpec.describe Redcap::DataRecords, type: :model do
     rc = @project_admin
     rc.current_admin = @admin
 
+    expect(rc.dynamic_model_ready?).to be true
+
     dd = rc.redcap_data_dictionary
 
     dr = Redcap::DataRecords.new(rc, 'TestFileFieldRec')
 
-    dm = DynamicModel.active.where(name: 'test_file_field_rec').first
+    dm = DynamicModel.active.find_by(table_name: 'test_file_field_recs')
+    puts rc.dynamic_storage.dynamic_model.implementation_class.table_name
+    puts DynamicModel.find_by(table_name: 'test_file_field_recs')&.attributes || 'no test_file_field_recs' unless dm
+    puts DynamicModel.active.to_a unless dm
     expect(dm).to be_a DynamicModel
 
     expect(dr.existing_records_length).to eq 0
