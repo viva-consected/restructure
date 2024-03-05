@@ -12,6 +12,21 @@ Note that not every tagged version may be suitable for production use. A Github 
 
 Since [version 8.4.0](#840---2024-01-10) the convention is that releases made within forked repositories should be up-versioned with a patch release, *x.y.z+1*. When changes are incorporated back into the primary repo [consected/restructure](https://github.com/consected/restructure) a new minor release will be created, *x.y+1,0*.
 
+## Unreleased
+
+- [Fixed] Redcap pull updating all records if there are empty `<vars>_chosen_array` fields - fixes #289
+
+## [8.6.1] - 2024-03-04
+
+- [Bumped] version
+- [Build] with latest changes from contributors
+- [Updated] gems to address CVEs
+  - CVE-2024-26144
+  - CVE-2024-25126
+  - CVE-2024-26141
+  - CVE-2024-26146
+  - CVE-2024-27285
+
 ## [8.5.2] - 2024-02-21
 
 - [Added] cleanup of test dynamic models
