@@ -12,7 +12,28 @@ Note that not every tagged version may be suitable for production use. A Github 
 
 Since [version 8.4.0](#840---2024-01-10) the convention is that releases made within forked repositories should be up-versioned with a patch release, *x.y.z+1*. When changes are incorporated back into the primary repo [consected/restructure](https://github.com/consected/restructure) a new minor release will be created, *x.y+1,0*.
 
+## Unreleased
+
+- [Fixed] parallel tests and specs
+- [Fixed] various rspec issues
+- [Changed] the naming of Redcap project dynamic models to be more human - fixes #276
+- [Fixed] to raise an exception if a nfs store container directory already exists
+- [Fixed] Redcap pull updating all records if there are empty `<vars>_chosen_array` fields - fixes #289
+
+## [8.6.1] - 2024-03-04
+
+- [Bumped] version
+- [Build] with latest changes from contributors
+- [Updated] gems to address CVEs
+  - CVE-2024-26144
+  - CVE-2024-25126
+  - CVE-2024-26141
+  - CVE-2024-26146
+  - CVE-2024-27285
+
 ## [8.5.2] - 2024-02-21
+
+### From Viva
 
 - [Added] cleanup of test dynamic models
 - [Fixed] parallel test cleanups
@@ -77,10 +98,26 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 - [Added] nfs_store configuration to conditionally enable actions like "send file to trash" - resolves #236
 - [Fixed] script to ensure exit if early git actions fail
 - [Added] bundle-audit ignore file and entry for devise-two-factor gem
+- [Fixed] add_tracker trigger failing in confusing way if there is no master record to add the tracker to - fixes #260
+- [Updated] gems to address CVE-2024-25062
 
-## [8.4.2] - 2024-01-15
+## [8.4.5] - 2024-02-01
 
-- [Build] Viva version
+- [Fixed] background Job failures still not notifying the admin via email - fixes #258
+
+## [8.4.4] - 2024-01-31
+
+- [Added] splitting to chunks for large files uploaded through API
+- [Added] improved handling of chunk uploads to check for and handle failures
+- [Fixed] Filestore reporting of chunk upload failures
+
+## [8.4.3] - 2024-01-24
+
+- [Fixed] error not showing external identifiers in standard master record view
+
+## [8.4.2] - 2024-01-11
+
+- [Build] FPHS version
 
 ## [8.4.1] - 2024-01-11
 
