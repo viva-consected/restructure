@@ -12,7 +12,7 @@ Note that not every tagged version may be suitable for production use. A Github 
 
 Since [version 8.4.0](#840---2024-01-10) the convention is that releases made within forked repositories should be up-versioned with a patch release, *x.y.z+1*. When changes are incorporated back into the primary repo [consected/restructure](https://github.com/consected/restructure) a new minor release will be created, *x.y+1,0*.
 
-## Unreleased
+## [8.6.4] - 2024-04-03
 
 - [Added] automatically select user date/time preferences based on user browser locale at registration - from pull request #284, issue #135
 - [Added] superscript and subscript support to the editor
