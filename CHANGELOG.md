@@ -12,6 +12,19 @@ Note that not every tagged version may be suitable for production use. A Github 
 
 Since [version 8.4.0](#840---2024-01-10) the convention is that releases made within forked repositories should be up-versioned with a patch release, *x.y.z+1*. When changes are incorporated back into the primary repo [consected/restructure](https://github.com/consected/restructure) a new minor release will be created, *x.y+1,0*.
 
+## Unreleased
+
+- [Added] automatically select user date/time preferences based on user browser locale at registration - from pull request #284, issue #135
+- [Added] superscript and subscript support to the editor
+- [Fixed] editor bugs
+- [Fixed] strikethrough support in the editor
+- [Fixed] pasting from documents when certain <img> or <a> attributes are missing
+- [Added] auto creation of signature document when activity created through create_reference save trigger
+- [Changed] styles for e-sign and general forms
+- [Changed] e-signatures to allow a plain document to be created for signature - fixes #299
+- [Fixed] report not able to show tags in results correctly
+- [Fixed] bug trying to singularize configuration keys in e_sign setup
+
 ## [8.6.3] - 2024-03-07
 
 - [Fixed] incorrect matching dynamic models on name. Use table_name instead.
