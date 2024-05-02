@@ -425,6 +425,9 @@ _fpa.utils.isoDateTimeStringToLocale = function (stre) {
   else if (stre.match(/^\d\d\d\d-\d\d-\d\d.*/)) {
     startTime = _fpa.utils.DateTime.fromSQL(stre, { zone: UserPreferences.timezone() });
   }
+  if (!startTime) {
+    return
+  }
 
   return startTime.toFormat(format);
 };
