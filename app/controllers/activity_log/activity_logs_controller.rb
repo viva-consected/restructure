@@ -15,9 +15,11 @@ class ActivityLog::ActivityLogsController < UserBaseController
   def template_config
     Application.refresh_dynamic_defs
 
-    response.headers['Cache-Control'] = 'max-age=3600'
-    response.headers['ETag'] = Digest::SHA256.hexdigest(helpers.partial_cache_key("activity-log-template-config-#{@item_type}-#{@id_list}"))
-    # TODO: handle the If-None-Match client header to avoid re-rendering unnecessarily
+    cache_key = Digest::SHA256.hexdigest(helpers.partial_cache_key("activity-log-template-config-#{@item_type}-#{@id_list}"))
+    response.headers['Cache-Control'] = 'max-age=30'
+    response.headers.delete 'Expires'
+    return unless stale?(etag: cache_key)   
+    
     refresh_embedded_item_for @instance_list
 
     render partial: 'activity_logs/common_search_results_template_set'
