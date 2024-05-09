@@ -30,12 +30,14 @@ module MasterHandler
   # so simply add a parameter like :cache_version => current timestamp to force new data
   def index
     index_res = if params[:cache_result].present?
-                  Rails.cache.fetch(index_cache_key) do
-                    retrieve_index
-                  end
-                else
-                  retrieve_index
-                end
+      Rails.cache.fetch(index_cache_key) do
+        response.headers['Cache-Control'] = 'max-age=3600'
+        response.headers['ETag'] = Digest::SHA256.hexdigest(index_cache_key)
+            retrieve_index.as_json
+          end
+        else
+          retrieve_index.as_json
+        end
 
     render json: index_res
   end
