@@ -371,7 +371,7 @@ CREATE FUNCTION ml_app.datadic_choice_history_upd() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
-  INSERT INTO datadic_choice_history (
+  INSERT INTO ref_data.datadic_choice_history (
     source_name, source_type, form_name, field_name, value, label, redcap_data_dictionary_id,
     disabled,
     admin_id,
@@ -2682,6 +2682,297 @@ $$;
 
 
 --
+-- Name: calc_var_stats_for_boolean(bigint); Type: FUNCTION; Schema: ref_data; Owner: -
+--
+
+CREATE FUNCTION ref_data.calc_var_stats_for_boolean(var_id bigint) RETURNS TABLE(variable_id bigint, variable text, results bigint[], labels character varying[], cat_counts jsonb, distincts bigint, completed bigint, total_recs bigint, "chart:" text)
+    LANGUAGE plpgsql
+    AS $_$
+declare
+sql text;
+varrec record;
+varname varchar;
+BEGIN 
+	
+select * from ref_data.datadic_variables dv where id = var_id
+into varrec;
+
+varname := varrec.storage_varname;
+
+raise notice '%1', varrec;
+if varname is null then
+  raise notice 'No matching storage variable name for variable %', (var_id);
+  
+  return;
+end if;
+
+sql := format($$
+with n as (
+    select %1$s
+    from %3$s.%4$s
+), 
+c as (
+	select %1$s::varchar cat, count(*) num
+	from n
+	group by %1$s
+),
+m as (
+    select 
+      (
+        select array_to_json(array_agg(json_build_object(c.cat, c.num))) from c
+        where c.cat is not null
+      ) cat_counts_m,
+      count(distinct %1$s)  distincts_m,
+      count(%1$s) count_m,
+      count(coalesce(%1$s, false)) recs_m
+    from n
+)
+select
+%5$s::bigint variable_id,
+'%1$s' "variable",
+array_agg(num) "results", 
+array_agg(cat) "labels", 
+cat_counts_m::jsonb "cat_counts",
+distincts_m "distincts", -- distinct values
+count_m  "completed",
+recs_m "total_recs",
+null "chart"
+from 
+c, m
+where c.cat is not null
+group by "variable",
+ "cat_counts",
+ "distincts",
+ "completed",
+ "total_recs"
+ ;
+$$
+,
+varname, varrec.variable_type, varrec.schema_or_path, varrec.table_or_file, var_id
+);
+
+return query execute sql;
+
+return query execute sql;
+exception when others then
+raise notice '%', varrec;
+raise notice '%', sqlerrm;
+null;
+
+
+end
+$_$;
+
+
+--
+-- Name: calc_var_stats_for_categorical(bigint); Type: FUNCTION; Schema: ref_data; Owner: -
+--
+
+CREATE FUNCTION ref_data.calc_var_stats_for_categorical(var_id bigint) RETURNS TABLE(variable_id bigint, variable text, results bigint[], labels character varying[], cat_counts jsonb, distincts bigint, completed bigint, total_recs bigint, "chart:" text)
+    LANGUAGE plpgsql
+    AS $_$
+declare
+sql text;
+varrec record;
+varname varchar;
+BEGIN 
+	
+select * from ref_data.datadic_variables dv where id = var_id
+into varrec;
+
+varname := varrec.storage_varname;
+
+raise notice '%1', varrec;
+if varname is null then
+  raise notice 'No matching storage variable name for variable %', (var_id);
+  
+  return;
+end if;
+
+sql := format($$
+with n as (
+    select nullif(%1$s, '')::numeric  %1$s
+    from %3$s.%4$s
+), 
+c as (
+	select %1$s::varchar cat, count(*) num
+	from n
+	group by %1$s
+	order by "cat"
+),
+m as (
+    select 
+      (
+        select array_to_json(array_agg(json_build_object(c.cat, c.num))) from c
+        where c.cat is not null
+      ) cat_counts_m,
+      count(distinct %1$s)  distincts_m,
+      count(%1$s) count_m,
+      count(coalesce(%1$s, 0)) recs_m
+    from n
+)
+select
+%5$s::bigint variable_id,
+'%1$s' "variable",
+array_agg(num) "results", 
+array_agg(cat) "labels", 
+cat_counts_m::jsonb "cat_counts",
+distincts_m "distincts", -- distinct values
+count_m  "completed",
+recs_m "total_recs",
+null "chart"
+from 
+c, m
+where c.cat is not null
+group by "variable",
+ "cat_counts",
+ "distincts",
+ "completed",
+ "total_recs"
+ ;
+$$
+,
+varname, varrec.variable_type, varrec.schema_or_path, varrec.table_or_file, var_id
+);
+
+return query execute sql;
+
+return query execute sql;
+exception when others then
+raise notice '%', varrec;
+raise notice '%', sqlerrm;
+null;
+
+
+end
+$_$;
+
+
+--
+-- Name: calc_var_stats_for_numeric(bigint); Type: FUNCTION; Schema: ref_data; Owner: -
+--
+
+CREATE FUNCTION ref_data.calc_var_stats_for_numeric(var_id bigint) RETURNS TABLE(variable_id bigint, variable text, results bigint[], labels character varying[], min numeric, med numeric, max numeric, mean numeric, stddev numeric, distincts bigint, completed bigint, total_recs bigint, "chart:" text)
+    LANGUAGE plpgsql
+    AS $_$
+declare
+sql text;
+varrec record;
+varname varchar;
+vardt varchar;
+BEGIN 
+	
+select * 
+from ref_data.datadic_variables dv 
+inner join
+information_schema."columns"
+on dv.table_or_file = table_name and dv.schema_or_path = table_schema
+and dv.storage_varname = column_name
+where id = var_id
+into varrec;
+
+varname := varrec.storage_varname;
+vardt := varrec.data_type;
+
+if varname is null then
+  raise notice 'No matching storage variable name for variable %', (var_id);
+  
+  return;
+end if;
+
+--raise notice 'ID: %', varrec.id;
+
+sql := format($$
+with n as (
+    select 
+$$ ||    
+  case when vardt in ('varchar','character varying', 'text')
+  then 
+  $$ nullif(%1$s, '')::numeric $$
+  else $$ %1$s::numeric $$
+  end
+|| $$ 
+%1$s
+    from %3$s.%4$s
+), 
+m as (
+    select 
+      min(%1$s) min_m, 
+      max(%1$s) max_m,
+      round((PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY %1$s))::numeric, 1) med_m,
+      round(avg(%1$s)::numeric, 1) mean_m, 
+      round(stddev_pop(%1$s)::numeric, 1) stddev_m,
+      count(distinct %1$s)  distincts_m,
+      count(%1$s) count_m,
+      count(coalesce(%1$s, 0)) recs_m,
+      12 buckets_m,
+      (max(%1$s)-min(%1$s))/12 bin_width_m
+    from n
+)
+select
+%5$s::bigint variable_id,
+'%1$s' "variable",
+array_agg(num) "results", 
+array_agg(bucket)::varchar[] "labels", 
+min_m "min", 
+med_m "med",
+max_m "max", 
+mean_m "mean", 
+stddev_m "stddev",
+distincts_m "distincts", -- distinct values
+count_m  "completed",
+recs_m "total_recs",
+null "chart"
+from 
+(
+
+  select 
+  count(val) num, 
+  --t.val val, 
+  (round(min_m + ((bin-1) * bin_width_m),2))::varchar || ' - ' || (round(min_m + ((bin) * bin_width_m),2))::varchar "bucket"
+  from
+  (
+    select generate_series(1,buckets_m+1) bin from m
+  ) bins
+  left join (
+    select 
+      width_bucket(%1$s, min_m, max_m+0.0000001, buckets_m) bucket, 
+      %1$s val
+    from n, m
+    where %1$s is not null
+  ) t on bins.bin = t.bucket
+  cross join  m
+  group by bin, min_m, bin_width_m
+  order by bin
+  
+) vals, m
+group by "variable",
+ "min", 
+ "med",
+ "max", 
+ "mean", 
+ "stddev",
+ "distincts",
+ "completed",
+ "total_recs"
+ ;
+$$
+,
+varname, varrec.variable_type, varrec.schema_or_path, varrec.table_or_file, var_id, vardt
+);
+--raise notice '%', sql;
+
+return query execute sql;
+exception when others then
+raise notice '%', varrec;
+raise notice '%', sqlerrm;
+null;
+
+end
+$_$;
+
+
+--
 -- Name: log_datadic_variables_update(); Type: FUNCTION; Schema: ref_data; Owner: -
 --
 
@@ -2760,6 +3051,42 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+
+--
+-- Name: model_references; Type: TABLE; Schema: ml_app; Owner: -
+--
+
+CREATE TABLE ml_app.model_references (
+    id integer NOT NULL,
+    from_record_type character varying,
+    from_record_id integer,
+    from_record_master_id integer,
+    to_record_type character varying,
+    to_record_id integer,
+    to_record_master_id integer,
+    user_id integer,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    disabled boolean
+);
+
+
+--
+-- Name: nfs_store_containers; Type: TABLE; Schema: ml_app; Owner: -
+--
+
+CREATE TABLE ml_app.nfs_store_containers (
+    id integer NOT NULL,
+    name character varying,
+    user_id integer,
+    app_type_id integer,
+    nfs_store_container_id integer,
+    master_id integer,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone,
+    created_by_user_id bigint
+);
 
 
 --
@@ -4383,25 +4710,6 @@ ALTER SEQUENCE ml_app.message_templates_id_seq OWNED BY ml_app.message_templates
 
 
 --
--- Name: model_references; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.model_references (
-    id integer NOT NULL,
-    from_record_type character varying,
-    from_record_id integer,
-    from_record_master_id integer,
-    to_record_type character varying,
-    to_record_id integer,
-    to_record_master_id integer,
-    user_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    disabled boolean
-);
-
-
---
 -- Name: model_references_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
 --
 
@@ -4532,23 +4840,6 @@ CREATE SEQUENCE ml_app.nfs_store_container_history_id_seq
 --
 
 ALTER SEQUENCE ml_app.nfs_store_container_history_id_seq OWNED BY ml_app.nfs_store_container_history.id;
-
-
---
--- Name: nfs_store_containers; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.nfs_store_containers (
-    id integer NOT NULL,
-    name character varying,
-    user_id integer,
-    app_type_id integer,
-    nfs_store_container_id integer,
-    master_id integer,
-    created_at timestamp without time zone,
-    updated_at timestamp without time zone,
-    created_by_user_id bigint
-);
 
 
 --
@@ -6561,6 +6852,446 @@ ALTER SEQUENCE ref_data.datadic_choices_id_seq OWNED BY ref_data.datadic_choices
 
 
 --
+-- Name: datadic_variables; Type: TABLE; Schema: ref_data; Owner: -
+--
+
+CREATE TABLE ref_data.datadic_variables (
+    id bigint NOT NULL,
+    study character varying,
+    source_name character varying,
+    source_type character varying,
+    domain character varying,
+    form_name character varying,
+    variable_name character varying,
+    variable_type character varying,
+    presentation_type character varying,
+    label character varying,
+    label_note character varying,
+    annotation character varying,
+    is_required boolean,
+    valid_type character varying,
+    valid_min character varying,
+    valid_max character varying,
+    multi_valid_choices character varying[],
+    is_identifier boolean,
+    is_derived_var boolean,
+    multi_derived_from_id bigint[],
+    doc_url character varying,
+    target_type character varying,
+    owner_email character varying,
+    classification character varying,
+    other_classification character varying,
+    multi_timepoints character varying[],
+    equivalent_to_id bigint,
+    storage_type character varying,
+    db_or_fs character varying,
+    schema_or_path character varying,
+    table_or_file character varying,
+    disabled boolean,
+    admin_id bigint,
+    redcap_data_dictionary_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    "position" integer,
+    section_id integer,
+    sub_section_id integer,
+    title character varying,
+    storage_varname character varying,
+    user_id bigint,
+    contributor_type character varying,
+    n_for_timepoints jsonb,
+    notes character varying
+);
+
+
+--
+-- Name: TABLE datadic_variables; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON TABLE ref_data.datadic_variables IS 'Dynamicmodel: User Variables';
+
+
+--
+-- Name: COLUMN datadic_variables.study; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.study IS 'Study name';
+
+
+--
+-- Name: COLUMN datadic_variables.source_name; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.source_name IS 'Source of variable';
+
+
+--
+-- Name: COLUMN datadic_variables.source_type; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.source_type IS 'Source type';
+
+
+--
+-- Name: COLUMN datadic_variables.domain; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.domain IS 'Domain';
+
+
+--
+-- Name: COLUMN datadic_variables.form_name; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.form_name IS 'Form name (if the source was a type of form)';
+
+
+--
+-- Name: COLUMN datadic_variables.variable_name; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.variable_name IS 'Variable name';
+
+
+--
+-- Name: COLUMN datadic_variables.variable_type; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.variable_type IS 'Variable type';
+
+
+--
+-- Name: COLUMN datadic_variables.presentation_type; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.presentation_type IS 'Data type for presentation purposes';
+
+
+--
+-- Name: COLUMN datadic_variables.label; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.label IS 'Primary label or title (if source was a form, the label presented for the field)';
+
+
+--
+-- Name: COLUMN datadic_variables.label_note; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.label_note IS 'Description (if source was a form, a note presented for the field)';
+
+
+--
+-- Name: COLUMN datadic_variables.annotation; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.annotation IS 'Annotations (if source was a form, annotations not presented to the user)';
+
+
+--
+-- Name: COLUMN datadic_variables.is_required; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.is_required IS 'Was required in source';
+
+
+--
+-- Name: COLUMN datadic_variables.valid_type; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.valid_type IS 'Source data type';
+
+
+--
+-- Name: COLUMN datadic_variables.valid_min; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.valid_min IS 'Minimum value';
+
+
+--
+-- Name: COLUMN datadic_variables.valid_max; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.valid_max IS 'Maximum value';
+
+
+--
+-- Name: COLUMN datadic_variables.multi_valid_choices; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.multi_valid_choices IS 'List of valid choices for categorical variables';
+
+
+--
+-- Name: COLUMN datadic_variables.is_identifier; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.is_identifier IS 'Represents identifiable information';
+
+
+--
+-- Name: COLUMN datadic_variables.is_derived_var; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.is_derived_var IS 'Is a derived variable';
+
+
+--
+-- Name: COLUMN datadic_variables.multi_derived_from_id; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.multi_derived_from_id IS 'If a derived variable, ids of variables used to calculate it';
+
+
+--
+-- Name: COLUMN datadic_variables.doc_url; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.doc_url IS 'URL to additional documentation';
+
+
+--
+-- Name: COLUMN datadic_variables.target_type; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.target_type IS 'Type of participant this variable relates to';
+
+
+--
+-- Name: COLUMN datadic_variables.owner_email; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.owner_email IS 'Owner, especially for derived variables';
+
+
+--
+-- Name: COLUMN datadic_variables.classification; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.classification IS 'Category of sensitivity from a privacy perspective';
+
+
+--
+-- Name: COLUMN datadic_variables.other_classification; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.other_classification IS 'Additional information regarding classification';
+
+
+--
+-- Name: COLUMN datadic_variables.multi_timepoints; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.multi_timepoints IS 'Timepoints this data is collected (in longitudinal studies)';
+
+
+--
+-- Name: COLUMN datadic_variables.equivalent_to_id; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.equivalent_to_id IS 'Primary variable id this is equivalent to';
+
+
+--
+-- Name: COLUMN datadic_variables.storage_type; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.storage_type IS 'Type of storage for dataset';
+
+
+--
+-- Name: COLUMN datadic_variables.db_or_fs; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.db_or_fs IS 'Database or Filesystem name';
+
+
+--
+-- Name: COLUMN datadic_variables.schema_or_path; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.schema_or_path IS 'Database schema or Filesystem directory path';
+
+
+--
+-- Name: COLUMN datadic_variables.table_or_file; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.table_or_file IS 'Database table (or view, if derived or equivalent to another variable), or filename in directory';
+
+
+--
+-- Name: COLUMN datadic_variables.redcap_data_dictionary_id; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.redcap_data_dictionary_id IS 'Reference to REDCap data dictionary representation';
+
+
+--
+-- Name: COLUMN datadic_variables."position"; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables."position" IS 'Relative position (for source forms or other variables where order of collection matters)';
+
+
+--
+-- Name: COLUMN datadic_variables.section_id; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.section_id IS 'Section this belongs to';
+
+
+--
+-- Name: COLUMN datadic_variables.sub_section_id; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.sub_section_id IS 'Sub-section this belongs to';
+
+
+--
+-- Name: COLUMN datadic_variables.title; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.title IS 'Section caption';
+
+
+--
+-- Name: COLUMN datadic_variables.storage_varname; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.storage_varname IS 'Database field name, or variable name in data file';
+
+
+--
+-- Name: COLUMN datadic_variables.contributor_type; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.contributor_type IS 'Type of contributor this variable was provided by';
+
+
+--
+-- Name: COLUMN datadic_variables.n_for_timepoints; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.n_for_timepoints IS 'For each named timepoint (name:), the population or count of responses (n:), with notes (notes:)';
+
+
+--
+-- Name: COLUMN datadic_variables.notes; Type: COMMENT; Schema: ref_data; Owner: -
+--
+
+COMMENT ON COLUMN ref_data.datadic_variables.notes IS 'Notes';
+
+
+--
+-- Name: datadic_stats; Type: MATERIALIZED VIEW; Schema: ref_data; Owner: -
+--
+
+CREATE MATERIALIZED VIEW ref_data.datadic_stats AS
+ WITH vars AS (
+         SELECT var.id,
+            var.study,
+            var.source_name,
+            var.source_type,
+            var.domain,
+            var.form_name,
+            var.variable_name,
+            var.variable_type,
+            var.presentation_type,
+            var.label,
+            var.label_note,
+            var.annotation,
+            var.is_required,
+            var.valid_type,
+            var.valid_min,
+            var.valid_max,
+            var.multi_valid_choices,
+            var.is_identifier,
+            var.is_derived_var,
+            var.multi_derived_from_id,
+            var.doc_url,
+            var.target_type,
+            var.owner_email,
+            var.classification,
+            var.other_classification,
+            var.multi_timepoints,
+            var.equivalent_to_id,
+            var.storage_type,
+            var.db_or_fs,
+            var.schema_or_path,
+            var.table_or_file,
+            var.disabled,
+            var.admin_id,
+            var.redcap_data_dictionary_id,
+            var.created_at,
+            var.updated_at,
+            var."position",
+            var.section_id,
+            var.sub_section_id,
+            var.title,
+            var.storage_varname,
+            var.user_id
+           FROM ref_data.datadic_variables var
+          WHERE ((NOT COALESCE(var.disabled, false)) AND ((var.variable_name)::text <> 'participant_id'::text) AND (NULLIF((var.storage_varname)::text, ''::text) IS NOT NULL))
+        )
+ SELECT var.id AS variable_id,
+    stats.variable AS variable_name,
+    var.label AS variable_label,
+    stats.results,
+    stats.labels,
+    stats.mean,
+    stats.stddev,
+    stats.min,
+    stats.med,
+    stats.max,
+    NULL::character varying AS choices,
+    stats.distincts,
+    stats.completed,
+    stats.total_recs
+   FROM (vars var
+     JOIN LATERAL ref_data.calc_var_stats_for_numeric(var.id) stats(variable_id, variable, results, labels, min, med, max, mean, stddev, distincts, completed, total_recs, "chart:") ON ((stats.variable IS NOT NULL)))
+  WHERE ((var.table_or_file IS NOT NULL) AND ((var.variable_type)::text = ANY ((ARRAY['numeric'::character varying, 'calculated'::character varying])::text[])))
+UNION
+ SELECT var.id AS variable_id,
+    stats.variable AS variable_name,
+    var.label AS variable_label,
+    stats.results,
+    stats.labels,
+    NULL::numeric AS mean,
+    NULL::numeric AS stddev,
+    NULL::numeric AS min,
+    NULL::numeric AS med,
+    NULL::numeric AS max,
+    (to_json(var.multi_valid_choices))::character varying AS choices,
+    stats.distincts,
+    stats.completed,
+    stats.total_recs
+   FROM (vars var
+     JOIN LATERAL ref_data.calc_var_stats_for_categorical(var.id) stats(variable_id, variable, results, labels, cat_counts, distincts, completed, total_recs, "chart:") ON ((stats.variable IS NOT NULL)))
+  WHERE ((var.table_or_file IS NOT NULL) AND ((var.variable_type)::text = 'categorical'::text))
+UNION
+ SELECT var.id AS variable_id,
+    stats.variable AS variable_name,
+    var.label AS variable_label,
+    stats.results,
+    stats.labels,
+    NULL::numeric AS mean,
+    NULL::numeric AS stddev,
+    NULL::numeric AS min,
+    NULL::numeric AS med,
+    NULL::numeric AS max,
+    NULL::character varying AS choices,
+    stats.distincts,
+    stats.completed,
+    stats.total_recs
+   FROM (vars var
+     JOIN LATERAL ref_data.calc_var_stats_for_boolean(var.id) stats(variable_id, variable, results, labels, cat_counts, distincts, completed, total_recs, "chart:") ON ((stats.variable IS NOT NULL)))
+  WHERE ((var.table_or_file IS NOT NULL) AND ((var.variable_type)::text = 'dichotomous'::text))
+  WITH NO DATA;
+
+
+--
 -- Name: datadic_variable_history; Type: TABLE; Schema: ref_data; Owner: -
 --
 
@@ -6907,339 +7638,6 @@ ALTER SEQUENCE ref_data.datadic_variable_history_id_seq OWNED BY ref_data.datadi
 
 
 --
--- Name: datadic_variables; Type: TABLE; Schema: ref_data; Owner: -
---
-
-CREATE TABLE ref_data.datadic_variables (
-    id bigint NOT NULL,
-    study character varying,
-    source_name character varying,
-    source_type character varying,
-    domain character varying,
-    form_name character varying,
-    variable_name character varying,
-    variable_type character varying,
-    presentation_type character varying,
-    label character varying,
-    label_note character varying,
-    annotation character varying,
-    is_required boolean,
-    valid_type character varying,
-    valid_min character varying,
-    valid_max character varying,
-    multi_valid_choices character varying[],
-    is_identifier boolean,
-    is_derived_var boolean,
-    multi_derived_from_id bigint[],
-    doc_url character varying,
-    target_type character varying,
-    owner_email character varying,
-    classification character varying,
-    other_classification character varying,
-    multi_timepoints character varying[],
-    equivalent_to_id bigint,
-    storage_type character varying,
-    db_or_fs character varying,
-    schema_or_path character varying,
-    table_or_file character varying,
-    disabled boolean,
-    admin_id bigint,
-    redcap_data_dictionary_id bigint,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    "position" integer,
-    section_id integer,
-    sub_section_id integer,
-    title character varying,
-    storage_varname character varying,
-    user_id bigint,
-    contributor_type character varying,
-    n_for_timepoints jsonb,
-    notes character varying
-);
-
-
---
--- Name: TABLE datadic_variables; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON TABLE ref_data.datadic_variables IS 'Dynamicmodel: User Variables';
-
-
---
--- Name: COLUMN datadic_variables.study; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.study IS 'Study name';
-
-
---
--- Name: COLUMN datadic_variables.source_name; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.source_name IS 'Source of variable';
-
-
---
--- Name: COLUMN datadic_variables.source_type; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.source_type IS 'Source type';
-
-
---
--- Name: COLUMN datadic_variables.domain; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.domain IS 'Domain';
-
-
---
--- Name: COLUMN datadic_variables.form_name; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.form_name IS 'Form name (if the source was a type of form)';
-
-
---
--- Name: COLUMN datadic_variables.variable_name; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.variable_name IS 'Variable name';
-
-
---
--- Name: COLUMN datadic_variables.variable_type; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.variable_type IS 'Variable type';
-
-
---
--- Name: COLUMN datadic_variables.presentation_type; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.presentation_type IS 'Data type for presentation purposes';
-
-
---
--- Name: COLUMN datadic_variables.label; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.label IS 'Primary label or title (if source was a form, the label presented for the field)';
-
-
---
--- Name: COLUMN datadic_variables.label_note; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.label_note IS 'Description (if source was a form, a note presented for the field)';
-
-
---
--- Name: COLUMN datadic_variables.annotation; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.annotation IS 'Annotations (if source was a form, annotations not presented to the user)';
-
-
---
--- Name: COLUMN datadic_variables.is_required; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.is_required IS 'Was required in source';
-
-
---
--- Name: COLUMN datadic_variables.valid_type; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.valid_type IS 'Source data type';
-
-
---
--- Name: COLUMN datadic_variables.valid_min; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.valid_min IS 'Minimum value';
-
-
---
--- Name: COLUMN datadic_variables.valid_max; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.valid_max IS 'Maximum value';
-
-
---
--- Name: COLUMN datadic_variables.multi_valid_choices; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.multi_valid_choices IS 'List of valid choices for categorical variables';
-
-
---
--- Name: COLUMN datadic_variables.is_identifier; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.is_identifier IS 'Represents identifiable information';
-
-
---
--- Name: COLUMN datadic_variables.is_derived_var; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.is_derived_var IS 'Is a derived variable';
-
-
---
--- Name: COLUMN datadic_variables.multi_derived_from_id; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.multi_derived_from_id IS 'If a derived variable, ids of variables used to calculate it';
-
-
---
--- Name: COLUMN datadic_variables.doc_url; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.doc_url IS 'URL to additional documentation';
-
-
---
--- Name: COLUMN datadic_variables.target_type; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.target_type IS 'Type of participant this variable relates to';
-
-
---
--- Name: COLUMN datadic_variables.owner_email; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.owner_email IS 'Owner, especially for derived variables';
-
-
---
--- Name: COLUMN datadic_variables.classification; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.classification IS 'Category of sensitivity from a privacy perspective';
-
-
---
--- Name: COLUMN datadic_variables.other_classification; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.other_classification IS 'Additional information regarding classification';
-
-
---
--- Name: COLUMN datadic_variables.multi_timepoints; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.multi_timepoints IS 'Timepoints this data is collected (in longitudinal studies)';
-
-
---
--- Name: COLUMN datadic_variables.equivalent_to_id; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.equivalent_to_id IS 'Primary variable id this is equivalent to';
-
-
---
--- Name: COLUMN datadic_variables.storage_type; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.storage_type IS 'Type of storage for dataset';
-
-
---
--- Name: COLUMN datadic_variables.db_or_fs; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.db_or_fs IS 'Database or Filesystem name';
-
-
---
--- Name: COLUMN datadic_variables.schema_or_path; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.schema_or_path IS 'Database schema or Filesystem directory path';
-
-
---
--- Name: COLUMN datadic_variables.table_or_file; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.table_or_file IS 'Database table (or view, if derived or equivalent to another variable), or filename in directory';
-
-
---
--- Name: COLUMN datadic_variables.redcap_data_dictionary_id; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.redcap_data_dictionary_id IS 'Reference to REDCap data dictionary representation';
-
-
---
--- Name: COLUMN datadic_variables."position"; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables."position" IS 'Relative position (for source forms or other variables where order of collection matters)';
-
-
---
--- Name: COLUMN datadic_variables.section_id; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.section_id IS 'Section this belongs to';
-
-
---
--- Name: COLUMN datadic_variables.sub_section_id; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.sub_section_id IS 'Sub-section this belongs to';
-
-
---
--- Name: COLUMN datadic_variables.title; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.title IS 'Section caption';
-
-
---
--- Name: COLUMN datadic_variables.storage_varname; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.storage_varname IS 'Database field name, or variable name in data file';
-
-
---
--- Name: COLUMN datadic_variables.contributor_type; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.contributor_type IS 'Type of contributor this variable was provided by';
-
-
---
--- Name: COLUMN datadic_variables.n_for_timepoints; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.n_for_timepoints IS 'For each named timepoint (name:), the population or count of responses (n:), with notes (notes:)';
-
-
---
--- Name: COLUMN datadic_variables.notes; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.datadic_variables.notes IS 'Notes';
-
-
---
 -- Name: datadic_variables_id_seq; Type: SEQUENCE; Schema: ref_data; Owner: -
 --
 
@@ -7256,6 +7654,113 @@ CREATE SEQUENCE ref_data.datadic_variables_id_seq
 --
 
 ALTER SEQUENCE ref_data.datadic_variables_id_seq OWNED BY ref_data.datadic_variables.id;
+
+
+--
+-- Name: mv_datadic_stats; Type: MATERIALIZED VIEW; Schema: ref_data; Owner: -
+--
+
+CREATE MATERIALIZED VIEW ref_data.mv_datadic_stats AS
+ WITH vars AS (
+         SELECT var.id,
+            var.study,
+            var.source_name,
+            var.source_type,
+            var.domain,
+            var.form_name,
+            var.variable_name,
+            var.variable_type,
+            var.presentation_type,
+            var.label,
+            var.label_note,
+            var.annotation,
+            var.is_required,
+            var.valid_type,
+            var.valid_min,
+            var.valid_max,
+            var.multi_valid_choices,
+            var.is_identifier,
+            var.is_derived_var,
+            var.multi_derived_from_id,
+            var.doc_url,
+            var.target_type,
+            var.owner_email,
+            var.classification,
+            var.other_classification,
+            var.multi_timepoints,
+            var.equivalent_to_id,
+            var.storage_type,
+            var.db_or_fs,
+            var.schema_or_path,
+            var.table_or_file,
+            var.disabled,
+            var.admin_id,
+            var.redcap_data_dictionary_id,
+            var.created_at,
+            var.updated_at,
+            var."position",
+            var.section_id,
+            var.sub_section_id,
+            var.title,
+            var.storage_varname,
+            var.user_id
+           FROM ref_data.datadic_variables var
+          WHERE ((NOT COALESCE(var.disabled, false)) AND ((var.variable_name)::text <> 'participant_id'::text) AND (NULLIF((var.storage_varname)::text, ''::text) IS NOT NULL))
+        )
+ SELECT var.id AS variable_id,
+    stats.variable AS variable_name,
+    var.label AS variable_label,
+    stats.results,
+    stats.labels,
+    stats.mean,
+    stats.stddev,
+    stats.min,
+    stats.med,
+    stats.max,
+    NULL::character varying AS choices,
+    stats.distincts,
+    stats.completed,
+    stats.total_recs
+   FROM (vars var
+     JOIN LATERAL ref_data.calc_var_stats_for_numeric(var.id) stats(variable_id, variable, results, labels, min, med, max, mean, stddev, distincts, completed, total_recs, "chart:") ON ((stats.variable IS NOT NULL)))
+  WHERE ((var.table_or_file IS NOT NULL) AND ((var.variable_type)::text = ANY ((ARRAY['numeric'::character varying, 'calculated'::character varying])::text[])))
+UNION
+ SELECT var.id AS variable_id,
+    stats.variable AS variable_name,
+    var.label AS variable_label,
+    stats.results,
+    stats.labels,
+    NULL::numeric AS mean,
+    NULL::numeric AS stddev,
+    NULL::numeric AS min,
+    NULL::numeric AS med,
+    NULL::numeric AS max,
+    (to_json(var.multi_valid_choices))::character varying AS choices,
+    stats.distincts,
+    stats.completed,
+    stats.total_recs
+   FROM (vars var
+     JOIN LATERAL ref_data.calc_var_stats_for_categorical(var.id) stats(variable_id, variable, results, labels, cat_counts, distincts, completed, total_recs, "chart:") ON ((stats.variable IS NOT NULL)))
+  WHERE ((var.table_or_file IS NOT NULL) AND ((var.variable_type)::text = 'categorical'::text))
+UNION
+ SELECT var.id AS variable_id,
+    stats.variable AS variable_name,
+    var.label AS variable_label,
+    stats.results,
+    stats.labels,
+    NULL::numeric AS mean,
+    NULL::numeric AS stddev,
+    NULL::numeric AS min,
+    NULL::numeric AS med,
+    NULL::numeric AS max,
+    NULL::character varying AS choices,
+    stats.distincts,
+    stats.completed,
+    stats.total_recs
+   FROM (vars var
+     JOIN LATERAL ref_data.calc_var_stats_for_boolean(var.id) stats(variable_id, variable, results, labels, cat_counts, distincts, completed, total_recs, "chart:") ON ((stats.variable IS NOT NULL)))
+  WHERE ((var.table_or_file IS NOT NULL) AND ((var.variable_type)::text = 'dichotomous'::text))
+  WITH NO DATA;
 
 
 --
@@ -10205,6 +10710,13 @@ CREATE INDEX index_sub_processes_on_admin_id ON ml_app.sub_processes USING btree
 --
 
 CREATE INDEX index_sub_processes_on_protocol_id ON ml_app.sub_processes USING btree (protocol_id);
+
+
+--
+-- Name: index_tracker_history_on_item_type_id; Type: INDEX; Schema: ml_app; Owner: -
+--
+
+CREATE INDEX index_tracker_history_on_item_type_id ON ml_app.tracker_history USING btree (item_type, item_id);
 
 
 --
@@ -13308,6 +13820,8 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20200727122117'),
 ('20200731121100'),
 ('20200731121144'),
+('20200731122147'),
+('20200731124515'),
 ('20201109114833'),
 ('20201111160935'),
 ('20201111161035'),
@@ -13754,8 +14268,570 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20220526182143'),
 ('20220531121546'),
 ('20220601180701'),
+('20220621090729'),
+('20220621090731'),
+('20220621090732'),
+('20220621090734'),
+('20220621090737'),
+('20220621090739'),
+('20220621091859'),
+('20220621091900'),
+('20220621091902'),
+('20220621205650'),
+('20220621205651'),
+('20220621210030'),
+('20220621210031'),
+('20220621210654'),
+('20220621210656'),
+('20220621210923'),
+('20220621210924'),
+('20220621212005'),
+('20220621212007'),
+('20220621212454'),
+('20220621212456'),
+('20220621212457'),
+('20220621212459'),
+('20220621212500'),
+('20220621212502'),
+('20220621212503'),
+('20220621212504'),
+('20220621212506'),
+('20220621212507'),
+('20220621212509'),
+('20220621212510'),
+('20220621212626'),
+('20220621212628'),
+('20220621212630'),
+('20220621212631'),
+('20220621212632'),
+('20220621212634'),
+('20220621212635'),
+('20220621212636'),
+('20220621212638'),
+('20220621212639'),
+('20220621212641'),
+('20220621212642'),
+('20220621212644'),
+('20220621212645'),
+('20220621212646'),
+('20220621212648'),
+('20220621212650'),
+('20220621212747'),
+('20220621212749'),
+('20220621212751'),
+('20220621212752'),
+('20220621212753'),
+('20220621212755'),
+('20220621212756'),
+('20220621212757'),
+('20220621212759'),
+('20220621212800'),
+('20220621212802'),
+('20220621212803'),
+('20220621212805'),
+('20220621212806'),
+('20220621212807'),
+('20220621212810'),
+('20220621212811'),
+('20220621212812'),
+('20220621212814'),
+('20220622095513'),
+('20220622095644'),
+('20220624132515'),
+('20220624150128'),
+('20220624150155'),
+('20220627154143'),
+('20220627154145'),
+('20220627154146'),
+('20220627154148'),
+('20220627154149'),
+('20220627154150'),
+('20220627154152'),
+('20220627154153'),
+('20220627154155'),
+('20220627154156'),
+('20220627154158'),
+('20220627154159'),
+('20220627154200'),
+('20220627154202'),
+('20220627154203'),
+('20220627154206'),
+('20220627154207'),
+('20220627154327'),
+('20220627154329'),
+('20220627154330'),
+('20220627154331'),
+('20220627154333'),
+('20220627154334'),
+('20220627154335'),
+('20220627154337'),
+('20220627154338'),
+('20220627154340'),
+('20220627154341'),
+('20220627154343'),
+('20220627154344'),
+('20220627154345'),
+('20220627154347'),
+('20220627154349'),
+('20220627154350'),
+('20220630082801'),
+('20220704183420'),
+('20220704183422'),
+('20220704183424'),
+('20220704183425'),
+('20220704183426'),
+('20220704183428'),
+('20220704183429'),
+('20220704183430'),
+('20220704183432'),
+('20220704183433'),
+('20220704183435'),
+('20220704183436'),
+('20220704183437'),
+('20220704183439'),
+('20220704183440'),
+('20220704183443'),
+('20220704183444'),
+('20220824102025'),
+('20220824190346'),
+('20220915144411'),
+('20220915144413'),
+('20220915144414'),
+('20220915144415'),
+('20220915144417'),
+('20220915144418'),
+('20220915144419'),
+('20220915144421'),
+('20220915144422'),
+('20220915144424'),
+('20220915144426'),
+('20220915144428'),
+('20220915144429'),
+('20220915144430'),
+('20220915144432'),
+('20220915144434'),
+('20220915144436'),
+('20220915144444'),
+('20220915144445'),
+('20220916105116'),
+('20220916105118'),
+('20220916105119'),
+('20220916105121'),
+('20220916105122'),
+('20220916105123'),
+('20220916105125'),
+('20220916105126'),
+('20220916105128'),
+('20220916105129'),
+('20220916105131'),
+('20220916105132'),
+('20220916105133'),
+('20220916105135'),
+('20220916105137'),
+('20220916105143'),
+('20220916105149'),
+('20220916105150'),
+('20221031174109'),
+('20221110101203'),
+('20221110101411'),
+('20221110101647'),
+('20221110102412'),
+('20221110102414'),
+('20221110102415'),
+('20221110102417'),
+('20221110102419'),
+('20221110102421'),
+('20221110102422'),
+('20221110102424'),
+('20221110102426'),
+('20221110102437'),
+('20221110102438'),
+('20221110102439'),
+('20221110102441'),
+('20221110102442'),
+('20221110102443'),
+('20221110102445'),
+('20221110102446'),
+('20221110102447'),
+('20221110102819'),
+('20221110102820'),
+('20221110102822'),
+('20221110102823'),
+('20221110102826'),
+('20221110102827'),
+('20221110102830'),
+('20221110102833'),
+('20221110102834'),
+('20221110103050'),
+('20221110103052'),
+('20221110103054'),
+('20221110103055'),
+('20221110103058'),
+('20221110103059'),
+('20221110103101'),
+('20230104133814'),
+('20230117115913'),
 ('20230209153019'),
+('20230309104811'),
+('20230309104813'),
+('20230309104814'),
+('20230309104817'),
+('20230309104819'),
+('20230309104820'),
+('20230309104822'),
+('20230309104824'),
+('20230309104825'),
+('20230309104827'),
+('20230309104828'),
+('20230309104829'),
+('20230309104831'),
+('20230309104832'),
+('20230309105041'),
+('20230309105042'),
+('20230309105044'),
+('20230309105047'),
+('20230309105048'),
+('20230309105050'),
+('20230309105053'),
+('20230309105055'),
+('20230309105056'),
+('20230309105057'),
+('20230309105059'),
+('20230309105100'),
+('20230309105449'),
+('20230309105450'),
+('20230309105452'),
+('20230309105455'),
+('20230309105456'),
+('20230309105457'),
+('20230309105459'),
+('20230309105941'),
+('20230309105942'),
+('20230309105943'),
+('20230309105946'),
+('20230309105948'),
+('20230309105949'),
+('20230309110022'),
+('20230309110024'),
+('20230309110025'),
+('20230309110028'),
+('20230309110029'),
+('20230309110031'),
+('20230309110157'),
+('20230309110159'),
+('20230309110200'),
+('20230309110203'),
+('20230309110205'),
+('20230309110206'),
+('20230309110556'),
+('20230309110557'),
+('20230309110559'),
+('20230309110602'),
+('20230309110603'),
+('20230309110605'),
+('20230309110609'),
+('20230309110610'),
+('20230309110612'),
+('20230309111233'),
+('20230309111234'),
+('20230309111236'),
+('20230309111239'),
+('20230309111240'),
+('20230309111400'),
+('20230309111401'),
+('20230309111403'),
+('20230309111406'),
+('20230309111407'),
+('20230309111436'),
+('20230309111437'),
+('20230309111439'),
+('20230309111442'),
+('20230309111443'),
+('20230309111447'),
+('20230309111449'),
+('20230309111450'),
+('20230309111658'),
+('20230309111724'),
+('20230309111816'),
 ('20230420125603'),
-('20230420125634');
+('20230420125634'),
+('20230502172849'),
+('20230502180019'),
+('20230502180248'),
+('20230502180810'),
+('20230711165157'),
+('20230711165159'),
+('20230711165201'),
+('20230711165203'),
+('20230711165204'),
+('20230711165205'),
+('20230711165207'),
+('20230711165208'),
+('20230711165210'),
+('20230711165211'),
+('20230711165213'),
+('20230711165215'),
+('20230711165216'),
+('20230711165218'),
+('20230711165220'),
+('20230711165229'),
+('20230711165543'),
+('20230711165545'),
+('20230711165547'),
+('20230711165549'),
+('20230711165550'),
+('20230711165551'),
+('20230711165553'),
+('20230711165554'),
+('20230711165556'),
+('20230711165557'),
+('20230711165559'),
+('20230711165601'),
+('20230711165602'),
+('20230711165604'),
+('20230711165606'),
+('20230711170038'),
+('20230711170040'),
+('20230711170042'),
+('20230711170043'),
+('20230711170045'),
+('20230711170046'),
+('20230711170047'),
+('20230711170049'),
+('20230711170051'),
+('20230711170052'),
+('20230711170054'),
+('20230711170055'),
+('20230711170057'),
+('20230711170058'),
+('20230711170101'),
+('20230711170552'),
+('20230711170554'),
+('20230711170555'),
+('20230711170557'),
+('20230711170558'),
+('20230711170600'),
+('20230711170601'),
+('20230711170602'),
+('20230711170604'),
+('20230711170605'),
+('20230711170607'),
+('20230711170609'),
+('20230711170610'),
+('20230711170611'),
+('20230711170614'),
+('20230711170750'),
+('20230711170752'),
+('20230711170754'),
+('20230711170756'),
+('20230711170757'),
+('20230711170758'),
+('20230711170800'),
+('20230711170801'),
+('20230711170803'),
+('20230711170804'),
+('20230711170806'),
+('20230711170808'),
+('20230711170809'),
+('20230711170811'),
+('20230711170813'),
+('20230711170818'),
+('20230711170820'),
+('20230712111929'),
+('20230712111931'),
+('20230712111933'),
+('20230712111935'),
+('20230712111936'),
+('20230712111937'),
+('20230712111939'),
+('20230712111940'),
+('20230712111942'),
+('20230712111943'),
+('20230712111945'),
+('20230712111946'),
+('20230712111948'),
+('20230712111949'),
+('20230712111952'),
+('20230712111954'),
+('20230712111956'),
+('20230712112543'),
+('20230712112545'),
+('20230712112547'),
+('20230712112550'),
+('20230712112552'),
+('20230712112556'),
+('20230712112728'),
+('20230712112729'),
+('20230712112731'),
+('20230712112734'),
+('20230712112736'),
+('20230712112740'),
+('20230712112742'),
+('20230712132520'),
+('20230712132522'),
+('20230712132524'),
+('20230712132525'),
+('20230712132527'),
+('20230712132528'),
+('20230712132529'),
+('20230712132531'),
+('20230712132533'),
+('20230712132534'),
+('20230712132536'),
+('20230712132537'),
+('20230712132538'),
+('20230712132540'),
+('20230712132543'),
+('20230712132545'),
+('20230712132546'),
+('20230712133250'),
+('20230712133251'),
+('20230712133253'),
+('20230712133255'),
+('20230712133256'),
+('20230712133258'),
+('20230712133259'),
+('20230712133300'),
+('20230712133302'),
+('20230712133303'),
+('20230712133305'),
+('20230712133307'),
+('20230712133308'),
+('20230712133309'),
+('20230712133312'),
+('20230712133315'),
+('20230712133316'),
+('20230809093208'),
+('20230809093210'),
+('20230809093212'),
+('20230809093213'),
+('20230809093215'),
+('20230809093216'),
+('20230809093217'),
+('20230809093219'),
+('20230809093220'),
+('20230809093222'),
+('20230809093224'),
+('20230809093225'),
+('20230809093227'),
+('20230809093228'),
+('20230809093231'),
+('20230809093233'),
+('20230809093235'),
+('20230814082411'),
+('20230814082412'),
+('20230814082414'),
+('20230814082416'),
+('20230814082417'),
+('20230814082418'),
+('20230814082420'),
+('20230814082421'),
+('20230814082423'),
+('20230814082424'),
+('20230814082426'),
+('20230814082428'),
+('20230814082429'),
+('20230814082430'),
+('20230814082433'),
+('20230814082436'),
+('20230814082437'),
+('20230822183526'),
+('20230822183528'),
+('20230822183530'),
+('20230822183531'),
+('20230822183533'),
+('20230822183534'),
+('20230822183535'),
+('20230822183537'),
+('20230822183538'),
+('20230822183540'),
+('20230822183541'),
+('20230822183543'),
+('20230822183544'),
+('20230822183546'),
+('20230822183547'),
+('20230822183550'),
+('20230822183552'),
+('20230822183554'),
+('20230824095001'),
+('20230920154249'),
+('20230920154251'),
+('20230920154252'),
+('20230920154626'),
+('20230920154628'),
+('20230920154629'),
+('20230920154901'),
+('20230920154903'),
+('20230920154904'),
+('20230920155547'),
+('20230920155800'),
+('20230920155802'),
+('20230920155803'),
+('20230920160248'),
+('20230920160334'),
+('20230920160337'),
+('20230920160339'),
+('20230920160545'),
+('20230920160720'),
+('20230927111319'),
+('20230927123224'),
+('20230927125854'),
+('20231011135146'),
+('20231011135151'),
+('20231011135153'),
+('20231011135158'),
+('20231011135200'),
+('20231011135621'),
+('20231011135835'),
+('20231011140608'),
+('20231012130116'),
+('20231017100419'),
+('20231017100511'),
+('20231017100519'),
+('20231017100609'),
+('20231017163817'),
+('20231030175759'),
+('20231030175801'),
+('20231106102828'),
+('20231106102830'),
+('20231106102832'),
+('20231106102834'),
+('20231106102835'),
+('20231106102837'),
+('20231106102839'),
+('20231106102840'),
+('20231106120905'),
+('20231107155231'),
+('20231115100715'),
+('20231115100717'),
+('20231115100719'),
+('20231127083512'),
+('20231127083514'),
+('20231127083515'),
+('20231130164246'),
+('20231130164351'),
+('20231130164353'),
+('20231130164355'),
+('20231204090620'),
+('20231212093450'),
+('20231212093453'),
+('20231212093454'),
+('20231212093456'),
+('20231212093458'),
+('20240116090059'),
+('20240116090102'),
+('20240116090103'),
+('20240116090105'),
+('20240116090106'),
+('20240116090108'),
+('20240116090341'),
+('20240116090347'),
+('20240116090402'),
+('20240129184920'),
+('20240129184931'),
+('20240129184934'),
+('20240213103516'),
+('20240213104713'),
+('20240506141400');
 
 

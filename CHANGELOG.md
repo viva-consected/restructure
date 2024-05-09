@@ -12,6 +12,21 @@ Note that not every tagged version may be suitable for production use. A Github 
 
 Since [version 8.4.0](#840---2024-01-10) the convention is that releases made within forked repositories should be up-versioned with a patch release, *x.y.z+1*. When changes are incorporated back into the primary repo [consected/restructure](https://github.com/consected/restructure) a new minor release will be created, *x.y+1,0*.
 
+## Unreleased
+
+- [Changed] browser caching for common scenarios
+
+### Merge pull request #320 from hmsrc/hms-perf
+
+- [Added] exception information to failure mailer
+- [Updated] gems
+- [Fixed] specs
+- [Changed] logging of dynamic definition setup
+- [Changed] handling of info and help pages to show a not found for missing library or not authorized access
+- [Changed] handling of item flags for new selector caching
+- [Changed] handling of selector cache handling and application version to log when changes will affect performance
+- [Added] index to tracker_history to improve performance
+
 ## [8.6.5] - 2024-05-02
 
 - [Updated] gems
