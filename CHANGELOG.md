@@ -12,6 +12,12 @@ Note that not every tagged version may be suitable for production use. A Github 
 
 Since [version 8.4.0](#840---2024-01-10) the convention is that releases made within forked repositories should be up-versioned with a patch release, *x.y.z+1*. When changes are incorporated back into the primary repo [consected/restructure](https://github.com/consected/restructure) a new minor release will be created, *x.y+1,0*.
 
+## Unreleased
+
+- [Changed] display of tree report loading
+- [Fixed] tree embedded report when there is a report in the underlying page (embedded in a placeholder for example)
+- [Added] report results handler to force all <pre> elements to be fully expanded
+
 ## [8.6.8] - 2024-05-23
 
 - [Fixed] mailto links breaking in sidebar when content is a portal page
