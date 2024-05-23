@@ -123,7 +123,7 @@ _fpa.postprocessors_help = {
           var changed = true;
         }
 
-        if (href.indexOf('./') == 0 || href.indexOf('../') == 0 || href.indexOf('/') < 0) {
+        if ((href.indexOf('./') == 0 || href.indexOf('../') == 0 || href.indexOf('/') < 0) && href.indexOf('mailto:') != 0) {
           href = href.replace(/^\.\//, '');
           href = `${orig_subpath}/${href}#open-in-sidebar`;
           var changed = true;
