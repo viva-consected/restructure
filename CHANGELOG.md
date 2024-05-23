@@ -12,6 +12,13 @@ Note that not every tagged version may be suitable for production use. A Github 
 
 Since [version 8.4.0](#840---2024-01-10) the convention is that releases made within forked repositories should be up-versioned with a patch release, *x.y.z+1*. When changes are incorporated back into the primary repo [consected/restructure](https://github.com/consected/restructure) a new minor release will be created, *x.y+1,0*.
 
+## Unreleased
+
+- [Fixed] mailto links breaking in sidebar when content is a portal page
+- [Fixed] editor html cleanup losing images and horizonal rule
+- [Fixed] tree expander implementations
+- [Fixed] report criteria drop down selector filters not loading when default criteria passed through URL
+
 ## [8.6.7] - 2024-05-09
 
 - [Fixed] use of Etag headers for caching
