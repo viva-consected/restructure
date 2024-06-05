@@ -283,7 +283,7 @@ class Settings
     ScriptedJobDirectory
     DisableVDef AllowDynamicMigrations
     AllowUsersToRegister DefaultUserTemplateEmail RegistrationAdminEmail AllowAdminsToManageAdmins NotifyOnRegistration
-    InvitationCode
+    InvitationCode ReCaptchaSiteKey ReCaptchaMinScore
     CountryCodesForTimezones DefaultUserTimezone
     DefaultDateFormat DefaultTimeFormat DefaultDateTimeFormat
     DefaultCountrySelect GdprCountryCodes
