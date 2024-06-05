@@ -52,9 +52,10 @@ module Utilities
 
     def passing_score?(score)
       res = score >= passing_score
-      return if res
+      return true if res
 
       Rails.logger.warn "reCAPTCHA didn't get a passing score: #{score} < #{passing_score}"
+      false
     end
 
     def passing_score
