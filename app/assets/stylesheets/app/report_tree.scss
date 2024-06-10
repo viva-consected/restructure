@@ -20,13 +20,13 @@ table.table.tree-table {
     display: block;
   }
 
-  &.jsTT {
+  &.jsTT, &[data-results-count="0"] {
     tbody, thead {
       opacity: 1
     }
   }
 
-  &.jsTT:before {
+  &.jsTT:before, &[data-results-count="0"]:before {
     display: none;
   }
 
