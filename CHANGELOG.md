@@ -14,6 +14,8 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
+- [Added] definition for multiple save buttons, with show_if control
+
 ## [8.6.14] - 2024-06-10
 
 - [Added] report results count attribute to markup to allow better styling for no results
