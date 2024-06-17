@@ -86,16 +86,17 @@ class User < ActiveRecord::Base
   # The template user is assigned to newly created roles to ensure they are exported
   # in an app type export, even if there are no other matching users on the target server
   def self.template_user
-    res = find_by(email: Settings::TemplateUserEmail)
+    tue = Settings::TemplateUserEmail.downcase
+    res = find_by(email: tue)
 
-    Rails.logger.error "template_user #{Settings::TemplateUserEmail} does not exist" unless res
+    Rails.logger.error "template_user #{tue} does not exist" unless res
     res
   end
 
   # Get the admin that corresponds to this user
   # @return [Admin | nil]
   def matching_admin
-    Admin.active.where(email:).first
+    Admin.active.where(email: email.downcase).first
   end
 
   #
