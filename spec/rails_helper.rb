@@ -188,7 +188,7 @@ RSpec.configure do |config|
 
     # Do some setup that could impact all tests through the availability of master associations
     SetupHelper.clear_delayed_job
-    tu = Settings::TemplateUserEmail&.downcase
+    tue = Settings::TemplateUserEmail&.downcase
     require "#{::Rails.root}/db/seeds.rb" unless User.active.find_by(email: tue)
     tu = User.find_by(email: tue)
     Seeds::BUsers.setup if tu.nil?
