@@ -408,6 +408,17 @@ _fpa.reports = {
     }
 
     $submit[0].click();
+
+    var $modal = $form.parents('.modal').first();
+    if ($modal.length) {
+
+      $modal.not('.has-mfcbb-clear').on('hidden.bs.modal', function () {
+        $modal.find('.modal-footer .modal-footer-caption-before-button').html('');
+      }).addClass('has-mfcbb-clear');
+
+      $modal.find('.modal-footer .modal-footer-caption-before-button').html('selected items automatically saved')
+    }
+
   },
 
   run_autos: function (sel) {
