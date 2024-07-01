@@ -8,8 +8,8 @@ _fpa.loaded.reports = function () {
   if ($('#editable_data').length == 1 && $('.report-criteria-fields').length >= 1)
     $('input[type="submit"][value="table"]').click();
 
-
   // Substitute list_id param into links in the report criteria containing :list_id
+  // This only functions for full page reports, not embedded reports
   const $a_to_list = $criteria_form.find('a[href*=":list_id"]');
   const param_list_match = location.href.match(/\[list_id\]=(\d+)/);
   if ($a_to_list.length && param_list_match) {
