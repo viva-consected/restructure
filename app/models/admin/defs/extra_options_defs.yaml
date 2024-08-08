@@ -27,6 +27,9 @@
     field_name:
       depends_on_field_name: conditional value
       current_mode: show | edit
+    submit_buttons_<button_id>: |
+      Controls the display of a display button, identified by <button_id> being
+      the underscored id representing the button label
   view_options:
     show_embedded_at_top: |
       true | false to position a single auto loaded embedded item
@@ -78,11 +81,14 @@
       #   - prevent scrolling to this item if edit is clicked (manually or automatically)
       # - make-labels-placeholders
       #   - show fields with in field placeholders rather than labels
+      # - hide-form-metadata
+      #   - hides the form metadata in edit mode
 
   filestore:
     container: {}
   save_action:
-    label: button label
+    label: button label 
+    # May also use an array of labels for multiple alternative buttons, in combination with show_if control of the one shown
     on_update:
       create_next_creatable:
         if: 'ref: ** conditions reference **'
@@ -266,6 +272,8 @@
         # always allow the references to be disabled, even if the containing record is not editable
       prevent_reload_on_save: true | false (default)
         # prevent the parent from reloading on save - use in combination with {save_action: expand_reference}
+      action_position: top|bottom
+        # position this action at the top or bottom of the reference results (default: bottom)
   
 
   save_trigger:
@@ -290,6 +298,9 @@
 
       pull_external_data: 
 #!defs(save_triggers_pull_external_data_options_defs.yaml)
+
+      set_item_flags:
+#!defs(save_triggers_set_item_flags_options_defs.yaml)
 
       update_reference: 
 #!defs(save_triggers_update_reference_options_defs.yaml)

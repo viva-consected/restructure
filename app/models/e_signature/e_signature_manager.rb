@@ -24,6 +24,7 @@ module ESignature
     included do
       validate :e_signature_password_correct
       validate :prevent_change
+      before_create :auto_create_document
       before_create :set_status
       before_save :set_new_status
 
@@ -50,7 +51,7 @@ module ESignature
     # @return [ESignature::SignedDocument]
     def prepare_activity_for_signature
       validate_configuration
-      @signed_document = SignedDocument.new self, find_reference_to_sign
+      create_or_find_ref_to_sign
       self.e_signed_document = @signed_document.prepare_for_signature
       @signed_document
     end
@@ -153,6 +154,33 @@ module ESignature
     def validate_configuration
       res = (ExpectedFields - attribute_names).empty?
       raise ESignatureException, "Missing the expected fields for e-signature (#{ExpectedFields.join(', ')})" unless res
+    end
+
+    # If e_sign.auto_create_document is set, create it
+    def auto_create_document
+      return unless extra_log_type_config.e_sign&.dig(:auto_create_document)
+
+      extra_log_type_config.e_sign[:create_document] = true
+      prepare_activity_for_signature
+    end
+
+    # Create the document to sign or find an existing document to sign
+    # Only create a new document to sign if {e_sign: create_document:} is set.
+    # This create_document: configuration is left open for extension, so anything
+    # truthy will satisfy the condition.
+    def create_or_find_ref_to_sign
+      if extra_log_type_config.e_sign[:create_document]
+        mn = extra_log_type_config.e_sign.dig(:document_reference, :item).first.first
+        signdoc_class = ModelReference.to_record_class_for_type(mn)
+        to_sign = signdoc_class.new(master:, current_user:)
+        to_sign.force_save!
+        to_sign.ignore_configurable_valid_if = true
+        to_sign.send(:force_write_user)
+        to_sign.save!
+        ModelReference.create_with(self, to_sign, force_create: false)
+      end
+
+      @signed_document = SignedDocument.new self, find_reference_to_sign
     end
 
     # Find the model reference and subsequently the record it points to,
