@@ -3,13 +3,13 @@ table.table.tree-table {
   border: 1px solid gray;
   margin: 0 auto;
   tbody, thead {
-    opacity: 0.10;
+    opacity: 0.30;
   }
 
   &:before {
     content: "loading...";
     opacity: 1;
-    color: gray;
+    color: black;
     text-align: left;
     margin: 0 auto;
     width: auto;
@@ -20,13 +20,13 @@ table.table.tree-table {
     display: block;
   }
 
-  &.jsTT {
+  &.jsTT, &[data-results-count="0"] {
     tbody, thead {
       opacity: 1
     }
   }
 
-  &.jsTT:before {
+  &.jsTT:before, &[data-results-count="0"]:before {
     display: none;
   }
 
