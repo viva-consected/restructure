@@ -179,6 +179,8 @@ _fpa.reports = {
     var dct;
     var dct_parts;
 
+    var $outer = block.parents('.modal-body, body').first().parent();
+
     block.find('td[data-col-type^="chart:"]').not('.attached_report_chart').each(function () {
 
       var row = $(this).parent();
@@ -235,7 +237,7 @@ _fpa.reports = {
       var ctx = $(this).find('canvas');
       var myPieChart = new Chart(ctx, value);
 
-      var head = $('th[data-col-type="' + chart_dct + '"]').not('.added-chart-legend');
+      var head = $outer.find('th[data-col-type="' + chart_dct + '"]').not('.added-chart-legend');
       if (head.length > 0) {
         var headp = head.find('p.table-header-col-type');
         headp.html(name);
@@ -296,7 +298,7 @@ _fpa.reports = {
       var extra_val = dct_parts[2].trim();
     }
 
-    var report_id = $('.report-container').attr('data-report-id');
+    var report_id = $outer.find('.report-container').first().attr('data-report-id');
 
 
     if (dct_action == 'download files') {
@@ -312,7 +314,7 @@ _fpa.reports = {
     else if (dct_action == 'remove from list') {
       var $f = $(`<form id="itemselection-for-report" method="post" action="/reports/${report_id}/remove_from_list.json" class="report-remove-from-list" data-remote="true"><input type="hidden" name="remove_from_list[list_name]" value="${extra_val}"></form>`);
 
-      var cblock = $('[data-result="#report-embedded"]');
+      var cblock = $outer.find('[data-result="#report-embedded"]').first();
       if (cblock.length == 0) cblock = $('body');
 
       cblock.find('#report_query_form').addClass('keep-notices');
@@ -321,15 +323,15 @@ _fpa.reports = {
       });
 
     }
-    var $fsels = $('.report-file-selector');
+    var $fsels = $outer.find('.report-file-selector');
     var all_selected = ($fsels.filter(':checked').length > 0);
     var checked_attr = all_selected ? 'checked' : '';
     var init_label = all_selected ? 'unselect all' : 'select all'
 
     var b = `<span class="report-files-actions"><a id="report-select-all-files" data-select-all="select">select all</a> / <a id="report-unselect-all-files" data-select-all="unselect">unselect all</a></span><span class="report-files-actions-btn"><input id="submit-report-selections" type="submit" value="${dct_action}" class="btn btn-primary rep-sel-action-${dct_action.replace(' ', '-')}"/></span>`;
-    var $t = $('table.report-table, .report-list[data-results-count]');
+    var $t = $outer.find('table.report-table, .report-list[data-results-count]');
     $f.insertBefore($t);
-    $t.appendTo($('#itemselection-for-report'));
+    $t.appendTo($outer.find('#itemselection-for-report'));
 
     // On select all / unselect all
     // check or uncheck all the entries.
@@ -395,7 +397,7 @@ _fpa.reports = {
     $el.attr('class', 'report-file-selector-default')
     $el.hide();
     console.log($el);
-    $('.report-files-actions').append($el);
+    $outer.find('.report-files-actions').append($el);
 
 
   },

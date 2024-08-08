@@ -24,8 +24,8 @@ module StandardAuthentication
                 maximum: 100
               }
 
-    validate :new_password_changed?, if: :password
-    validate :no_matching_prev_passwords, if: :password
+    validate :new_password_changed?, if: :password_present?
+    validate :no_matching_prev_passwords, if: :password_present?
     validates :password, password_strength: password_config, if: :password_changed?
     validate :password_like_email, if: :password_changed?
     validate :check_strength, if: :password_changed?
@@ -236,7 +236,7 @@ module StandardAuthentication
   def two_factor_auth_uri
     issuer = Settings::TwoFactorAuthIssuer
     label = "#{issuer} (#{self.class.name.downcase}) #{email}"
-    otp_provisioning_uri(label, issuer: issuer)
+    otp_provisioning_uri(label, issuer:)
   end
 
   #
@@ -341,6 +341,10 @@ module StandardAuthentication
     errors.add :password, 'must be changed' unless password_changed?
   end
 
+  def password_present?
+    password.present?
+  end
+
   #
   # A direct comparison of encrypted_password against what is saved in the DB is not possible, since
   # bcrypt generates a new salt every time.
@@ -353,7 +357,7 @@ module StandardAuthentication
   # true if the password has actually changed
   def password_changed?(prev_password_hash: nil)
     prev_password_hash ||= encrypted_password_was
-    return false unless password
+    return false unless password.present?
     return true if prev_password_hash.blank? && password.present?
 
     # Get salt from saved encrypted_password

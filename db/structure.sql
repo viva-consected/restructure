@@ -10,6 +10,20 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: dynamic; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA dynamic;
+
+
+--
+-- Name: extra_app; Type: SCHEMA; Schema: -; Owner: -
+--
+
+CREATE SCHEMA extra_app;
+
+
+--
 -- Name: ml_app; Type: SCHEMA; Schema: -; Owner: -
 --
 
@@ -17,10 +31,10 @@ CREATE SCHEMA ml_app;
 
 
 --
--- Name: SCHEMA ml_app; Type: COMMENT; Schema: -; Owner: -
+-- Name: redcap; Type: SCHEMA; Schema: -; Owner: -
 --
 
-COMMENT ON SCHEMA ml_app IS 'The primary Zeus application, player contact and tracking schema';
+CREATE SCHEMA redcap;
 
 
 --
@@ -30,347 +44,445 @@ COMMENT ON SCHEMA ml_app IS 'The primary Zeus application, player contact and tr
 CREATE SCHEMA ref_data;
 
 
-SET default_tablespace = '';
-
-SET default_table_access_method = heap;
-
 --
--- Name: addresses; Type: TABLE; Schema: ml_app; Owner: -
+-- Name: log_activity_log_project_assignment_simple_tests_update(); Type: FUNCTION; Schema: dynamic; Owner: -
 --
 
-CREATE TABLE ml_app.addresses (
-    id integer NOT NULL,
-    master_id integer,
-    street character varying,
-    street2 character varying,
-    street3 character varying,
-    city character varying,
-    state character varying,
-    zip character varying,
-    source character varying,
-    rank integer,
-    rec_type character varying,
-    user_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone DEFAULT '2017-09-25 15:43:35.929228'::timestamp without time zone,
-    country character varying(3),
-    postal_code character varying,
-    region character varying
-);
-
-
---
--- Name: player_contacts; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.player_contacts (
-    id integer NOT NULL,
-    master_id integer,
-    rec_type character varying,
-    data character varying,
-    source character varying,
-    rank integer,
-    user_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone DEFAULT '2017-09-25 15:43:36.922871'::timestamp without time zone
-);
-
-
---
--- Name: player_infos; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.player_infos (
-    id integer NOT NULL,
-    master_id integer,
-    first_name character varying,
-    last_name character varying,
-    middle_name character varying,
-    nick_name character varying,
-    birth_date date,
-    death_date date,
-    user_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone DEFAULT '2017-09-25 15:43:37.094626'::timestamp without time zone,
-    contact_pref character varying,
-    start_year integer,
-    rank integer,
-    notes character varying,
-    contact_id integer,
-    college character varying,
-    end_year integer,
-    source character varying
-);
-
-
---
--- Name: TABLE player_infos; Type: COMMENT; Schema: ml_app; Owner: -
---
-
-COMMENT ON TABLE ml_app.player_infos IS 'Player biographical information';
-
-
---
--- Name: COLUMN player_infos.first_name; Type: COMMENT; Schema: ml_app; Owner: -
---
-
-COMMENT ON COLUMN ml_app.player_infos.first_name IS 'First Name';
-
-
---
--- Name: nfs_store_archived_files; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.nfs_store_archived_files (
-    id integer NOT NULL,
-    file_hash character varying,
-    file_name character varying NOT NULL,
-    content_type character varying NOT NULL,
-    archive_file character varying NOT NULL,
-    path character varying NOT NULL,
-    file_size bigint NOT NULL,
-    file_updated_at timestamp without time zone,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    nfs_store_container_id integer,
-    user_id integer,
-    title character varying,
-    description character varying,
-    nfs_store_stored_file_id integer,
-    file_metadata jsonb,
-    embed_resource_name character varying,
-    embed_resource_id bigint
-);
-
-
---
--- Name: nfs_store_stored_files; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.nfs_store_stored_files (
-    id integer NOT NULL,
-    file_hash character varying NOT NULL,
-    file_name character varying NOT NULL,
-    content_type character varying NOT NULL,
-    file_size bigint NOT NULL,
-    path character varying,
-    file_updated_at timestamp without time zone,
-    user_id integer,
-    nfs_store_container_id integer,
-    created_at timestamp without time zone,
-    updated_at timestamp without time zone,
-    title character varying,
-    description character varying,
-    last_process_name_run character varying,
-    file_metadata jsonb,
-    embed_resource_name character varying,
-    embed_resource_id bigint
-);
-
-
---
--- Name: activity_log_bhs_assignment_info_request_notification(integer); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.activity_log_bhs_assignment_info_request_notification(activity_id integer) RETURNS integer
+CREATE FUNCTION dynamic.log_activity_log_project_assignment_simple_tests_update() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
-    DECLARE
-        dl_users INTEGER[];
-        activity_record RECORD;
-        message_id INTEGER;
-        current_app_type_id INTEGER;
-    BEGIN
-
-        current_app_type_id := get_app_type_id_by_name('bhs');
-
-        dl_users := get_user_ids_for_app_type_role(current_app_type_id, 'pi');
-
-        SELECT * INTO activity_record FROM activity_log_bhs_assignments WHERE id = activity_id;
-
-        IF activity_record.bhs_assignment_id IS NOT NULL AND activity_record.extra_log_type = 'primary'
-        THEN
-
-          SELECT
-          INTO message_id
-            create_message_notification_email(
-              current_app_type_id,
-              activity_record.master_id,
-              activity_record.id,
-              'ActivityLog::BhsAssignment'::VARCHAR,
-              activity_record.user_id,
-              dl_users,
-              'bhs notification layout'::VARCHAR,
-              'bhs pi notification content'::VARCHAR,
-              'New Brain Health Study Info Request'::VARCHAR,
-              now()::TIMESTAMP
-            )
-          ;
-
-        END IF;
-        RETURN message_id;
-    END;
+BEGIN
+  INSERT INTO activity_log_project_assignment_simple_test_history (
+    master_id,
+    project_assignment_id,
+    created_by_user_id, next_step, status, event_time, disabled, notes,
+    extra_log_type,
+    user_id,
+    created_at,
+    updated_at,
+    activity_log_project_assignment_simple_test_id)
+  SELECT
+    NEW.master_id,
+    NEW.project_assignment_id,
+    NEW.created_by_user_id, NEW.next_step, NEW.status, NEW.event_time, NEW.disabled, NEW.notes,
+    NEW.extra_log_type,
+    NEW.user_id,
+    NEW.created_at,
+    NEW.updated_at,
+    NEW.id;
+  RETURN NEW;
+END;
 $$;
 
 
 --
--- Name: activity_log_bhs_assignment_insert_defaults(); Type: FUNCTION; Schema: ml_app; Owner: -
+-- Name: log_project_imports_update(); Type: FUNCTION; Schema: dynamic; Owner: -
 --
 
-CREATE FUNCTION ml_app.activity_log_bhs_assignment_insert_defaults() RETURNS trigger
+CREATE FUNCTION dynamic.log_project_imports_update() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
-        DECLARE
-          found_bhs RECORD;
-          found_phone RECORD;
-        BEGIN
-
-            -- if there is no player contact phone set, try and set it
-            -- in case the sync from Zeus to Elaine happened between the time the
-            -- user opened the new form (with an empty drop down) and now.
-            -- This avoids missing the population of this field
-            IF NEW.select_record_from_player_contact_phones IS NULL THEN
-              SELECT * FROM player_contacts
-              INTO found_phone
-              WHERE master_id = NEW.master_id AND rec_type = 'phone'
-              ORDER BY rank desc
-              LIMIT 1;
-
-              IF found_phone.data is not null THEN
-                NEW.select_record_from_player_contact_phones := found_phone.data;
-              END IF;
-
-            END IF;
-
-
-            -- Generate the testmybrain URL from the BHS ID
-            select * from bhs_assignments
-            into found_bhs
-            where master_id = NEW.master_id
-            limit 1;
-
-
-            IF found_bhs.bhs_id is not null THEN
-              NEW.results_link := ('https://testmybrain.org?demotestid=' || found_bhs.bhs_id::varchar);
-            END IF;
-            RETURN NEW;
-        END;
-    $$;
+BEGIN
+  INSERT INTO project_import_history (
+    master_id,
+    approval_status, ap_title, investigator_name, investigator_name2, co_i_mentor, ap_presentation_date, meeting_ap_presented, sci_approval_status, irb_title, irb_status, cv, citi_equiv, ack, data_ready, data_update_date, meeting_data_update, data_update2_date, meeting_data_update2, grant_association, publication_1, publication_2, notes, orig_id, import_status,
+    user_id,
+    created_at,
+    updated_at,
+    project_import_id)
+  SELECT
+    NEW.master_id,
+    NEW.approval_status, NEW.ap_title, NEW.investigator_name, NEW.investigator_name2, NEW.co_i_mentor, NEW.ap_presentation_date, NEW.meeting_ap_presented, NEW.sci_approval_status, NEW.irb_title, NEW.irb_status, NEW.cv, NEW.citi_equiv, NEW.ack, NEW.data_ready, NEW.data_update_date, NEW.meeting_data_update, NEW.data_update2_date, NEW.meeting_data_update2, NEW.grant_association, NEW.publication_1, NEW.publication_2, NEW.notes, NEW.orig_id, NEW.import_status,
+    NEW.user_id,
+    NEW.created_at,
+    NEW.updated_at,
+    NEW.id;
+  RETURN NEW;
+END;
+$$;
 
 
 --
--- Name: activity_log_bhs_assignment_insert_notification(); Type: FUNCTION; Schema: ml_app; Owner: -
+-- Name: log_test_fields_update(); Type: FUNCTION; Schema: dynamic; Owner: -
 --
 
-CREATE FUNCTION ml_app.activity_log_bhs_assignment_insert_notification() RETURNS trigger
+CREATE FUNCTION dynamic.log_test_fields_update() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
-    DECLARE
-      message_id INTEGER;
-      to_user_ids INTEGER[];
-      num_primary_logs INTEGER;
-      current_app_type_id INTEGER;
-  BEGIN
-
-        current_app_type_id := get_app_type_id_by_name('bhs');
-
-        IF NEW.extra_log_type = 'contact_initiator' THEN
-
-            -- Get the most recent info request from the activity log records for this master_id
-            -- This gives us the user_id of the initiator of the request
-            select array_agg(user_id)
-            into to_user_ids
-            from
-            (select user_id
-            from activity_log_bhs_assignments
-            where
-              master_id = NEW.master_id
-              and extra_log_type = 'primary'
-            order by id desc
-            limit 1) t;
-
-            -- If nobody was set, send to all users in the RA role
-            IF to_user_ids IS NULL THEN
-              to_user_ids := get_user_ids_for_app_type_role(current_app_type_id, 'ra');
-            END IF;
-
-            SELECT
-            INTO message_id
-              create_message_notification_email(
-                current_app_type_id,
-                NEW.master_id,
-                NEW.id,
-                'ActivityLog::BhsAssignment'::VARCHAR,
-                NEW.user_id,
-                to_user_ids,
-                'bhs notification layout'::VARCHAR,
-                'bhs message notification content'::VARCHAR,
-                'Brain Health Study contact from PI'::VARCHAR,
-                now()::TIMESTAMP
-              )
-            ;
-
-            RETURN NEW;
-        END IF;
-
-        IF NEW.extra_log_type = 'respond_to_pi' THEN
-
-            -- Get the most recent contact_initiator from the activity log records for this master_id
-            -- This gives us the user_id of the PI making the Contact RA request
-            select array_agg(user_id)
-            into to_user_ids
-            from
-            (select user_id
-            from activity_log_bhs_assignments
-            where
-              master_id = NEW.master_id
-              and extra_log_type = 'contact_initiator'
-            order by id desc
-            limit 1) t;
-
-            -- If nobody was set, send to all users in the PI role
-            IF to_user_ids IS NULL THEN
-              to_user_ids := get_user_ids_for_app_type_role(current_app_type_id, 'pi');
-            END IF;
+BEGIN
+  INSERT INTO test_field_history (
+    master_id,
+    test_id, test_boolean, test_integer, test_float, test_decimal, test_date, test_datetime, test_at, test_yes_no, test_no_yes, tag_select_record_id_from_dynamic_model__test_field, tag_select_record_from_dynamic_model__test_field, select_record_from_dynamic_model__test_field, select_record_from_table_dynamic_model__test_field,
+    user_id,
+    created_at,
+    updated_at,
+    test_field_id)
+  SELECT
+    NEW.master_id,
+    NEW.test_id, NEW.test_boolean, NEW.test_integer, NEW.test_float, NEW.test_decimal, NEW.test_date, NEW.test_datetime, NEW.test_at, NEW.test_yes_no, NEW.test_no_yes, NEW.tag_select_record_id_from_dynamic_model__test_field, NEW.tag_select_record_from_dynamic_model__test_field, NEW.select_record_from_dynamic_model__test_field, NEW.select_record_from_table_dynamic_model__test_field,
+    NEW.user_id,
+    NEW.created_at,
+    NEW.updated_at,
+    NEW.id;
+  RETURN NEW;
+END;
+$$;
 
 
-            SELECT
-            INTO message_id
-              create_message_notification_email(
-                current_app_type_id,
-                NEW.master_id,
-                NEW.id,
-                'ActivityLog::BhsAssignment'::VARCHAR,
-                NEW.user_id,
-                to_user_ids,
-                'bhs notification layout'::VARCHAR,
-                'bhs message notification content'::VARCHAR,
-                'Brain Health Study contact from RA'::VARCHAR,
-                now()::TIMESTAMP
-              );
+--
+-- Name: log_test_model_b_embed_recs_update(); Type: FUNCTION; Schema: dynamic; Owner: -
+--
 
-            RETURN NEW;
-        END IF;
-
-        -- If this is a primary type (info request), and there are already
-        -- info request activities for this master
-        -- then send another info request notification
-        -- Don't do this otherwise, since the sync process is responsible for notifications
-        -- related to the initial info request only when the sync has completed
-        IF NEW.extra_log_type = 'primary' THEN
-          SELECT count(id)
-          INTO num_primary_logs
-          FROM activity_log_bhs_assignments
-          WHERE master_id = NEW.master_id AND id <> NEW.id AND extra_log_type = 'primary';
-
-          IF num_primary_logs > 0 THEN
-            PERFORM activity_log_bhs_assignment_info_request_notification(NEW.id);
-          END IF;
-        END IF;
+CREATE FUNCTION dynamic.log_test_model_b_embed_recs_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  INSERT INTO test_model_b_embed_rec_history (
+    master_id,
+    street_address, city,
+    user_id,
+    created_at,
+    updated_at,
+    test_model_b_embed_rec_id)
+  SELECT
+    NEW.master_id,
+    NEW.street_address, NEW.city,
+    NEW.user_id,
+    NEW.created_at,
+    NEW.updated_at,
+    NEW.id;
+  RETURN NEW;
+END;
+$$;
 
 
-        RETURN NEW;
-    END;
+--
+-- Name: log_test_model_b_embeds_update(); Type: FUNCTION; Schema: dynamic; Owner: -
+--
+
+CREATE FUNCTION dynamic.log_test_model_b_embeds_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  INSERT INTO test_model_b_embed_history (
+    master_id,
+    first_name, last_name, embed_resource_name, embed_resource_id,
+    user_id,
+    created_at,
+    updated_at,
+    test_model_b_embed_id)
+  SELECT
+    NEW.master_id,
+    NEW.first_name, NEW.last_name, NEW.embed_resource_name, NEW.embed_resource_id,
+    NEW.user_id,
+    NEW.created_at,
+    NEW.updated_at,
+    NEW.id;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: log_test_model_c_embed_recs_update(); Type: FUNCTION; Schema: dynamic; Owner: -
+--
+
+CREATE FUNCTION dynamic.log_test_model_c_embed_recs_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  INSERT INTO test_model_c_embed_rec_history (
+    master_id,
+    street_address, city, test_model_c_embed_id,
+    user_id,
+    created_at,
+    updated_at,
+    test_model_c_embed_rec_id)
+  SELECT
+    NEW.master_id,
+    NEW.street_address, NEW.city, NEW.test_model_c_embed_id,
+    NEW.user_id,
+    NEW.created_at,
+    NEW.updated_at,
+    NEW.id;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: log_test_model_c_embeds_update(); Type: FUNCTION; Schema: dynamic; Owner: -
+--
+
+CREATE FUNCTION dynamic.log_test_model_c_embeds_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  INSERT INTO test_model_c_embed_history (
+    master_id,
+    first_name, last_name,
+    user_id,
+    created_at,
+    updated_at,
+    test_model_c_embed_id)
+  SELECT
+    NEW.master_id,
+    NEW.first_name, NEW.last_name,
+    NEW.user_id,
+    NEW.created_at,
+    NEW.updated_at,
+    NEW.id;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: log_test_model_embed_recs_update(); Type: FUNCTION; Schema: dynamic; Owner: -
+--
+
+CREATE FUNCTION dynamic.log_test_model_embed_recs_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  INSERT INTO test_model_embed_rec_history (
+    master_id,
+    street_address, city, test_model_embed_id,
+    user_id,
+    created_at,
+    updated_at,
+    test_model_embed_rec_id)
+  SELECT
+    NEW.master_id,
+    NEW.street_address, NEW.city, NEW.test_model_embed_id,
+    NEW.user_id,
+    NEW.created_at,
+    NEW.updated_at,
+    NEW.id;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: log_test_model_embeds_update(); Type: FUNCTION; Schema: dynamic; Owner: -
+--
+
+CREATE FUNCTION dynamic.log_test_model_embeds_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  INSERT INTO test_model_embed_history (
+    master_id,
+    first_name, last_name,
+    user_id,
+    created_at,
+    updated_at,
+    test_model_embed_id)
+  SELECT
+    NEW.master_id,
+    NEW.first_name, NEW.last_name,
+    NEW.user_id,
+    NEW.created_at,
+    NEW.updated_at,
+    NEW.id;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: log_test_references_update(); Type: FUNCTION; Schema: dynamic; Owner: -
+--
+
+CREATE FUNCTION dynamic.log_test_references_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  INSERT INTO test_reference_history (
+    master_id,
+    first_name, last_name,
+    user_id,
+    created_at,
+    updated_at,
+    test_reference_id)
+  SELECT
+    NEW.master_id,
+    NEW.first_name, NEW.last_name,
+    NEW.user_id,
+    NEW.created_at,
+    NEW.updated_at,
+    NEW.id;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: log_test_refs_update(); Type: FUNCTION; Schema: dynamic; Owner: -
+--
+
+CREATE FUNCTION dynamic.log_test_refs_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  INSERT INTO test_ref_history (
+    
+    test1,
+    user_id,
+    created_at,
+    updated_at,
+    test_ref_id)
+  SELECT
+    
+    NEW.test1,
+    NEW.user_id,
+    NEW.created_at,
+    NEW.updated_at,
+    NEW.id;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: log_test_times_update(); Type: FUNCTION; Schema: dynamic; Owner: -
+--
+
+CREATE FUNCTION dynamic.log_test_times_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  INSERT INTO test_time_history (
+    
+    test_time, test2_time, test_date, timezone,
+    user_id,
+    created_at,
+    updated_at,
+    test_time_id)
+  SELECT
+    
+    NEW.test_time, NEW.test2_time, NEW.test_date, NEW.timezone,
+    NEW.user_id,
+    NEW.created_at,
+    NEW.updated_at,
+    NEW.id;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: log_tests_update(); Type: FUNCTION; Schema: dynamic; Owner: -
+--
+
+CREATE FUNCTION dynamic.log_tests_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  INSERT INTO test_history (
+    
+    
+    user_id,
+    created_at,
+    updated_at,
+    test_id)
+  SELECT
+    
+    
+    NEW.user_id,
+    NEW.created_at,
+    NEW.updated_at,
+    NEW.id;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: log_grit_assignments_update(); Type: FUNCTION; Schema: extra_app; Owner: -
+--
+
+CREATE FUNCTION extra_app.log_grit_assignments_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  INSERT INTO grit_assignment_history (
+    master_id,
+    grit_id,
+    user_id,
+    admin_id,
+    created_at,
+    updated_at,
+    grit_assignment_table_id)
+  SELECT
+    NEW.master_id,
+    NEW.grit_id,
+    NEW.user_id,
+    NEW.admin_id,
+    NEW.created_at,
+    NEW.updated_at,
+    NEW.id;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: log_pitt_bhi_assignments_update(); Type: FUNCTION; Schema: extra_app; Owner: -
+--
+
+CREATE FUNCTION extra_app.log_pitt_bhi_assignments_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  INSERT INTO pitt_bhi_assignment_history (
+    master_id,
+    pitt_bhi_id,
+    user_id,
+    admin_id,
+    created_at,
+    updated_at,
+    pitt_bhi_assignment_table_id)
+  SELECT
+    NEW.master_id,
+    NEW.pitt_bhi_id,
+    NEW.user_id,
+    NEW.admin_id,
+    NEW.created_at,
+    NEW.updated_at,
+    NEW.id;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: log_sleep_assignments_update(); Type: FUNCTION; Schema: extra_app; Owner: -
+--
+
+CREATE FUNCTION extra_app.log_sleep_assignments_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  INSERT INTO sleep_assignment_history (
+    master_id,
+    sleep_id,
+    user_id,
+    admin_id,
+    created_at,
+    updated_at,
+    sleep_assignment_table_id)
+  SELECT
+    NEW.master_id,
+    NEW.sleep_id,
+    NEW.user_id,
+    NEW.admin_id,
+    NEW.created_at,
+    NEW.updated_at,
+    NEW.id;
+  RETURN NEW;
+END;
 $$;
 
 
@@ -385,34 +497,34 @@ CREATE FUNCTION ml_app.add_study_update_entry(master_id integer, update_type cha
           new_tracker_id integer;
           protocol_record RECORD;
         BEGIN
-        
+
           SELECT add_tracker_entry_by_name(master_id, 'Updates', 'record updates', (update_type || ' ' || update_name), event_date, update_notes, user_id, item_id, item_type) into new_tracker_id;
           /*
-          SELECT p.id protocol_id, sp.id sub_process_id, pe.id protocol_event_id 
-          INTO protocol_record           
-          FROM protocol_events pe 
-          INNER JOIN sub_processes sp on pe.sub_process_id = sp.id 
+          SELECT p.id protocol_id, sp.id sub_process_id, pe.id protocol_event_id
+          INTO protocol_record
+          FROM protocol_events pe
+          INNER JOIN sub_processes sp on pe.sub_process_id = sp.id
           INNER JOIN protocols p on sp.protocol_id = p.id
-          WHERE p.name = 'Updates' 
-          AND sp.name = 'record updates' 
-          AND pe.name = (update_type || ' ' || update_name) 
+          WHERE p.name = 'Updates'
+          AND sp.name = 'record updates'
+          AND pe.name = (update_type || ' ' || update_name)
           AND (p.disabled IS NULL or p.disabled = FALSE) AND (sp.disabled IS NULL or sp.disabled = FALSE) AND (pe.disabled IS NULL or pe.disabled = FALSE);
 
           IF NOT FOUND THEN
             RAISE EXCEPTION 'Nonexistent protocol record --> %', (update_type || ' ' || update_name );
           ELSE
 
-            INSERT INTO trackers 
+            INSERT INTO trackers
             (master_id, protocol_id, sub_process_id, protocol_event_id, item_type, item_id, user_id, event_date, updated_at, created_at, notes)
             VALUES
-            (master_id, protocol_record.protocol_id, protocol_record.sub_process_id, protocol_record.protocol_event_id, 
-             item_type, item_id, user_id, now(), now(), now(), update_notes);                        
+            (master_id, protocol_record.protocol_id, protocol_record.sub_process_id, protocol_record.protocol_event_id,
+             item_type, item_id, user_id, now(), now(), now(), update_notes);
 
             RETURN new_tracker_id;
           END IF;
-          */  
+          */
           RETURN new_tracker_id;
-        END;   
+        END;
     $$;
 
 
@@ -428,14 +540,14 @@ CREATE FUNCTION ml_app.add_tracker_entry_by_name(master_id integer, protocol_nam
           protocol_record RECORD;
         BEGIN
 
-          
-          SELECT p.id protocol_id, sp.id sub_process_id, pe.id protocol_event_id 
-          INTO protocol_record           
-          FROM protocol_events pe 
-          INNER JOIN sub_processes sp on pe.sub_process_id = sp.id 
+
+          SELECT p.id protocol_id, sp.id sub_process_id, pe.id protocol_event_id
+          INTO protocol_record
+          FROM protocol_events pe
+          INNER JOIN sub_processes sp on pe.sub_process_id = sp.id
           INNER JOIN protocols p on sp.protocol_id = p.id
           WHERE p.name = protocol_name
-          AND sp.name = sub_process_name 
+          AND sp.name = sub_process_name
           AND pe.name = protocol_event_name
           AND (p.disabled IS NULL or p.disabled = FALSE) AND (sp.disabled IS NULL or sp.disabled = FALSE) AND (pe.disabled IS NULL or pe.disabled = FALSE);
 
@@ -443,16 +555,16 @@ CREATE FUNCTION ml_app.add_tracker_entry_by_name(master_id integer, protocol_nam
             RAISE EXCEPTION 'Nonexistent protocol record --> %', (protocol_name || ' ' || sub_process_name || ' ' || protocol_event_name);
           ELSE
 
-            INSERT INTO trackers 
+            INSERT INTO trackers
             (master_id, protocol_id, sub_process_id, protocol_event_id, item_type, item_id, user_id, event_date, updated_at, created_at, notes)
             VALUES
-            (master_id, protocol_record.protocol_id, protocol_record.sub_process_id, protocol_record.protocol_event_id, 
-             item_type, item_id, user_id, now(), now(), now(), set_notes);                        
+            (master_id, protocol_record.protocol_id, protocol_record.sub_process_id, protocol_record.protocol_event_id,
+             item_type, item_id, user_id, now(), now(), now(), set_notes);
 
             RETURN new_tracker_id;
           END IF;
-            
-        END;   
+
+        END;
     $$;
 
 
@@ -468,14 +580,14 @@ CREATE FUNCTION ml_app.add_tracker_entry_by_name(master_id integer, protocol_nam
           protocol_record RECORD;
         BEGIN
 
-          
-          SELECT p.id protocol_id, sp.id sub_process_id, pe.id protocol_event_id 
-          INTO protocol_record           
-          FROM protocol_events pe 
-          INNER JOIN sub_processes sp on pe.sub_process_id = sp.id 
+
+          SELECT p.id protocol_id, sp.id sub_process_id, pe.id protocol_event_id
+          INTO protocol_record
+          FROM protocol_events pe
+          INNER JOIN sub_processes sp on pe.sub_process_id = sp.id
           INNER JOIN protocols p on sp.protocol_id = p.id
           WHERE lower(p.name) = lower(protocol_name)
-          AND lower(sp.name) = lower(sub_process_name) 
+          AND lower(sp.name) = lower(sub_process_name)
           AND lower(pe.name) = lower(protocol_event_name)
           AND (p.disabled IS NULL or p.disabled = FALSE) AND (sp.disabled IS NULL or sp.disabled = FALSE) AND (pe.disabled IS NULL or pe.disabled = FALSE);
 
@@ -483,16 +595,16 @@ CREATE FUNCTION ml_app.add_tracker_entry_by_name(master_id integer, protocol_nam
             RAISE EXCEPTION 'Nonexistent protocol record --> %', (protocol_name || ' ' || sub_process_name || ' ' || protocol_event_name);
           ELSE
 
-            INSERT INTO trackers 
+            INSERT INTO trackers
             (master_id, protocol_id, sub_process_id, protocol_event_id, item_type, item_id, user_id, event_date, updated_at, created_at, notes)
             VALUES
-            (master_id, protocol_record.protocol_id, protocol_record.sub_process_id, protocol_record.protocol_event_id, 
-             item_type, item_id, user_id, now(), now(), now(), set_notes);                        
+            (master_id, protocol_record.protocol_id, protocol_record.sub_process_id, protocol_record.protocol_event_id,
+             item_type, item_id, user_id, now(), now(), now(), set_notes);
 
             RETURN new_tracker_id;
           END IF;
-            
-        END;   
+
+        END;
     $$;
 
 
@@ -509,193 +621,38 @@ CREATE FUNCTION ml_app.assign_sage_ids_to_players() RETURNS record
         res record;
       BEGIN
 
-        -- update the precreated Sage ID records with the master_id from the player info, based on matching ID. 
+
+        -- update the precreated Sage ID records with the master_id from the player info, based on matching ID.
+
         -- apply an offset here if the Sage ID does not start at zero
+
         -- find the first unassigned Sage ID
+
         select min(id) into min_sa from sage_assignments where master_id is null;
+
         -- update the sage assignments in a block starting from the minimum unassigned ID
+
         update sage_assignments sa set master_id = (select master_id from temp_pit where id = sa.id - min_sa) where sa.master_id is null and sa.id >= min_sa;
+
         -- get the max value to return the results
+
         select max(id) into max_sa from sage_assignments where master_id is not null;
+
         select min_sa, max_sa into res;
+
         return res;
 
+
        END;
+
     $$;
-
-
---
--- Name: create_all_remote_bhs_records(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.create_all_remote_bhs_records() RETURNS integer
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-bhs_record RECORD;
-BEGIN
-
-FOR bhs_record IN
-  SELECT * from temp_bhs_assignments
-LOOP
-
-PERFORM create_remote_bhs_record(
-bhs_record.bhs_id,
-(SELECT (pi::varchar)::player_infos FROM temp_player_infos pi WHERE master_id = bhs_record.master_id LIMIT 1),
-ARRAY(SELECT distinct (pc::varchar)::player_contacts FROM temp_player_contacts pc WHERE master_id = bhs_record.master_id)
-);
-
-END LOOP;
-
-return 1;
-
-END;
-$$;
-
-
---
--- Name: create_all_remote_sleep_records(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.create_all_remote_sleep_records() RETURNS integer
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-	sleep_record RECORD;
-BEGIN
-
-	FOR sleep_record IN
-	  SELECT * from temp_sleep_assignments
-	LOOP
-
-		PERFORM create_remote_sleep_record(
-			sleep_record.sleep_id::BIGINT,
-			(SELECT (pi::varchar)::player_infos FROM temp_player_infos pi WHERE master_id = sleep_record.master_id LIMIT 1),
-			ARRAY(SELECT distinct (pc::varchar)::player_contacts FROM temp_player_contacts pc WHERE master_id = sleep_record.master_id),
-			ARRAY(SELECT distinct (a::varchar)::addresses FROM temp_addresses a WHERE master_id = sleep_record.master_id)
-		);
-
-	END LOOP;
-
-	return 1;
-
-END;
-$$;
-
-
---
--- Name: create_all_remote_tbs_records(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.create_all_remote_tbs_records() RETURNS integer
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-	tbs_record RECORD;
-BEGIN
-
-	FOR tbs_record IN
-	  SELECT * from temp_tbs_assignments
-	LOOP
-
-		PERFORM create_remote_tbs_record(
-			tbs_record.tbs_id::BIGINT,
-			(SELECT (pi::varchar)::player_infos FROM temp_player_infos pi WHERE master_id = tbs_record.master_id LIMIT 1),
-			ARRAY(SELECT distinct (pc::varchar)::player_contacts FROM temp_player_contacts pc WHERE master_id = tbs_record.master_id),
-			ARRAY(SELECT distinct (a::varchar)::addresses FROM temp_addresses a WHERE master_id = tbs_record.master_id)
-		);
-
-	END LOOP;
-
-	return 1;
-
-END;
-$$;
-
-
---
--- Name: create_all_remote_test_baseline_study_records(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.create_all_remote_test_baseline_study_records() RETURNS integer
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-	test_baseline_study_record RECORD;
-BEGIN
-
-	FOR test_baseline_study_record IN
-	  SELECT * from temp_test_baseline_study_assignments
-	LOOP
-
-		PERFORM create_remote_test_baseline_study_record(
-			test_baseline_study_record.test_baseline_study_id::BIGINT,
-			(SELECT (pi::varchar)::player_infos FROM temp_player_infos pi WHERE master_id = test_baseline_study_record.master_id LIMIT 1),
-			ARRAY(SELECT distinct (pc::varchar)::player_contacts FROM temp_player_contacts pc WHERE master_id = test_baseline_study_record.master_id),
-			ARRAY(SELECT distinct (a::varchar)::addresses FROM temp_addresses a WHERE master_id = test_baseline_study_record.master_id)
-		);
-
-	END LOOP;
-
-	return 1;
-
-END;
-$$;
-
-
---
--- Name: create_message_notification_email(character varying, character varying, character varying, json, character varying[], character varying); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.create_message_notification_email(layout_template_name character varying, content_template_name character varying, subject character varying, data json, recipient_emails character varying[], from_user_email character varying) RETURNS integer
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-  last_id INTEGER;
-BEGIN
-
-  INSERT INTO ml_app.message_notifications
-  (
-    message_type,
-    created_at,
-    updated_at,
-    layout_template_name,
-    content_template_name,
-    subject,
-    data,
-    recipient_emails,
-    from_user_email
-  )
-  VALUES
-  (
-    'email',
-    now(),
-    now(),
-    layout_template_name,
-    content_template_name,
-    subject,
-    data,
-    recipient_emails,
-    from_user_email
-  )
-  RETURNING id
-  INTO last_id
-  ;
-
-  SELECT create_message_notification_job(last_id)
-  INTO last_id
-  ;
-
-  RETURN last_id;
-END;
-$$;
 
 
 --
 -- Name: create_message_notification_email(character varying, character varying, character varying, json, character varying[], character varying, timestamp without time zone); Type: FUNCTION; Schema: ml_app; Owner: -
 --
 
-CREATE FUNCTION ml_app.create_message_notification_email(layout_template_name character varying, content_template_name character varying, subject character varying, data json, recipient_data character varying[], from_user_email character varying, run_at timestamp without time zone DEFAULT NULL::timestamp without time zone) RETURNS integer
+CREATE FUNCTION ml_app.create_message_notification_email(layout_template_name character varying, content_template_name character varying, subject character varying, data json, recipient_emails character varying[], from_user_email character varying, run_at timestamp without time zone DEFAULT NULL::timestamp without time zone) RETURNS integer
     LANGUAGE plpgsql
     AS $$
     DECLARE
@@ -715,7 +672,7 @@ CREATE FUNCTION ml_app.create_message_notification_email(layout_template_name ch
         content_template_name,
         subject,
         data,
-        recipient_data,
+        recipient_emails,
         from_user_email
       )
       VALUES
@@ -727,7 +684,7 @@ CREATE FUNCTION ml_app.create_message_notification_email(layout_template_name ch
         content_template_name,
         subject,
         data,
-        recipient_data,
+        recipient_emails,
         from_user_email
       )
       RETURNING id
@@ -802,53 +759,6 @@ CREATE FUNCTION ml_app.create_message_notification_email(app_type_id integer, ma
 
 
 --
--- Name: create_message_notification_job(integer); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.create_message_notification_job(message_notification_id integer) RETURNS integer
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-  last_id INTEGER;
-BEGIN
-
-  INSERT INTO ml_app.delayed_jobs
-  (
-    priority,
-    attempts,
-    handler,
-    run_at,
-    queue,
-    created_at,
-    updated_at
-  )
-  VALUES
-  (
-    0,
-    0,
-    '--- !ruby/object:ActiveJob::QueueAdapters::DelayedJobAdapter::JobWrapper
-    job_data:
-      job_class: HandleMessageNotificationJob
-      job_id: ' || gen_random_uuid() || '
-      queue_name: default
-      arguments:
-      - _aj_globalid: gid://fpa1/MessageNotification/' || message_notification_id::varchar || '
-      locale: :en',
-    now(),
-    'default',
-    now(),
-    now()
-  )
-  RETURNING id
-  INTO last_id
-  ;
-
-RETURN last_id;
-END;
-$$;
-
-
---
 -- Name: create_message_notification_job(integer, timestamp without time zone); Type: FUNCTION; Schema: ml_app; Owner: -
 --
 
@@ -900,931 +810,6 @@ CREATE FUNCTION ml_app.create_message_notification_job(message_notification_id i
 
 
 --
--- Name: create_remote_bhs_record(bigint, ml_app.player_infos, ml_app.player_contacts[]); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.create_remote_bhs_record(match_bhs_id bigint, new_player_info_record ml_app.player_infos, new_player_contact_records ml_app.player_contacts[]) RETURNS integer
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-found_bhs record;
-player_contact record;
-pc_length INTEGER;
-found_pc record;
-last_id INTEGER;
-phone VARCHAR;
-BEGIN
-
--- Find the bhs_assignments external identifier record for this master record and
--- validate that it exists
-SELECT *
-INTO found_bhs
-FROM bhs_assignments bhs
-WHERE bhs.bhs_id = match_bhs_id
-LIMIT 1;
-
--- At this point, if we found the above record, then the master record can be referred to with found_bhs.master_id
--- We also create the new records setting the user_id to match that of the found_bhs record, rather than the original
--- value from the source database, which probably would not match the user IDs in the remote database. The user_id of the
--- found_bhs record is conceptually valid, since it is that user that has effectively kicked off the synchronization process
--- and requested the new player_infos and player_contacts records be created.
-
-IF NOT FOUND THEN
-RAISE EXCEPTION 'No bhs_assigments record found for BHS_ID --> %', (match_bhs_id);
-END IF;
-
-
-
-
-IF new_player_info_record.master_id IS NULL THEN
-RAISE NOTICE 'No new_player_info_record found for BHS_ID --> %', (match_bhs_id);
-RETURN NULL;
-ELSE
-
-RAISE NOTICE 'Syncing player info record %', (new_player_info_record::varchar);
-
--- Create the player info record
-  INSERT INTO player_infos
-  (
-    master_id,
-    first_name,
-    last_name,
-    middle_name,
-    nick_name,
-    birth_date,
-    death_date,
-    user_id,
-    created_at,
-    updated_at,
-    contact_pref,
-    start_year,
-    rank,
-    notes,
-    contact_id,
-    college,
-    end_year,
-    source
-  )
-  SELECT
-    found_bhs.master_id,
-    new_player_info_record.first_name,
-    new_player_info_record.last_name,
-    new_player_info_record.middle_name,
-    new_player_info_record.nick_name,
-    new_player_info_record.birth_date,
-    new_player_info_record.death_date,
-    found_bhs.user_id,
-    new_player_info_record.created_at,
-    new_player_info_record.updated_at,
-    new_player_info_record.contact_pref,
-    new_player_info_record.start_year,
-    new_player_info_record.rank,
-    new_player_info_record.notes,
-    new_player_info_record.contact_id,
-    new_player_info_record.college,
-    new_player_info_record.end_year,
-    new_player_info_record.source
-
-RETURNING id
-  INTO last_id
-  ;
-
-
-END IF;
-
-
-
-SELECT array_length(new_player_contact_records, 1)
-INTO pc_length;
-
-
-IF pc_length IS NULL THEN
-RAISE NOTICE 'No new_player_contact_records found for BHS_ID --> %', (match_bhs_id);
-ELSE
-
-RAISE NOTICE 'player contacts length %', (pc_length);
-
-FOREACH player_contact IN ARRAY new_player_contact_records LOOP
-
-SELECT * from player_contacts
-INTO found_pc
-WHERE
-master_id = found_bhs.master_id AND
-rec_type = player_contact.rec_type AND
-data = player_contact.data
-LIMIT 1;
-
-IF found_pc.id IS NULL THEN
-
-  INSERT INTO player_contacts
-(
-master_id,
-rec_type,
-data,
-source,
-rank,
-user_id,
-created_at,
-updated_at
-)
-SELECT
-found_bhs.master_id,
-player_contact.rec_type,
-player_contact.data,
-player_contact.source,
-player_contact.rank,
-found_bhs.user_id,
-player_contact.created_at,
-player_contact.updated_at
-;
-END IF;
-
-END LOOP;
-
-
-SELECT id
-INTO last_id
-FROM activity_log_bhs_assignments
-WHERE
-bhs_assignment_id IS NOT NULL
-AND (select_record_from_player_contact_phones is null OR select_record_from_player_contact_phones = '')
-AND master_id = found_bhs.master_id
-AND extra_log_type = 'primary'
-ORDER BY id ASC
-LIMIT 1;
-
-
--- Get the best phone number
-SELECT data FROM player_contacts
-INTO phone
-WHERE rec_type='phone' AND rank is not null AND master_id = found_bhs.master_id
-ORDER BY rank desc
-LIMIT 1;
-
-RAISE NOTICE 'best phone number %', (phone);
-  RAISE NOTICE 'AL ID %', (last_id);
-
-  -- Now update the activity log record.
-UPDATE activity_log_bhs_assignments
-SET
-  select_record_from_player_contact_phones = phone,
-results_link = ('https://testmybrain.org?demotestid=' || found_bhs.bhs_id::varchar),
-updated_at = now()
-WHERE
-id = last_id;
-
-
--- Now send a notification to the PI
-PERFORM activity_log_bhs_assignment_info_request_notification(last_id);
-
-
-END IF;
-
-return found_bhs.master_id;
-
-END;
-$$;
-
-
---
--- Name: create_remote_sleep_record(bigint, ml_app.player_infos, ml_app.player_contacts[], ml_app.addresses[]); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.create_remote_sleep_record(match_sleep_id bigint, new_player_info_record ml_app.player_infos, new_player_contact_records ml_app.player_contacts[], new_address_records ml_app.addresses[]) RETURNS integer
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-	found_ipa record;
-	etl_user_id INTEGER;
-	new_master_id INTEGER;
-	player_contact record;
-	address record;
-	pc_length INTEGER;
-	found_pc record;
-	a_length INTEGER;
-	found_a record;
-	last_id INTEGER;
-BEGIN
-
--- Find the sleep_assignments external identifier record for this master record and
--- validate that it exists
-SELECT *
-INTO found_ipa
-FROM sleep.sleep_assignments ipa
-WHERE ipa.sleep_id = match_sleep_id
-LIMIT 1;
-
--- If the IPA external identifier already exists then the sync should fail.
-
-IF FOUND THEN
-	RAISE NOTICE 'Already transferred: sleep_assigments record found for IPA_ID --> %', (match_sleep_id);
-	UPDATE temp_sleep_assignments SET status='already transferred', to_master_id=new_master_id WHERE sleep_id = match_sleep_id;
-  RETURN found_ipa.master_id;
-END IF;
-
--- We create new records setting user_id for the user with email fphsetl@hms.harvard.edu, rather than the original
--- value from the source database, which probably would not match the user IDs in the remote database.
-SELECT id
-INTO etl_user_id
-FROM users u
-WHERE u.email = 'fphsetl@hms.harvard.edu'
-LIMIT 1;
-
-IF NOT FOUND THEN
-	RAISE EXCEPTION 'No user with email fphsetl@hms.harvard.edu was found. Can not continue.';
-END IF;
-
-UPDATE temp_sleep_assignments SET status='started sync' WHERE sleep_id = match_sleep_id;
-
-
-RAISE NOTICE 'Creating master record with user_id %', (etl_user_id::varchar);
-
-INSERT INTO masters
-(user_id, created_at, updated_at) VALUES (etl_user_id, now(), now())
-RETURNING id
-INTO new_master_id;
-
-RAISE NOTICE 'Creating external identifier record %', (match_sleep_id::varchar);
-
-INSERT INTO sleep.sleep_assignments
-(sleep_id, master_id, user_id, created_at, updated_at)
-VALUES (match_sleep_id, new_master_id, etl_user_id, now(), now());
-
-
-
-IF new_player_info_record.master_id IS NULL THEN
-	RAISE NOTICE 'No new_player_info_record found for IPA_ID --> %', (match_sleep_id);
-	UPDATE temp_sleep_assignments SET status='failed - no player info provided' WHERE sleep_id = match_sleep_id;
-	RETURN NULL;
-ELSE
-
-	RAISE NOTICE 'Syncing player info record %', (new_player_info_record::varchar);
-
-	-- Create the player info record
-  INSERT INTO player_infos
-  (
-    master_id,
-    first_name,
-    last_name,
-    middle_name,
-    nick_name,
-    birth_date,
-    death_date,
-    user_id,
-    created_at,
-    updated_at,
-    contact_pref,
-    start_year,
-    rank,
-    notes,
-    contact_id,
-    college,
-    end_year,
-    source
-  )
-  SELECT
-    new_master_id,
-    new_player_info_record.first_name,
-    new_player_info_record.last_name,
-    new_player_info_record.middle_name,
-    new_player_info_record.nick_name,
-    new_player_info_record.birth_date,
-    new_player_info_record.death_date,
-    etl_user_id,
-    new_player_info_record.created_at,
-    new_player_info_record.updated_at,
-    new_player_info_record.contact_pref,
-    new_player_info_record.start_year,
-    new_player_info_record.rank,
-    new_player_info_record.notes,
-    new_player_info_record.contact_id,
-    new_player_info_record.college,
-    new_player_info_record.end_year,
-    new_player_info_record.source
-
-		RETURNING id
-	  INTO last_id
-	  ;
-
-
-END IF;
-
-
-
-SELECT array_length(new_player_contact_records, 1)
-INTO pc_length;
-
-
-IF pc_length IS NULL THEN
-	RAISE NOTICE 'No new_player_contact_records found for IPA_ID --> %', (match_sleep_id);
-ELSE
-
-	RAISE NOTICE 'player contacts length %', (pc_length);
-
-	FOREACH player_contact IN ARRAY new_player_contact_records LOOP
-
-		SELECT * from player_contacts
-		INTO found_pc
-		WHERE
-			master_id = new_master_id AND
-			rec_type = player_contact.rec_type AND
-			data = player_contact.data
-		LIMIT 1;
-
-		IF found_pc.id IS NULL THEN
-
-		  INSERT INTO player_contacts
-			(
-							master_id,
-							rec_type,
-							data,
-							source,
-							rank,
-							user_id,
-							created_at,
-							updated_at
-			)
-			SELECT
-					new_master_id,
-					player_contact.rec_type,
-					player_contact.data,
-					player_contact.source,
-					player_contact.rank,
-					etl_user_id,
-					player_contact.created_at,
-					player_contact.updated_at
-			;
-		END IF;
-
-	END LOOP;
-
-END IF;
-
-
-
-
-SELECT array_length(new_address_records, 1)
-INTO a_length;
-
-
-IF a_length IS NULL THEN
-	RAISE NOTICE 'No new_address_records found for IPA_ID --> %', (match_sleep_id);
-ELSE
-
-	RAISE NOTICE 'addresses length %', (a_length);
-
-	FOREACH address IN ARRAY new_address_records LOOP
-
-		SELECT * from addresses
-		INTO found_a
-		WHERE
-			master_id = new_master_id AND
-			street = address.street AND
-			zip = address.zip
-		LIMIT 1;
-
-		IF found_a.id IS NULL THEN
-
-		  INSERT INTO addresses
-			(
-							master_id,
-							street,
-							street2,
-							street3,
-							city,
-							state,
-							zip,
-							source,
-							rank,
-							rec_type,
-							user_id,
-							created_at,
-							updated_at
-			)
-			SELECT
-					new_master_id,
-					address.street,
-					address.street2,
-					address.street3,
-					address.city,
-					address.state,
-					address.zip,
-					address.source,
-					address.rank,
-					address.rec_type,
-					etl_user_id,
-					address.created_at,
-					address.updated_at
-			;
-		END IF;
-
-	END LOOP;
-
-END IF;
-
-RAISE NOTICE 'Setting results for master_id %', (new_master_id);
-
-UPDATE temp_sleep_assignments SET status='completed', to_master_id=new_master_id WHERE sleep_id = match_sleep_id;
-
-return new_master_id;
-
-END;
-$$;
-
-
---
--- Name: create_remote_tbs_record(bigint, ml_app.player_infos, ml_app.player_contacts[], ml_app.addresses[]); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.create_remote_tbs_record(match_tbs_id bigint, new_player_info_record ml_app.player_infos, new_player_contact_records ml_app.player_contacts[], new_address_records ml_app.addresses[]) RETURNS integer
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-	found_ipa record;
-	etl_user_id INTEGER;
-	new_master_id INTEGER;
-	player_contact record;
-	address record;
-	pc_length INTEGER;
-	found_pc record;
-	a_length INTEGER;
-	found_a record;
-	last_id INTEGER;
-BEGIN
-
--- Find the tbs_assignments external identifier record for this master record and
--- validate that it exists
-SELECT *
-INTO found_ipa
-FROM tbs.tbs_assignments ipa
-WHERE ipa.tbs_id = match_tbs_id
-LIMIT 1;
-
--- If the IPA external identifier already exists then the sync should fail.
-
-IF FOUND THEN
-	RAISE NOTICE 'Already transferred: tbs_assigments record found for IPA_ID --> %', (match_tbs_id);
-	UPDATE temp_tbs_assignments SET status='already transferred', to_master_id=new_master_id WHERE tbs_id = match_tbs_id;
-  RETURN found_ipa.master_id;
-END IF;
-
--- We create new records setting user_id for the user with email fphsetl@hms.harvard.edu, rather than the original
--- value from the source database, which probably would not match the user IDs in the remote database.
-SELECT id
-INTO etl_user_id
-FROM users u
-WHERE u.email = 'fphsetl@hms.harvard.edu'
-LIMIT 1;
-
-IF NOT FOUND THEN
-	RAISE EXCEPTION 'No user with email fphsetl@hms.harvard.edu was found. Can not continue.';
-END IF;
-
-UPDATE temp_tbs_assignments SET status='started sync' WHERE tbs_id = match_tbs_id;
-
-
-RAISE NOTICE 'Creating master record with user_id %', (etl_user_id::varchar);
-
-INSERT INTO masters
-(user_id, created_at, updated_at) VALUES (etl_user_id, now(), now())
-RETURNING id
-INTO new_master_id;
-
-RAISE NOTICE 'Creating external identifier record %', (match_tbs_id::varchar);
-
-INSERT INTO tbs.tbs_assignments
-(tbs_id, master_id, user_id, created_at, updated_at)
-VALUES (match_tbs_id, new_master_id, etl_user_id, now(), now());
-
-
-
-IF new_player_info_record.master_id IS NULL THEN
-	RAISE NOTICE 'No new_player_info_record found for IPA_ID --> %', (match_tbs_id);
-	UPDATE temp_tbs_assignments SET status='failed - no player info provided' WHERE tbs_id = match_tbs_id;
-	RETURN NULL;
-ELSE
-
-	RAISE NOTICE 'Syncing player info record %', (new_player_info_record::varchar);
-
-	-- Create the player info record
-  INSERT INTO player_infos
-  (
-    master_id,
-    first_name,
-    last_name,
-    middle_name,
-    nick_name,
-    birth_date,
-    death_date,
-    user_id,
-    created_at,
-    updated_at,
-    contact_pref,
-    start_year,
-    rank,
-    notes,
-    contact_id,
-    college,
-    end_year,
-    source
-  )
-  SELECT
-    new_master_id,
-    new_player_info_record.first_name,
-    new_player_info_record.last_name,
-    new_player_info_record.middle_name,
-    new_player_info_record.nick_name,
-    new_player_info_record.birth_date,
-    new_player_info_record.death_date,
-    etl_user_id,
-    new_player_info_record.created_at,
-    new_player_info_record.updated_at,
-    new_player_info_record.contact_pref,
-    new_player_info_record.start_year,
-    new_player_info_record.rank,
-    new_player_info_record.notes,
-    new_player_info_record.contact_id,
-    new_player_info_record.college,
-    new_player_info_record.end_year,
-    new_player_info_record.source
-
-		RETURNING id
-	  INTO last_id
-	  ;
-
-
-END IF;
-
-
-
-SELECT array_length(new_player_contact_records, 1)
-INTO pc_length;
-
-
-IF pc_length IS NULL THEN
-	RAISE NOTICE 'No new_player_contact_records found for IPA_ID --> %', (match_tbs_id);
-ELSE
-
-	RAISE NOTICE 'player contacts length %', (pc_length);
-
-	FOREACH player_contact IN ARRAY new_player_contact_records LOOP
-
-		SELECT * from player_contacts
-		INTO found_pc
-		WHERE
-			master_id = new_master_id AND
-			rec_type = player_contact.rec_type AND
-			data = player_contact.data
-		LIMIT 1;
-
-		IF found_pc.id IS NULL THEN
-
-		  INSERT INTO player_contacts
-			(
-							master_id,
-							rec_type,
-							data,
-							source,
-							rank,
-							user_id,
-							created_at,
-							updated_at
-			)
-			SELECT
-					new_master_id,
-					player_contact.rec_type,
-					player_contact.data,
-					player_contact.source,
-					player_contact.rank,
-					etl_user_id,
-					player_contact.created_at,
-					player_contact.updated_at
-			;
-		END IF;
-
-	END LOOP;
-
-END IF;
-
-
-
-
-SELECT array_length(new_address_records, 1)
-INTO a_length;
-
-
-IF a_length IS NULL THEN
-	RAISE NOTICE 'No new_address_records found for IPA_ID --> %', (match_tbs_id);
-ELSE
-
-	RAISE NOTICE 'addresses length %', (a_length);
-
-	FOREACH address IN ARRAY new_address_records LOOP
-
-		SELECT * from addresses
-		INTO found_a
-		WHERE
-			master_id = new_master_id AND
-			street = address.street AND
-			zip = address.zip
-		LIMIT 1;
-
-		IF found_a.id IS NULL THEN
-
-		  INSERT INTO addresses
-			(
-							master_id,
-							street,
-							street2,
-							street3,
-							city,
-							state,
-							zip,
-							source,
-							rank,
-							rec_type,
-							user_id,
-							created_at,
-							updated_at
-			)
-			SELECT
-					new_master_id,
-					address.street,
-					address.street2,
-					address.street3,
-					address.city,
-					address.state,
-					address.zip,
-					address.source,
-					address.rank,
-					address.rec_type,
-					etl_user_id,
-					address.created_at,
-					address.updated_at
-			;
-		END IF;
-
-	END LOOP;
-
-END IF;
-
-RAISE NOTICE 'Setting results for master_id %', (new_master_id);
-
-UPDATE temp_tbs_assignments SET status='completed', to_master_id=new_master_id WHERE tbs_id = match_tbs_id;
-
-return new_master_id;
-
-END;
-$$;
-
-
---
--- Name: create_remote_test_baseline_study_record(bigint, ml_app.player_infos, ml_app.player_contacts[], ml_app.addresses[]); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.create_remote_test_baseline_study_record(match_test_baseline_study_id bigint, new_player_info_record ml_app.player_infos, new_player_contact_records ml_app.player_contacts[], new_address_records ml_app.addresses[]) RETURNS integer
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-	found_ipa record;
-	etl_user_id INTEGER;
-	new_master_id INTEGER;
-	player_contact record;
-	address record;
-	pc_length INTEGER;
-	found_pc record;
-	a_length INTEGER;
-	found_a record;
-	last_id INTEGER;
-BEGIN
-
--- Find the test_baseline_study_assignments external identifier record for this master record and
--- validate that it exists
-SELECT *
-INTO found_ipa
-FROM tbs.test_baseline_study_assignments ipa
-WHERE ipa.test_baseline_study_id = match_test_baseline_study_id
-LIMIT 1;
-
--- If the IPA external identifier already exists then the sync should fail.
-
-IF FOUND THEN
-	RAISE NOTICE 'Already transferred: test_baseline_study_assigments record found for IPA_ID --> %', (match_test_baseline_study_id);
-	UPDATE temp_test_baseline_study_assignments SET status='already transferred', to_master_id=new_master_id WHERE test_baseline_study_id = match_test_baseline_study_id;
-  RETURN found_ipa.master_id;
-END IF;
-
--- We create new records setting user_id for the user with email fphsetl@hms.harvard.edu, rather than the original
--- value from the source database, which probably would not match the user IDs in the remote database.
-SELECT id
-INTO etl_user_id
-FROM users u
-WHERE u.email = 'fphsetl@hms.harvard.edu'
-LIMIT 1;
-
-IF NOT FOUND THEN
-	RAISE EXCEPTION 'No user with email fphsetl@hms.harvard.edu was found. Can not continue.';
-END IF;
-
-UPDATE temp_test_baseline_study_assignments SET status='started sync' WHERE test_baseline_study_id = match_test_baseline_study_id;
-
-
-RAISE NOTICE 'Creating master record with user_id %', (etl_user_id::varchar);
-
-INSERT INTO masters
-(user_id, created_at, updated_at) VALUES (etl_user_id, now(), now())
-RETURNING id
-INTO new_master_id;
-
-RAISE NOTICE 'Creating external identifier record %', (match_test_baseline_study_id::varchar);
-
-INSERT INTO tbs.test_baseline_study_assignments
-(test_baseline_study_id, master_id, user_id, created_at, updated_at)
-VALUES (match_test_baseline_study_id, new_master_id, etl_user_id, now(), now());
-
-
-
-IF new_player_info_record.master_id IS NULL THEN
-	RAISE NOTICE 'No new_player_info_record found for IPA_ID --> %', (match_test_baseline_study_id);
-	UPDATE temp_test_baseline_study_assignments SET status='failed - no player info provided' WHERE test_baseline_study_id = match_test_baseline_study_id;
-	RETURN NULL;
-ELSE
-
-	RAISE NOTICE 'Syncing player info record %', (new_player_info_record::varchar);
-
-	-- Create the player info record
-  INSERT INTO player_infos
-  (
-    master_id,
-    first_name,
-    last_name,
-    middle_name,
-    nick_name,
-    birth_date,
-    death_date,
-    user_id,
-    created_at,
-    updated_at,
-    contact_pref,
-    start_year,
-    rank,
-    notes,
-    contact_id,
-    college,
-    end_year,
-    source
-  )
-  SELECT
-    new_master_id,
-    new_player_info_record.first_name,
-    new_player_info_record.last_name,
-    new_player_info_record.middle_name,
-    new_player_info_record.nick_name,
-    new_player_info_record.birth_date,
-    new_player_info_record.death_date,
-    etl_user_id,
-    new_player_info_record.created_at,
-    new_player_info_record.updated_at,
-    new_player_info_record.contact_pref,
-    new_player_info_record.start_year,
-    new_player_info_record.rank,
-    new_player_info_record.notes,
-    new_player_info_record.contact_id,
-    new_player_info_record.college,
-    new_player_info_record.end_year,
-    new_player_info_record.source
-
-		RETURNING id
-	  INTO last_id
-	  ;
-
-
-END IF;
-
-
-
-SELECT array_length(new_player_contact_records, 1)
-INTO pc_length;
-
-
-IF pc_length IS NULL THEN
-	RAISE NOTICE 'No new_player_contact_records found for IPA_ID --> %', (match_test_baseline_study_id);
-ELSE
-
-	RAISE NOTICE 'player contacts length %', (pc_length);
-
-	FOREACH player_contact IN ARRAY new_player_contact_records LOOP
-
-		SELECT * from player_contacts
-		INTO found_pc
-		WHERE
-			master_id = new_master_id AND
-			rec_type = player_contact.rec_type AND
-			data = player_contact.data
-		LIMIT 1;
-
-		IF found_pc.id IS NULL THEN
-
-		  INSERT INTO player_contacts
-			(
-							master_id,
-							rec_type,
-							data,
-							source,
-							rank,
-							user_id,
-							created_at,
-							updated_at
-			)
-			SELECT
-					new_master_id,
-					player_contact.rec_type,
-					player_contact.data,
-					player_contact.source,
-					player_contact.rank,
-					etl_user_id,
-					player_contact.created_at,
-					player_contact.updated_at
-			;
-		END IF;
-
-	END LOOP;
-
-END IF;
-
-
-
-
-SELECT array_length(new_address_records, 1)
-INTO a_length;
-
-
-IF a_length IS NULL THEN
-	RAISE NOTICE 'No new_address_records found for IPA_ID --> %', (match_test_baseline_study_id);
-ELSE
-
-	RAISE NOTICE 'addresses length %', (a_length);
-
-	FOREACH address IN ARRAY new_address_records LOOP
-
-		SELECT * from addresses
-		INTO found_a
-		WHERE
-			master_id = new_master_id AND
-			street = address.street AND
-			zip = address.zip
-		LIMIT 1;
-
-		IF found_a.id IS NULL THEN
-
-		  INSERT INTO addresses
-			(
-							master_id,
-							street,
-							street2,
-							street3,
-							city,
-							state,
-							zip,
-							source,
-							rank,
-							rec_type,
-							user_id,
-							created_at,
-							updated_at
-			)
-			SELECT
-					new_master_id,
-					address.street,
-					address.street2,
-					address.street3,
-					address.city,
-					address.state,
-					address.zip,
-					address.source,
-					address.rank,
-					address.rec_type,
-					etl_user_id,
-					address.created_at,
-					address.updated_at
-			;
-		END IF;
-
-	END LOOP;
-
-END IF;
-
-RAISE NOTICE 'Setting results for master_id %', (new_master_id);
-
-UPDATE temp_test_baseline_study_assignments SET status='completed', to_master_id=new_master_id WHERE test_baseline_study_id = match_test_baseline_study_id;
-
-return new_master_id;
-
-END;
-$$;
-
-
---
 -- Name: current_user_id(); Type: FUNCTION; Schema: ml_app; Owner: -
 --
 
@@ -1849,7 +834,7 @@ CREATE FUNCTION ml_app.datadic_choice_history_upd() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
-  INSERT INTO datadic_choice_history (
+  INSERT INTO ref_data.datadic_choice_history (
     source_name, source_type, form_name, field_name, value, label, redcap_data_dictionary_id,
     disabled,
     admin_id,
@@ -1895,39 +880,59 @@ END;
 $$;
 
 
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
 --
--- Name: demo_sync_bhs_record(integer, bigint); Type: FUNCTION; Schema: ml_app; Owner: -
+-- Name: nfs_store_archived_files; Type: TABLE; Schema: ml_app; Owner: -
 --
 
-CREATE FUNCTION ml_app.demo_sync_bhs_record(new_master_id integer, new_bhs_id bigint) RETURNS integer
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-	prev_master_id integer;
-	found_player_info record;
-begin
+CREATE TABLE ml_app.nfs_store_archived_files (
+    id integer NOT NULL,
+    file_hash character varying,
+    file_name character varying NOT NULL,
+    content_type character varying NOT NULL,
+    archive_file character varying NOT NULL,
+    path character varying NOT NULL,
+    file_size bigint NOT NULL,
+    file_updated_at timestamp without time zone,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    nfs_store_container_id integer,
+    user_id integer,
+    title character varying,
+    description character varying,
+    nfs_store_stored_file_id integer,
+    file_metadata jsonb,
+    embed_resource_name character varying,
+    embed_resource_id bigint
+);
 
 
-select * 
-into found_player_info
-from player_infos pi 
-left join bhs_assignments b on b.master_id = pi.master_id 
-where pi.bhs_id = new_bhs_id
-;
+--
+-- Name: nfs_store_stored_files; Type: TABLE; Schema: ml_app; Owner: -
+--
 
-IF NOT FOUND THEN
-	RAISE EXCEPTION 'BHS ID not found --> %', (bhs_id);
-ELSE
-	update player_infos
-	set master_id = new_master_id 
-	where id = found_player_info.id;
-	
-
-	return found_player_info.id;
-END IF;
-end;
-
-$$;
+CREATE TABLE ml_app.nfs_store_stored_files (
+    id integer NOT NULL,
+    file_hash character varying NOT NULL,
+    file_name character varying NOT NULL,
+    content_type character varying NOT NULL,
+    file_size bigint NOT NULL,
+    path character varying,
+    file_updated_at timestamp without time zone,
+    user_id integer,
+    nfs_store_container_id integer,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone,
+    title character varying,
+    description character varying,
+    last_process_name_run character varying,
+    file_metadata jsonb,
+    embed_resource_name character varying,
+    embed_resource_id bigint
+);
 
 
 --
@@ -1955,15 +960,15 @@ $$;
 CREATE FUNCTION ml_app.filestore_report_full_file_path(sf ml_app.nfs_store_stored_files, af ml_app.nfs_store_archived_files) RETURNS character varying
     LANGUAGE plpgsql
     AS $$
-          BEGIN
+    BEGIN
 
-            return CASE WHEN af.id IS NOT NULL THEN
-              coalesce(sf.path, '') || '/' || sf.file_name || '/' || af.path || '/' || af.file_name
-              ELSE coalesce(sf.path, '') || '/' || sf.file_name
-            END;
+      return CASE WHEN af.id IS NOT NULL THEN
+        coalesce(sf.path, '') || '/' || sf.file_name || '/' || af.path || '/' || af.file_name
+        ELSE coalesce(sf.path, '') || '/' || sf.file_name
+      END;
 
-       END;
-      $$;
+	END;
+$$;
 
 
 --
@@ -2034,32 +1039,6 @@ $$;
 
 
 --
--- Name: find_new_remote_bhs_records(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.find_new_remote_bhs_records() RETURNS TABLE(master_id integer, bhs_id bigint)
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-RETURN QUERY
-SELECT distinct bhs.master_id, bhs.bhs_id
-FROM masters m
-LEFT JOIN player_infos pi
-ON pi.master_id = m.id
-INNER JOIN bhs_assignments bhs
-ON m.id = bhs.master_id
-INNER JOIN activity_log_bhs_assignments al
-ON m.id = al.master_id AND al.extra_log_type = 'primary'
-WHERE
-  pi.id IS NULL
-AND bhs.bhs_id is not null
-AND bhs.bhs_id <> 100000000
-;
-END;
-$$;
-
-
---
 -- Name: format_update_notes(character varying, character varying, character varying); Type: FUNCTION; Schema: ml_app; Owner: -
 --
 
@@ -2072,7 +1051,7 @@ CREATE FUNCTION ml_app.format_update_notes(field_name character varying, old_val
           res := '';
           old_val := lower(coalesce(old_val, '-')::varchar);
           new_val := lower(coalesce(new_val, '')::varchar);
-          IF old_val <> new_val THEN 
+          IF old_val <> new_val THEN
             res := field_name;
             IF old_val <> '-' THEN
               res := res || ' from ' || old_val ;
@@ -2085,128 +1064,6 @@ CREATE FUNCTION ml_app.format_update_notes(field_name character varying, old_val
 
 
 --
--- Name: get_app_type_id_by_name(character varying); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.get_app_type_id_by_name(app_type_name character varying) RETURNS integer
-    LANGUAGE plpgsql
-    AS $$
-  DECLARE
-    app_type_id INTEGER;
-  BEGIN
-
-    select id from app_types
-    into app_type_id
-    where name = app_type_name and (disabled is null or disabled = false)
-    order by id asc
-    limit 1;
-
-    RETURN app_type_id;
-
-  END;
-$$;
-
-
---
--- Name: users; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.users (
-    id integer NOT NULL,
-    email character varying DEFAULT ''::character varying NOT NULL,
-    encrypted_password character varying DEFAULT ''::character varying NOT NULL,
-    reset_password_token character varying,
-    reset_password_sent_at timestamp without time zone,
-    remember_created_at timestamp without time zone,
-    sign_in_count integer DEFAULT 0 NOT NULL,
-    current_sign_in_at timestamp without time zone,
-    last_sign_in_at timestamp without time zone,
-    current_sign_in_ip inet,
-    last_sign_in_ip inet,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    failed_attempts integer DEFAULT 0 NOT NULL,
-    unlock_token character varying,
-    locked_at timestamp without time zone,
-    disabled boolean,
-    admin_id integer,
-    app_type_id integer,
-    authentication_token character varying(30),
-    encrypted_otp_secret character varying,
-    encrypted_otp_secret_iv character varying,
-    encrypted_otp_secret_salt character varying,
-    consumed_timestep integer,
-    otp_required_for_login boolean,
-    password_updated_at timestamp without time zone,
-    first_name character varying,
-    last_name character varying,
-    do_not_email boolean DEFAULT false,
-    confirmation_token character varying,
-    confirmed_at timestamp without time zone,
-    confirmation_sent_at timestamp without time zone,
-    country_code character varying,
-    terms_of_use_accepted character varying
-);
-
-
---
--- Name: get_etl_user(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.get_etl_user() RETURNS ml_app.users
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-	etl_user RECORD;
-BEGIN
--- We create new records setting user_id for the user with email fphsetl@hms.harvard.edu, rather than the original
--- value from the source database, which probably would not match the user IDs in the remote database.
-SELECT *
-INTO etl_user
-FROM users u
-WHERE u.email = 'fphsetl@hms.harvard.edu'
-LIMIT 1;
-
-IF NOT FOUND THEN
-  RAISE EXCEPTION 'No user with email fphsetl@hms.harvard.edu was found. Can not continue.';
-END IF;
-
-
-RETURN etl_user;
-
-END;
-$$;
-
-
---
--- Name: get_user_ids_for_app_type_role(integer, character varying); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.get_user_ids_for_app_type_role(for_app_type_id integer, with_role_name character varying) RETURNS integer[]
-    LANGUAGE plpgsql
-    AS $$
-  DECLARE
-    user_ids INTEGER[];
-  BEGIN
-
-    select array_agg(ur.user_id)
-    from user_roles ur
-    inner join users u on ur.user_id = u.id
-    into user_ids
-    where
-      role_name = with_role_name AND
-      ur.app_type_id = for_app_type_id AND
-      (ur.disabled is null or ur.disabled = false) AND
-      (ur.disabled is null or u.disabled = false)
-    ;
-
-    RETURN user_ids;
-
-  END;
-$$;
-
-
---
 -- Name: handle_address_update(); Type: FUNCTION; Schema: ml_app; Owner: -
 --
 
@@ -2214,7 +1071,7 @@ CREATE FUNCTION ml_app.handle_address_update() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
         BEGIN
-          
+
           NEW.street := lower(NEW.street);
           NEW.street2 := lower(NEW.street2);
           NEW.street3 := lower(NEW.street3);
@@ -2226,8 +1083,8 @@ CREATE FUNCTION ml_app.handle_address_update() RETURNS trigger
           NEW.region := lower(NEW.region);
           NEW.source := lower(NEW.source);
           RETURN NEW;
-            
-        END;   
+
+        END;
     $$;
 
 
@@ -2247,8 +1104,8 @@ CREATE FUNCTION ml_app.handle_delete() RETURNS trigger
         -- tracker_id is the foreign key onto the trackers table master/protocol record.
 
         SELECT * INTO latest_tracker
-          FROM tracker_history 
-          WHERE tracker_id = OLD.tracker_id 
+          FROM tracker_history
+          WHERE tracker_id = OLD.tracker_id
           ORDER BY event_date DESC NULLS last, updated_at DESC NULLS last LIMIT 1;
 
         IF NOT FOUND THEN
@@ -2259,15 +1116,15 @@ CREATE FUNCTION ml_app.handle_delete() RETURNS trigger
         ELSE
           -- A record was found in tracker_history. Since it is the latest one for the master/protocol pair,
           -- just go ahead and update the corresponding record in trackers.
-          UPDATE trackers 
-            SET 
-              event_date = latest_tracker.event_date, 
-              sub_process_id = latest_tracker.sub_process_id, 
-              protocol_event_id = latest_tracker.protocol_event_id, 
-              item_id = latest_tracker.item_id, 
-              item_type = latest_tracker.item_type, 
-              updated_at = latest_tracker.updated_at, 
-              notes = latest_tracker.notes, 
+          UPDATE trackers
+            SET
+              event_date = latest_tracker.event_date,
+              sub_process_id = latest_tracker.sub_process_id,
+              protocol_event_id = latest_tracker.protocol_event_id,
+              item_id = latest_tracker.item_id,
+              item_type = latest_tracker.item_type,
+              updated_at = latest_tracker.updated_at,
+              notes = latest_tracker.notes,
               user_id = latest_tracker.user_id
             WHERE trackers.id = OLD.tracker_id;
 
@@ -2288,7 +1145,7 @@ CREATE FUNCTION ml_app.handle_player_contact_update() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
         BEGIN
-         
+
 
           NEW.rec_type := lower(NEW.rec_type);
           NEW.data := lower(NEW.data);
@@ -2296,8 +1153,8 @@ CREATE FUNCTION ml_app.handle_player_contact_update() RETURNS trigger
 
 
           RETURN NEW;
-            
-        END;   
+
+        END;
     $$;
 
 
@@ -2309,15 +1166,15 @@ CREATE FUNCTION ml_app.handle_player_info_before_update() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
         BEGIN
-          NEW.first_name := lower(NEW.first_name);          
-          NEW.last_name := lower(NEW.last_name);          
-          NEW.middle_name := lower(NEW.middle_name);          
-          NEW.nick_name := lower(NEW.nick_name);          
-          NEW.college := lower(NEW.college);                    
+          NEW.first_name := lower(NEW.first_name);
+          NEW.last_name := lower(NEW.last_name);
+          NEW.middle_name := lower(NEW.middle_name);
+          NEW.nick_name := lower(NEW.nick_name);
+          NEW.college := lower(NEW.college);
           NEW.source := lower(NEW.source);
           RETURN NEW;
-            
-        END;   
+
+        END;
     $$;
 
 
@@ -2339,7 +1196,7 @@ CREATE FUNCTION ml_app.handle_rc_cis_update() RETURNS trigger
           track_sp varchar;
           track_pe varchar;
           res_status varchar;
-          
+
         BEGIN
 
 
@@ -2363,10 +1220,10 @@ CREATE FUNCTION ml_app.handle_rc_cis_update() RETURNS trigger
 
 
                 SELECT MAX(msid) + 1 INTO new_msid FROM masters;
-                
+
                 INSERT INTO masters
                   (msid, created_at, updated_at, user_id)
-                  VALUES 
+                  VALUES
                   (new_msid, now(), now(), NEW.user_id)
                   RETURNING id INTO new_master_id;
 
@@ -2374,14 +1231,14 @@ CREATE FUNCTION ml_app.handle_rc_cis_update() RETURNS trigger
                   (master_id, first_name, last_name, source, created_at, updated_at, user_id)
                   VALUES
                   (new_master_id, NEW.first_name, NEW.last_name, 'cis-redcap', now(), now(), NEW.user_id);
-                
+
                 register_tracker := TRUE;
-                
-            ELSE              
+
+            ELSE
                 SELECT id INTO new_master_id FROM masters WHERE id = NEW.master_id;
             END IF;
-  
-            IF NEW.status = 'update name' OR NEW.status = 'update all' OR NEW.status = 'create master' THEN  
+
+            IF NEW.status = 'update name' OR NEW.status = 'update all' OR NEW.status = 'create master' THEN
                 IF new_master_id IS NULL THEN
                   RAISE EXCEPTION 'Must set a master ID to %', NEW.status;
                 END IF;
@@ -2396,45 +1253,45 @@ CREATE FUNCTION ml_app.handle_rc_cis_update() RETURNS trigger
                 WHERE master_id = new_master_id order by rank desc limit 1;
 
                 UPDATE player_infos SET
-                  master_id = new_master_id, first_name = NEW.first_name, last_name = NEW.last_name, 
-                  middle_name = NEW.middle_name, nick_name = NEW.nick_name, 
+                  master_id = new_master_id, first_name = NEW.first_name, last_name = NEW.last_name,
+                  middle_name = NEW.middle_name, nick_name = NEW.nick_name,
                   source = 'cis-redcap', created_at = now(), updated_at = now(), user_id = NEW.user_id
                   WHERE master_id = new_master_id
                   RETURNING id INTO updated_item_id;
-                
+
 
                 PERFORM add_study_update_entry(new_master_id, 'updated', 'player info', event_date, update_notes, NEW.user_id, updated_item_id, 'PlayerInfo');
 
-                register_tracker := TRUE;                
+                register_tracker := TRUE;
                 res_status := 'updated name';
             END IF;
 
-            IF NEW.status = 'update address' OR NEW.status = 'update all' OR NEW.status = 'create master' THEN  
+            IF NEW.status = 'update address' OR NEW.status = 'update all' OR NEW.status = 'create master' THEN
                 IF new_master_id IS NULL THEN
                   RAISE EXCEPTION 'Must set a master ID to %', NEW.status;
                 END IF;
 
                 IF NEW.street IS NOT NULL AND trim(NEW.street) <> '' OR
                     NEW.state IS NOT NULL AND trim(NEW.state) <> '' OR
-                    NEW.zipcode IS NOT NULL AND trim(NEW.zipcode) <> '' THEN   
+                    NEW.zipcode IS NOT NULL AND trim(NEW.zipcode) <> '' THEN
 
                   SELECT format_update_notes('street', NULL, NEW.street) ||
                     format_update_notes('street2', NULL, NEW.street2) ||
                     format_update_notes('city', NULL, NEW.city) ||
                     format_update_notes('state', NULL, NEW.state) ||
-                    format_update_notes('zip', NULL, NEW.zipcode)                  
+                    format_update_notes('zip', NULL, NEW.zipcode)
                   INTO update_notes;
                   -- FROM addresses
                   -- WHERE master_id = new_master_id;
 
 
-                  
+
                   INSERT INTO addresses
                     (master_id, street, street2, city, state, zip, source, rank, created_at, updated_at, user_id)
                     VALUES
                     (new_master_id, NEW.street, NEW.street2, NEW.city, NEW.state, NEW.zipcode, 'cis-redcap', 10, now(), now(), NEW.user_id)
                     RETURNING id INTO updated_item_id;
-                  
+
                   PERFORM update_address_ranks(new_master_id);
                   PERFORM add_study_update_entry(new_master_id, 'updated', 'address', event_date, update_notes, NEW.user_id, updated_item_id, 'Address');
 
@@ -2444,19 +1301,19 @@ CREATE FUNCTION ml_app.handle_rc_cis_update() RETURNS trigger
                   res_status := 'address not updated - details blank';
                 END IF;
 
-                
+
             END IF;
 
-            IF NEW.status = 'update email' OR NEW.status = 'update all' OR NEW.status = 'create master' THEN  
+            IF NEW.status = 'update email' OR NEW.status = 'update all' OR NEW.status = 'create master' THEN
 
                 IF new_master_id IS NULL THEN
                   RAISE EXCEPTION 'Must set a master ID to %', NEW.status;
                 END IF;
 
-                IF NEW.email IS NOT NULL AND trim(NEW.email) <> '' THEN   
+                IF NEW.email IS NOT NULL AND trim(NEW.email) <> '' THEN
 
-                  SELECT format_update_notes('data', NULL, NEW.email)           
-                  INTO update_notes;                  
+                  SELECT format_update_notes('data', NULL, NEW.email)
+                  INTO update_notes;
 
 
                   INSERT INTO player_contacts
@@ -2473,18 +1330,18 @@ CREATE FUNCTION ml_app.handle_rc_cis_update() RETURNS trigger
                   res_status := 'updated email';
                 ELSE
                   res_status := 'email not updated - details blank';
-                END IF;                
+                END IF;
             END IF;
 
-            IF NEW.status = 'update phone' OR NEW.status = 'update all' OR NEW.status = 'create master' THEN  
+            IF NEW.status = 'update phone' OR NEW.status = 'update all' OR NEW.status = 'create master' THEN
                 IF new_master_id IS NULL THEN
                   RAISE EXCEPTION 'Must set a master ID to %', NEW.status;
                 END IF;
 
-                IF NEW.phone IS NOT NULL AND trim(NEW.phone) <> '' THEN   
+                IF NEW.phone IS NOT NULL AND trim(NEW.phone) <> '' THEN
 
-                  SELECT format_update_notes('data', NULL, NEW.phone)           
-                  INTO update_notes;                  
+                  SELECT format_update_notes('data', NULL, NEW.phone)
+                  INTO update_notes;
 
                   INSERT INTO player_contacts
                     (master_id, data, rec_type, source, rank, created_at, updated_at, user_id)
@@ -2501,13 +1358,13 @@ CREATE FUNCTION ml_app.handle_rc_cis_update() RETURNS trigger
                   res_status := 'phone not updated - details blank';
                 END IF;
             END IF;
-            
 
-            CASE 
-              WHEN NEW.status = 'create master' THEN 
+
+            CASE
+              WHEN NEW.status = 'create master' THEN
                 res_status := 'created master';
-              WHEN NEW.status = 'update all' THEN 
-                res_status := 'updated all';              
+              WHEN NEW.status = 'update all' THEN
+                res_status := 'updated all';
               ELSE
             END CASE;
 
@@ -2525,8 +1382,8 @@ Submitted by REDCap ID '|| OLD.redcap_survey_identifier), NEW.user_id, NULL, NUL
           END IF;
 
           RETURN NEW;
-            
-        END;   
+
+        END;
     $$;
 
 
@@ -2538,110 +1395,24 @@ CREATE FUNCTION ml_app.handle_tracker_history_update() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
     BEGIN
-      
+
       DELETE FROM tracker_history WHERE id = OLD.id;
-  
-      INSERT INTO trackers 
-        (master_id, protocol_id, 
+
+      INSERT INTO trackers
+        (master_id, protocol_id,
          protocol_event_id, event_date, sub_process_id, notes,
          item_id, item_type,
          created_at, updated_at, user_id)
 
-        SELECT NEW.master_id, NEW.protocol_id, 
-           NEW.protocol_event_id, NEW.event_date, 
-           NEW.sub_process_id, NEW.notes, 
+        SELECT NEW.master_id, NEW.protocol_id,
+           NEW.protocol_event_id, NEW.event_date,
+           NEW.sub_process_id, NEW.notes,
            NEW.item_id, NEW.item_type,
            NEW.created_at, NEW.updated_at, NEW.user_id  ;
 
       RETURN NULL;
     END;
     $$;
-
-
---
--- Name: ipa_ps_tmoca_score_calc(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.ipa_ps_tmoca_score_calc() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-  BEGIN
-
-
-    NEW.tmoca_score :=
-      NEW.attn_digit_span +
-      NEW.attn_digit_vigilance +
-      NEW.attn_digit_calculation +
-      NEW.language_repeat +
-      NEW.language_fluency +
-      NEW.abstraction +
-      NEW.delayed_recall +
-      NEW.orientation;
-
-    RETURN NEW;
-    
-  END;
-$$;
-
-
---
--- Name: lock_transfer_records_with_external_ids(character varying, character varying, integer[], integer[], character varying); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.lock_transfer_records_with_external_ids(from_db character varying, to_db character varying, master_ids integer[], external_ids integer[], external_type character varying) RETURNS integer
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  INSERT into sync_statuses
-  ( from_master_id, external_id, external_type, from_db, to_db, select_status, created_at, updated_at )
-  (
-    SELECT unnest(master_ids), unnest(external_ids), external_type, from_db, to_db, 'new', now(), now()
-  );
-
-  RETURN 1;
-
-END;
-$$;
-
-
---
--- Name: lock_transfer_records_with_external_ids(character varying, character varying, integer[], integer[], character varying, character varying); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.lock_transfer_records_with_external_ids(from_db character varying, to_db character varying, master_ids integer[], external_ids integer[], external_type character varying, event character varying) RETURNS integer
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  INSERT into sync_statuses
-  ( from_master_id, external_id, external_type, from_db, to_db, event, select_status, created_at, updated_at )
-  (
-    SELECT unnest(master_ids), unnest(external_ids), external_type, from_db, to_db, event, 'new', now(), now()
-  );
-
-  RETURN 1;
-
-END;
-$$;
-
-
---
--- Name: lock_transfer_records_with_external_ids_and_events(character varying, character varying, integer[], integer[], character varying, character varying[]); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.lock_transfer_records_with_external_ids_and_events(from_db character varying, to_db character varying, master_ids integer[], external_ids integer[], external_type character varying, events character varying[]) RETURNS integer
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  INSERT into ml_app.sync_statuses
-  ( from_master_id, external_id, external_type, from_db, to_db, event, select_status, created_at, updated_at )
-  (
-    SELECT unnest(master_ids), unnest(external_ids), external_type, from_db, to_db, unnest(events), 'new', now(), now()
-  );
-
-  RETURN 1;
-
-END;
-$$;
 
 
 --
@@ -2656,483 +1427,24 @@ CREATE FUNCTION ml_app.log_accuracy_score_update() RETURNS trigger
             (
                     accuracy_score_id,
                     name ,
-                    value ,                    
+                    value ,
                     created_at ,
                     updated_at ,
                     disabled ,
-                    admin_id                      
-                )                 
-            SELECT                 
+                    admin_id
+                )
+            SELECT
                 NEW.id,
                 NEW.name ,
-                    NEW.value ,                    
+                    NEW.value ,
                     NEW.created_at ,
                     NEW.updated_at ,
                     NEW.disabled ,
-                    NEW.admin_id                      
+                    NEW.admin_id
             ;
             RETURN NEW;
         END;
     $$;
-
-
---
--- Name: log_activity_log_bhs_assignment_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_activity_log_bhs_assignment_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO activity_log_bhs_assignment_history
-                  (
-                      master_id,
-                      bhs_assignment_id,
-                      select_record_from_player_contact_phones,
-                      return_call_availability_notes,
-                      questions_from_call_notes,
-                      results_link,
-                      select_result,
-                      pi_return_call_notes,
-                      completed_q1_no_yes,
-                      completed_teamstudy_no_yes,
-                      previous_contact_with_team_no_yes,
-                      previous_contact_with_team_notes,
-                      notes,
-                      extra_log_type,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      activity_log_bhs_assignment_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.bhs_assignment_id,
-                      NEW.select_record_from_player_contact_phones,
-                      NEW.return_call_availability_notes,
-                      NEW.questions_from_call_notes,
-                      NEW.results_link,
-                      NEW.select_result,
-                      NEW.pi_return_call_notes,
-                      NEW.completed_q1_no_yes,
-                      NEW.completed_teamstudy_no_yes,
-                      NEW.previous_contact_with_team_no_yes,
-                      NEW.previous_contact_with_team_notes,
-                      NEW.notes,
-                      NEW.extra_log_type,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_activity_log_bhs_assignments_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_activity_log_bhs_assignments_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  INSERT INTO activity_log_bhs_assignment_history (
-    master_id,
-    bhs_assignment_id,
-    select_record_from_player_contact_phones, return_call_availability_notes, questions_from_call_notes, results_link, select_result, pi_notes_from_return_call, pi_return_call_notes,
-    extra_log_type,
-    user_id,
-    created_at,
-    updated_at,
-    activity_log_bhs_assignment_id)
-  SELECT
-    NEW.master_id,
-    NEW.bhs_assignment_id,
-    NEW.select_record_from_player_contact_phones, NEW.return_call_availability_notes, NEW.questions_from_call_notes, NEW.results_link, NEW.select_result, NEW.pi_notes_from_return_call, NEW.pi_return_call_notes,
-    NEW.extra_log_type,
-    NEW.user_id,
-    NEW.created_at,
-    NEW.updated_at,
-    NEW.id;
-  RETURN NEW;
-END;
-$$;
-
-
---
--- Name: log_activity_log_ext_assignment_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_activity_log_ext_assignment_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO activity_log_ext_assignment_history
-                  (
-                      master_id,
-                      ext_assignment_id,
-                      do_when,
-notes,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      activity_log_ext_assignment_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.ext_assignment_id,
-                      NEW.do_when,
-                      NEW.notes,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_activity_log_ipa_assignment_adverse_event_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_activity_log_ipa_assignment_adverse_event_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO activity_log_ipa_assignment_adverse_event_history
-                  (
-                      master_id,
-                      ipa_assignment_id,
-                      
-                      extra_log_type,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      activity_log_ipa_assignment_adverse_event_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.ipa_assignment_id,
-                      
-                      NEW.extra_log_type,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_activity_log_ipa_assignment_minor_deviation_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_activity_log_ipa_assignment_minor_deviation_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO activity_log_ipa_assignment_minor_deviation_history
-                  (
-                      master_id,
-                      ipa_assignment_id,
-                      activity_date,
-                      deviation_discovered_when,
-                      deviation_occurred_when,
-                      deviation_description,
-                      corrective_action_description,
-                      select_status,
-                      extra_log_type,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      activity_log_ipa_assignment_minor_deviation_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.ipa_assignment_id,
-                      NEW.activity_date,
-                      NEW.deviation_discovered_when,
-                      NEW.deviation_occurred_when,
-                      NEW.deviation_description,
-                      NEW.corrective_action_description,
-                      NEW.select_status,
-                      NEW.extra_log_type,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_activity_log_ipa_assignment_navigation_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_activity_log_ipa_assignment_navigation_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-        BEGIN
-            INSERT INTO activity_log_ipa_assignment_navigation_history
-            (
-                master_id,
-                ipa_assignment_id,
-                event_date,
-                select_station,
-                arrival_time,
-                start_time,
-                event_notes,
-                completion_time,
-                participant_feedback_notes,
-                other_navigator_notes,
-                add_protocol_deviation_record_no_yes,
-                add_adverse_event_record_no_yes,
-                select_event_type,
-                other_event_type,
-                select_status,
-                extra_log_type,
-                user_id,
-                created_at,
-                updated_at,
-                activity_log_ipa_assignment_navigation_id
-                )
-            SELECT
-                NEW.master_id,
-                NEW.ipa_assignment_id,
-                NEW.event_date,
-                NEW.select_station,
-                NEW.arrival_time,
-                NEW.start_time,
-                NEW.event_notes,
-                NEW.completion_time,
-                NEW.participant_feedback_notes,
-                NEW.other_navigator_notes,
-                NEW.add_protocol_deviation_record_no_yes,
-                NEW.add_adverse_event_record_no_yes,
-                NEW.select_event_type,
-                NEW.other_event_type,
-                NEW.select_status,
-                NEW.extra_log_type,
-                NEW.user_id,
-                NEW.created_at,
-                NEW.updated_at,
-                NEW.id
-            ;
-            RETURN NEW;
-        END;
-    $$;
-
-
---
--- Name: log_activity_log_ipa_assignment_phone_screen_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_activity_log_ipa_assignment_phone_screen_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO activity_log_ipa_assignment_phone_screen_history
-                  (
-                      master_id,
-                      ipa_assignment_id,
-                      callback_required,
-                      callback_date,
-                      callback_time,
-                      notes,
-                      extra_log_type,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      activity_log_ipa_assignment_phone_screen_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.ipa_assignment_id,
-                      NEW.callback_required,
-                      NEW.callback_date,
-                      NEW.callback_time,
-                      NEW.notes,
-                      NEW.extra_log_type,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_activity_log_ipa_assignment_post_visit_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_activity_log_ipa_assignment_post_visit_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO activity_log_ipa_assignment_post_visit_history
-                  (
-                      master_id,
-                      ipa_assignment_id,
-                      select_activity,
-                      activity_date,
-                      select_record_from_player_contacts,
-                      select_record_from_addresses,
-                      select_direction,
-                      select_who,
-                      select_result,
-                      select_next_step,
-                      follow_up_when,
-                      follow_up_time,
-                      notes,
-                      extra_log_type,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      activity_log_ipa_assignment_post_visit_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.ipa_assignment_id,
-                      NEW.select_activity,
-                      NEW.activity_date,
-                      NEW.select_record_from_player_contacts,
-                      NEW.select_record_from_addresses,
-                      NEW.select_direction,
-                      NEW.select_who,
-                      NEW.select_result,
-                      NEW.select_next_step,
-                      NEW.follow_up_when,
-                      NEW.follow_up_time,
-                      NEW.notes,
-                      NEW.extra_log_type,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_activity_log_ipa_assignment_protocol_deviation_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_activity_log_ipa_assignment_protocol_deviation_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO activity_log_ipa_assignment_protocol_deviation_history
-                  (
-                      master_id,
-                      ipa_assignment_id,
-                      
-                      extra_log_type,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      activity_log_ipa_assignment_protocol_deviation_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.ipa_assignment_id,
-                      
-                      NEW.extra_log_type,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_activity_log_ipa_survey_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_activity_log_ipa_survey_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO activity_log_ipa_survey_history
-                  (
-                      master_id,
-                      ipa_survey_id,
-                      screened_by_who,
-                      screening_date,
-                      select_status,
-                      extra_log_type,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      activity_log_ipa_survey_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.ipa_survey_id,
-                      NEW.screened_by_who,
-                      NEW.screening_date,
-                      NEW.select_status,
-                      NEW.extra_log_type,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_activity_log_new_test_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_activity_log_new_test_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO activity_log_new_test_history
-                  (
-                      master_id,
-                      new_test_id,
-                      done_when,
-                      select_result,
-                      notes,
-                      protocol_id,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      activity_log_new_test_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.new_test_id,
-                      NEW.done_when,
-                      NEW.select_result,
-                      NEW.notes,
-                      NEW.protocol_id,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
 
 
 --
@@ -3185,75 +1497,6 @@ CREATE FUNCTION ml_app.log_activity_log_player_contact_phone_update() RETURNS tr
                     RETURN NEW;
                 END;
             $$;
-
-
---
--- Name: log_activity_log_player_contact_phones_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_activity_log_player_contact_phones_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  INSERT INTO activity_log_player_contact_phone_history (
-    master_id,
-    player_contact_id,
-    data, select_call_direction, select_who, called_when, select_result, select_next_step, follow_up_when, notes, protocol_id, set_related_player_contact_rank,
-    extra_log_type,
-    user_id,
-    created_at,
-    updated_at,
-    activity_log_player_contact_phone_id)
-  SELECT
-    NEW.master_id,
-    NEW.player_contact_id,
-    NEW.data, NEW.select_call_direction, NEW.select_who, NEW.called_when, NEW.select_result, NEW.select_next_step, NEW.follow_up_when, NEW.notes, NEW.protocol_id, NEW.set_related_player_contact_rank,
-    NEW.extra_log_type,
-    NEW.user_id,
-    NEW.created_at,
-    NEW.updated_at,
-    NEW.id;
-  RETURN NEW;
-END;
-$$;
-
-
---
--- Name: log_activity_log_player_info_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_activity_log_player_info_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO activity_log_player_info_history
-                  (
-                      master_id,
-                      player_info_id,
-                      done_when,
-                      notes,
-                      protocol_id,
-                      select_who,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      activity_log_player_info_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.player_info_id,
-                      NEW.done_when,
-                      NEW.notes,
-                      NEW.protocol_id,
-                      NEW.select_who,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
 
 
 --
@@ -3320,7 +1563,7 @@ CREATE FUNCTION ml_app.log_address_update() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
         BEGIN
-            INSERT INTO address_history 
+            INSERT INTO address_history
                 (
                     master_id,
                     street,
@@ -3340,8 +1583,8 @@ CREATE FUNCTION ml_app.log_address_update() RETURNS trigger
                     region,
                     address_id
                 )
-                 
-            SELECT                 
+
+            SELECT
                 NEW.master_id,
                 NEW.street,
                 NEW.street2,
@@ -3499,38 +1742,6 @@ CREATE FUNCTION ml_app.log_app_type_update() RETURNS trigger
 
 
 --
--- Name: log_bhs_assignment_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_bhs_assignment_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO bhs_assignment_history
-                  (
-                      master_id,
-                      bhs_id,
-                      user_id,
-                      admin_id,
-                      created_at,
-                      updated_at,
-                      bhs_assignment_table_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.bhs_id,
-                      NEW.user_id,
-                      NEW.admin_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
 -- Name: log_college_update(); Type: FUNCTION; Schema: ml_app; Owner: -
 --
 
@@ -3547,12 +1758,12 @@ CREATE FUNCTION ml_app.log_college_update() RETURNS trigger
                     updated_at ,
                     disabled ,
                     admin_id,
-                    user_id            
-                )                 
-            SELECT                 
+                    user_id
+                )
+            SELECT
                 NEW.id,
                 NEW.name ,
-                    NEW.synonym_for_id ,                    
+                    NEW.synonym_for_id ,
                     NEW.created_at ,
                     NEW.updated_at ,
                     NEW.disabled ,
@@ -3607,111 +1818,49 @@ CREATE FUNCTION ml_app.log_config_library_update() RETURNS trigger
 CREATE FUNCTION ml_app.log_dynamic_model_update() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
-                      BEGIN
-                          INSERT INTO dynamic_model_history
-                          (
-                              name,
-                              table_name,
-                              schema_name,
-                              primary_key_name,
-                              foreign_key_name,
-                              description,
-                              position,
-                              category,
-                              table_key_name,
-                              field_list,
-                              result_order,
-                              options,
-                              admin_id,
-                              disabled,
-                              created_at,
-                              updated_at,
-                              dynamic_model_id
-                              )
-                          SELECT
-                              NEW.name,
-                              NEW.table_name,
-                              NEW.schema_name,
-                              NEW.primary_key_name,
-                              NEW.foreign_key_name,
-                              NEW.description,
-                              NEW.position,
-                              NEW.category,
-                              NEW.table_key_name,
-                              NEW.field_list,
-                              NEW.result_order,
-                              NEW.options,
-                              NEW.admin_id,
-                              NEW.disabled,
-                              NEW.created_at,
-                              NEW.updated_at,
-                              NEW.id
-                          ;
-                          RETURN NEW;
-                      END;
-                  $$;
-
-
---
--- Name: log_ext_assignment_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_ext_assignment_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO ext_assignment_history
-                  (
-                      master_id,
-                      ext_id,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      ext_assignment_table_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.ext_id,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_ext_gen_assignment_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_ext_gen_assignment_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO ext_gen_assignment_history
-                  (
-                      master_id,
-                      ext_gen_id,
-                      user_id,
-                      admin_id,
-                      created_at,
-                      updated_at,
-                      ext_gen_assignment_table_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.ext_gen_id,
-                      NEW.user_id,
-                      NEW.admin_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
+            BEGIN
+                INSERT INTO dynamic_model_history
+                (
+                    name,
+                    table_name,
+                    schema_name,
+                    primary_key_name,
+                    foreign_key_name,
+                    description,
+                    position,
+                    category,
+                    table_key_name,
+                    field_list,
+                    result_order,
+                    options,
+                    admin_id,
+                    disabled,
+                    created_at,
+                    updated_at,
+                    dynamic_model_id
+                    )
+                SELECT
+                    NEW.name,
+                    NEW.table_name,
+                    NEW.schema_name,
+                    NEW.primary_key_name,
+                    NEW.foreign_key_name,
+                    NEW.description,
+                    NEW.position,
+                    NEW.category,
+                    NEW.table_key_name,
+                    NEW.field_list,
+                    NEW.result_order,
+                    NEW.options,
+                    NEW.admin_id,
+                    NEW.disabled,
+                    NEW.created_at,
+                    NEW.updated_at,
+                    NEW.id
+                ;
+                RETURN NEW;
+            END;
+        $$;
 
 
 --
@@ -3778,18 +1927,18 @@ CREATE FUNCTION ml_app.log_external_link_update() RETURNS trigger
         BEGIN
             INSERT INTO external_link_history
             (
-                    external_link_id,                    
-                    name,                    
+                    external_link_id,
+                    name,
                     value,
                     admin_id,
-                    disabled,                    
+                    disabled,
                     created_at,
                     updated_at
-                )                 
-            SELECT                 
+                )
+            SELECT
                 NEW.id,
-                NEW.name,    
-                    NEW.value,                     
+                NEW.name,
+                    NEW.value,
                     NEW.admin_id,
                     NEW.disabled,
                     NEW.created_at,
@@ -3806,8 +1955,9 @@ CREATE FUNCTION ml_app.log_external_link_update() RETURNS trigger
 
 CREATE FUNCTION ml_app.log_general_selection_update() RETURNS trigger
     LANGUAGE plpgsql
-    AS $$        BEGIN
-            INSERT INTO ml_app.general_selection_history
+    AS $$
+        BEGIN
+            INSERT INTO general_selection_history
             (
                     general_selection_id,
                     name ,
@@ -3822,9 +1972,9 @@ CREATE FUNCTION ml_app.log_general_selection_update() RETURNS trigger
                     edit_always ,
                     position ,
                     description ,
-                    lock 
-                )                 
-            SELECT                 
+                    lock
+                )
+            SELECT
                 NEW.id,
                 NEW.name ,
                 NEW.value ,
@@ -3839,1125 +1989,6 @@ CREATE FUNCTION ml_app.log_general_selection_update() RETURNS trigger
                 NEW.position "position",
                 NEW.description ,
                 NEW.lock
-            ;
-            RETURN NEW;
-        END;
-    $$;
-
-
---
--- Name: log_ipa_adl_informant_screener_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_ipa_adl_informant_screener_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO ipa_adl_informant_screener_history
-                  (
-                      master_id,
-                      select_regarding_eating,
-                      select_regarding_walking,
-                      select_regarding_bowel_and_bladder,
-                      select_regarding_bathing,
-                      select_regarding_grooming,
-                      select_regarding_dressing,
-                      select_regarding_dressing_performance,
-                      select_regarding_getting_dressed,
-                      used_telephone_yes_no_dont_know,
-                      select_telephone_performance,
-                      watched_tv_yes_no_dont_know,
-                      selected_programs_yes_no_dont_know,
-                      talk_about_content_during_yes_no_dont_know,
-                      talk_about_content_after_yes_no_dont_know,
-                      pay_attention_to_conversation_yes_no_dont_know,
-                      select_degree_of_participation,
-                      clear_dishes_yes_no_dont_know,
-                      select_clear_dishes_performance,
-                      find_personal_belongings_yes_no_dont_know,
-                      select_find_personal_belongings_performance,
-                      obtain_beverage_yes_no_dont_know,
-                      select_obtain_beverage_performance,
-                      make_meal_yes_no_dont_know,
-                      select_make_meal_performance,
-                      dispose_of_garbage_yes_no_dont_know,
-                      select_dispose_of_garbage_performance,
-                      get_around_outside_yes_no_dont_know,
-                      select_get_around_outside_performance,
-                      go_shopping_yes_no_dont_know,
-                      select_go_shopping_performance,
-                      pay_for_items_yes_no_dont_know,
-                      keep_appointments_yes_no_dont_know,
-                      select_keep_appointments_performance,
-                      left_on_own_yes_no_dont_know,
-                      away_from_home_yes_no_dont_know,
-                      at_home_more_than_hour_yes_no_dont_know,
-                      at_home_less_than_hour_yes_no_dont_know,
-                      talk_about_current_events_yes_no_dont_know,
-                      did_not_take_part_in_yes_no_dont_know,
-                      took_part_in_outside_home_yes_no_dont_know,
-                      took_part_in_at_home_yes_no_dont_know,
-                      read_yes_no_dont_know,
-                      talk_about_reading_shortly_after_yes_no_dont_know,
-                      talk_about_reading_later_yes_no_dont_know,
-                      write_yes_no_dont_know,
-                      select_write_performance,
-                      pastime_yes_no_dont_know,
-                      multi_select_pastimes,
-                      pastime_other,
-                      pastimes_only_at_daycare_no_yes,
-                      select_pastimes_only_at_daycare_performance,
-                      use_household_appliance_yes_no_dont_know,
-                      multi_select_household_appliances,
-                      household_appliance_other,
-                      select_household_appliance_performance,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      ipa_adl_informant_screener_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.select_regarding_eating,
-                      NEW.select_regarding_walking,
-                      NEW.select_regarding_bowel_and_bladder,
-                      NEW.select_regarding_bathing,
-                      NEW.select_regarding_grooming,
-                      NEW.select_regarding_dressing,
-                      NEW.select_regarding_dressing_performance,
-                      NEW.select_regarding_getting_dressed,
-                      NEW.used_telephone_yes_no_dont_know,
-                      NEW.select_telephone_performance,
-                      NEW.watched_tv_yes_no_dont_know,
-                      NEW.selected_programs_yes_no_dont_know,
-                      NEW.talk_about_content_during_yes_no_dont_know,
-                      NEW.talk_about_content_after_yes_no_dont_know,
-                      NEW.pay_attention_to_conversation_yes_no_dont_know,
-                      NEW.select_degree_of_participation,
-                      NEW.clear_dishes_yes_no_dont_know,
-                      NEW.select_clear_dishes_performance,
-                      NEW.find_personal_belongings_yes_no_dont_know,
-                      NEW.select_find_personal_belongings_performance,
-                      NEW.obtain_beverage_yes_no_dont_know,
-                      NEW.select_obtain_beverage_performance,
-                      NEW.make_meal_yes_no_dont_know,
-                      NEW.select_make_meal_performance,
-                      NEW.dispose_of_garbage_yes_no_dont_know,
-                      NEW.select_dispose_of_garbage_performance,
-                      NEW.get_around_outside_yes_no_dont_know,
-                      NEW.select_get_around_outside_performance,
-                      NEW.go_shopping_yes_no_dont_know,
-                      NEW.select_go_shopping_performance,
-                      NEW.pay_for_items_yes_no_dont_know,
-                      NEW.keep_appointments_yes_no_dont_know,
-                      NEW.select_keep_appointments_performance,
-                      NEW.left_on_own_yes_no_dont_know,
-                      NEW.away_from_home_yes_no_dont_know,
-                      NEW.at_home_more_than_hour_yes_no_dont_know,
-                      NEW.at_home_less_than_hour_yes_no_dont_know,
-                      NEW.talk_about_current_events_yes_no_dont_know,
-                      NEW.did_not_take_part_in_yes_no_dont_know,
-                      NEW.took_part_in_outside_home_yes_no_dont_know,
-                      NEW.took_part_in_at_home_yes_no_dont_know,
-                      NEW.read_yes_no_dont_know,
-                      NEW.talk_about_reading_shortly_after_yes_no_dont_know,
-                      NEW.talk_about_reading_later_yes_no_dont_know,
-                      NEW.write_yes_no_dont_know,
-                      NEW.select_write_performance,
-                      NEW.pastime_yes_no_dont_know,
-                      NEW.multi_select_pastimes,
-                      NEW.pastime_other,
-                      NEW.pastimes_only_at_daycare_no_yes,
-                      NEW.select_pastimes_only_at_daycare_performance,
-                      NEW.use_household_appliance_yes_no_dont_know,
-                      NEW.multi_select_household_appliances,
-                      NEW.household_appliance_other,
-                      NEW.select_household_appliance_performance,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_ipa_adverse_event_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_ipa_adverse_event_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO ipa_adverse_event_history
-                  (
-                      master_id,
-                      select_problem_type,
-                      event_occurred_when,
-                      event_discovered_when,
-                      select_severity,
-                      select_location,
-                      select_expectedness,
-                      select_relatedness,
-                      event_description,
-                      corrective_action_description,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      ipa_adverse_event_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.select_problem_type,
-                      NEW.event_occurred_when,
-                      NEW.event_discovered_when,
-                      NEW.select_severity,
-                      NEW.select_location,
-                      NEW.select_expectedness,
-                      NEW.select_relatedness,
-                      NEW.event_description,
-                      NEW.corrective_action_description,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_ipa_assignment_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_ipa_assignment_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO ipa_assignment_history
-                  (
-                      master_id,
-                      ipa_id,
-                      user_id,
-                      admin_id,
-                      created_at,
-                      updated_at,
-                      ipa_assignment_table_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.ipa_id,
-                      NEW.user_id,
-                      NEW.admin_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_ipa_consent_mailing_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_ipa_consent_mailing_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO ipa_consent_mailing_history
-                  (
-                      master_id,
-                      select_record_from_player_contact_email,
-                      select_record_from_addresses,
-                      sent_when,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      ipa_consent_mailing_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.select_record_from_player_contact_email,
-                      NEW.select_record_from_addresses,
-                      NEW.sent_when,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_ipa_hotel_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_ipa_hotel_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO ipa_hotel_history
-                  (
-                      master_id,
-                      hotel,
-                      room_number,
-                      notes,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      ipa_hotel_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.hotel,
-                      NEW.room_number,
-                      NEW.notes,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_ipa_inex_checklist_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_ipa_inex_checklist_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO ipa_inex_checklist_history
-                  (
-                      master_id,
-                      fixed_checklist_type,
-                      ix_consent_blank_yes_no,
-                      ix_consent_details,
-                      ix_not_pro_blank_yes_no,
-                      ix_not_pro_details,
-                      ix_age_range_blank_yes_no,
-                      ix_age_range_details,
-                      ix_weight_ok_blank_yes_no,
-                      ix_weight_ok_details,
-                      ix_no_seizure_blank_yes_no,
-                      ix_no_seizure_details,
-                      ix_no_device_impl_blank_yes_no,
-                      ix_no_device_impl_details,
-                      ix_no_ferromagnetic_impl_blank_yes_no,
-                      ix_no_ferromagnetic_impl_details,
-                      ix_diagnosed_sleep_apnea_blank_yes_no,
-                      ix_diagnosed_sleep_apnea_details,
-                      ix_diagnosed_heart_stroke_or_meds_blank_yes_no,
-                      ix_diagnosed_heart_stroke_or_meds_details,
-                      ix_chronic_pain_and_meds_blank_yes_no,
-                      ix_chronic_pain_and_meds_details,
-                      ix_tmoca_score_blank_yes_no,
-                      ix_tmoca_score_details,
-                      ix_no_hemophilia_blank_yes_no,
-                      ix_no_hemophilia_details,
-                      ix_raynauds_ok_blank_yes_no,
-                      ix_raynauds_ok_details,
-                      ix_mi_ok_blank_yes_no,
-                      ix_mi_ok_details,
-                      ix_bicycle_ok_blank_yes_no,
-                      ix_bicycle_ok_details,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      ipa_inex_checklist_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.fixed_checklist_type,
-                      NEW.ix_consent_blank_yes_no,
-                      NEW.ix_consent_details,
-                      NEW.ix_not_pro_blank_yes_no,
-                      NEW.ix_not_pro_details,
-                      NEW.ix_age_range_blank_yes_no,
-                      NEW.ix_age_range_details,
-                      NEW.ix_weight_ok_blank_yes_no,
-                      NEW.ix_weight_ok_details,
-                      NEW.ix_no_seizure_blank_yes_no,
-                      NEW.ix_no_seizure_details,
-                      NEW.ix_no_device_impl_blank_yes_no,
-                      NEW.ix_no_device_impl_details,
-                      NEW.ix_no_ferromagnetic_impl_blank_yes_no,
-                      NEW.ix_no_ferromagnetic_impl_details,
-                      NEW.ix_diagnosed_sleep_apnea_blank_yes_no,
-                      NEW.ix_diagnosed_sleep_apnea_details,
-                      NEW.ix_diagnosed_heart_stroke_or_meds_blank_yes_no,
-                      NEW.ix_diagnosed_heart_stroke_or_meds_details,
-                      NEW.ix_chronic_pain_and_meds_blank_yes_no,
-                      NEW.ix_chronic_pain_and_meds_details,
-                      NEW.ix_tmoca_score_blank_yes_no,
-                      NEW.ix_tmoca_score_details,
-                      NEW.ix_no_hemophilia_blank_yes_no,
-                      NEW.ix_no_hemophilia_details,
-                      NEW.ix_raynauds_ok_blank_yes_no,
-                      NEW.ix_raynauds_ok_details,
-                      NEW.ix_mi_ok_blank_yes_no,
-                      NEW.ix_mi_ok_details,
-                      NEW.ix_bicycle_ok_blank_yes_no,
-                      NEW.ix_bicycle_ok_details,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_ipa_initial_screening_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_ipa_initial_screening_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO ipa_initial_screening_history
-                  (
-                      master_id,
-                      select_is_good_time_to_speak,
-                      select_looked_at_website_yes_no,
-                      select_may_i_begin,
-                      any_questions_blank_yes_no,
-                      select_still_interested,
-                      follow_up_date,
-                      follow_up_time,
-                      notes,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      ipa_initial_screening_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.select_is_good_time_to_speak,
-                      NEW.select_looked_at_website_yes_no,
-                      NEW.select_may_i_begin,
-                      NEW.any_questions_blank_yes_no,
-                      NEW.select_still_interested,
-                      NEW.follow_up_date,
-                      NEW.follow_up_time,
-                      NEW.notes,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_ipa_payment_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_ipa_payment_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO ipa_payment_history
-                  (
-                      master_id,
-                      select_type,
-                      sent_date,
-                      notes,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      ipa_payment_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.select_type,
-                      NEW.sent_date,
-                      NEW.notes,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_ipa_protocol_deviation_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_ipa_protocol_deviation_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO ipa_protocol_deviation_history
-                  (
-                      master_id,
-                      deviation_occurred_when,
-                      deviation_discovered_when,
-                      select_severity,
-                      deviation_description,
-                      corrective_action_description,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      ipa_protocol_deviation_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.deviation_occurred_when,
-                      NEW.deviation_discovered_when,
-                      NEW.select_severity,
-                      NEW.deviation_description,
-                      NEW.corrective_action_description,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_ipa_ps_football_experience_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_ipa_ps_football_experience_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO ipa_ps_football_experience_history
-                  (
-                      master_id,
-                      age,
-                      played_in_nfl_blank_yes_no,
-                      played_before_nfl_blank_yes_no,
-                      football_experience_notes,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      ipa_ps_football_experience_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.age,
-                      NEW.played_in_nfl_blank_yes_no,
-                      NEW.played_before_nfl_blank_yes_no,
-                      NEW.football_experience_notes,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_ipa_ps_health_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_ipa_ps_health_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO ipa_ps_health_history
-                  (
-                      master_id,
-                      physical_limitations_blank_yes_no,
-                      physical_limitations_details,
-                      sit_back_blank_yes_no,
-                      sit_back_details,
-                      cycle_blank_yes_no,
-                      cycle_details,
-                      chronic_pain_blank_yes_no,
-                      chronic_pain_details,
-                      chronic_pain_meds_blank_yes_no_dont_know,
-                      chronic_pain_meds_details,
-                      hemophilia_blank_yes_no_dont_know,
-                      hemophilia_details,
-                      raynauds_syndrome_blank_yes_no_dont_know,
-                      raynauds_syndrome_severity_selection,
-                      raynauds_syndrome_details,
-
-                      hypertension_diagnosis_blank_yes_no_dont_know,
-                      hypertension_medications_blank_yes_no,
-                      hypertension_diagnosis_details,
-
-                      diabetes_diagnosis_blank_yes_no_dont_know,
-                      diabetes_medications_blank_yes_no,
-                      diabetes_diagnosis_details,
-
-                      high_cholesterol_diagnosis_blank_yes_no_dont_know,
-                      high_cholesterol_medications_blank_yes_no,
-                      high_cholesterol_diagnosis_details,
-
-                      other_heart_conditions_blank_yes_no_dont_know,
-                      other_heart_conditions_details,
-
-                      heart_surgeries_blank_yes_no_dont_know,
-                      heart_surgeries_details,
-                      caridiac_pacemaker_blank_yes_no_dont_know,
-                      caridiac_pacemaker_details,
-
-                      memory_problems_blank_yes_no_dont_know,
-                      memory_problems_details,
-                      mental_health_conditions_blank_yes_no_dont_know,
-                      mental_health_conditions_details,
-
-                      mental_health_help_blank_yes_no_dont_know,
-                      mental_health_help_details,
-
-                      neurological_problems_blank_yes_no_dont_know,
-                      neurological_problems_details,
-
-                      neurological_surgeries_blank_yes_no_dont_know,
-                      neurological_surgeries_details,
-
-                      user_id,
-                      created_at,
-                      updated_at,
-                      ipa_ps_health_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.physical_limitations_blank_yes_no,
-                      NEW.physical_limitations_details,
-                      NEW.sit_back_blank_yes_no,
-                      NEW.sit_back_details,
-                      NEW.cycle_blank_yes_no,
-                      NEW.cycle_details,
-                      NEW.chronic_pain_blank_yes_no,
-                      NEW.chronic_pain_details,
-                      NEW.chronic_pain_meds_blank_yes_no_dont_know,
-                      NEW.chronic_pain_meds_details,
-                      NEW.hemophilia_blank_yes_no_dont_know,
-                      NEW.hemophilia_details,
-                      NEW.raynauds_syndrome_blank_yes_no_dont_know,
-                      NEW.raynauds_syndrome_severity_selection,
-                      NEW.raynauds_syndrome_details,
-
-                      NEW.hypertension_diagnosis_blank_yes_no_dont_know,
-                      NEW.hypertension_medications_blank_yes_no,
-                      NEW.hypertension_diagnosis_details,
-
-                      NEW.diabetes_diagnosis_blank_yes_no_dont_know,
-                      NEW.diabetes_medications_blank_yes_no,
-                      NEW.diabetes_diagnosis_details,
-
-                      NEW.high_cholesterol_diagnosis_blank_yes_no_dont_know,
-                      NEW.high_cholesterol_medications_blank_yes_no,
-                      NEW.high_cholesterol_diagnosis_details,
-
-                      NEW.other_heart_conditions_blank_yes_no_dont_know,
-                      NEW.other_heart_conditions_details,
-
-                      NEW.heart_surgeries_blank_yes_no_dont_know,
-                      NEW.heart_surgeries_details,
-                      NEW.caridiac_pacemaker_blank_yes_no_dont_know,
-                      NEW.caridiac_pacemaker_details,
-
-                      NEW.memory_problems_blank_yes_no_dont_know,
-                      NEW.memory_problems_details,
-                      NEW.mental_health_conditions_blank_yes_no_dont_know,
-                      NEW.mental_health_conditions_details,
-
-                      NEW.mental_health_help_blank_yes_no_dont_know,
-                      NEW.mental_health_help_details,
-
-                      NEW.neurological_problems_blank_yes_no_dont_know,
-                      NEW.neurological_problems_details,
-
-                      NEW.neurological_surgeries_blank_yes_no_dont_know,
-                      NEW.neurological_surgeries_details,
-
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_ipa_ps_initial_screening_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_ipa_ps_initial_screening_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO ipa_ps_initial_screening_history
-                  (
-                      master_id,
-                      select_is_good_time_to_speak,
-                      looked_at_website_yes_no,
-                      select_may_i_begin,
-                      any_questions_blank_yes_no,
-                      --- Note we retain select_still_interested since it is used in the withdrawal logic
-                      select_still_interested,
-                      follow_up_date,
-                      follow_up_time,
-                      notes,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      ipa_ps_initial_screening_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.select_is_good_time_to_speak,
-                      NEW.looked_at_website_yes_no,
-                      NEW.select_may_i_begin,
-                      NEW.any_questions_blank_yes_no,
-                      NEW.select_still_interested,
-                      NEW.follow_up_date,
-                      NEW.follow_up_time,
-                      NEW.notes,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_ipa_ps_mri_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_ipa_ps_mri_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO ipa_ps_mri_history
-                  (
-                      master_id,
-                      past_mri_yes_no_dont_know,
-                      past_mri_details,
-                      electrical_implants_blank_yes_no_dont_know,
-                      electrical_implants_details,
-                      metal_implants_blank_yes_no_dont_know,
-                      metal_implants_details,
-                      metal_jewelry_blank_yes_no,
-                      hearing_aid_blank_yes_no,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      ipa_ps_mri_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.past_mri_yes_no_dont_know,
-                      NEW.past_mri_details,
-                      NEW.electrical_implants_blank_yes_no_dont_know,
-                      NEW.electrical_implants_details,
-                      NEW.metal_implants_blank_yes_no_dont_know,
-                      NEW.metal_implants_details,
-                      NEW.metal_jewelry_blank_yes_no,
-                      NEW.hearing_aid_blank_yes_no,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_ipa_ps_size_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_ipa_ps_size_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO ipa_ps_size_history
-                  (
-                      master_id,
-                      birth_date,
-                      weight,
-                      height,
-                      hat_size,
-                      shirt_size,
-                      jacket_size,
-                      waist_size,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      ipa_ps_size_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.birth_date,
-                      NEW.weight,
-                      NEW.height,
-                      NEW.hat_size,
-                      NEW.shirt_size,
-                      NEW.jacket_size,
-                      NEW.waist_size,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_ipa_ps_sleep_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_ipa_ps_sleep_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO ipa_ps_sleep_history
-                  (
-                      master_id,
-                      sleep_disorder_blank_yes_no_dont_know,
-                      sleep_disorder_details,
-                      sleep_apnea_device_no_yes,
-                      sleep_apnea_device_details,
-                      bed_and_wake_time_details,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      ipa_ps_sleep_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.sleep_disorder_blank_yes_no_dont_know,
-                      NEW.sleep_disorder_details,
-                      NEW.sleep_apnea_device_no_yes,
-                      NEW.sleep_apnea_device_details,
-                      NEW.bed_and_wake_time_details,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_ipa_ps_tmoca_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_ipa_ps_tmoca_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO ipa_ps_tmoca_history
-                  (
-                      master_id,
-                      tmoca_version,
-                      attn_digit_span,
-                      attn_digit_vigilance,
-                      attn_digit_calculation,
-                      language_repeat,
-                      language_fluency,
-                      abstraction,
-                      delayed_recall,
-                      orientation,
-                      tmoca_score,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      ipa_ps_tmoca_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.tmoca_version,
-                      NEW.attn_digit_span,
-                      NEW.attn_digit_vigilance,
-                      NEW.attn_digit_calculation,
-                      NEW.language_repeat,
-                      NEW.language_fluency,
-                      NEW.abstraction,
-                      NEW.delayed_recall,
-                      NEW.orientation,
-                      NEW.tmoca_score,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-            END;
-          $$;
-
-
---
--- Name: log_ipa_ps_tms_test_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_ipa_ps_tms_test_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO ipa_ps_tms_test_history
-                  (
-                      master_id,
-                      convulsion_or_seizure_blank_yes_no_dont_know,
-                      epilepsy_blank_yes_no_dont_know,
-                      fainting_blank_yes_no_dont_know,
-                      concussion_blank_yes_no_dont_know,
-                      loss_of_conciousness_details,
-                      hearing_problems_blank_yes_no_dont_know,
-                      cochlear_implants_blank_yes_no_dont_know,
-                      metal_blank_yes_no_dont_know,
-                      metal_details,
-                      neurostimulator_blank_yes_no_dont_know,
-                      neurostimulator_details,
-                      med_infusion_device_blank_yes_no_dont_know,
-                      med_infusion_device_details,
-                      past_tms_blank_yes_no_dont_know,
-                      past_tms_details,
-                      current_meds_blank_yes_no_dont_know,
-                      current_meds_details,
-                      other_chronic_problems_blank_yes_no_dont_know,
-                      other_chronic_problems_details,
-                      hospital_visits_blank_yes_no_dont_know,
-                      hospital_visits_details,
-                      dietary_restrictions_blank_yes_no_dont_know,
-                      dietary_restrictions_details,
-                      anything_else_blank_yes_no,
-                      anything_else_details,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      ipa_ps_tms_test_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.convulsion_or_seizure_blank_yes_no_dont_know,
-                      NEW.epilepsy_blank_yes_no_dont_know,
-                      NEW.fainting_blank_yes_no_dont_know,
-                      NEW.concussion_blank_yes_no_dont_know,
-                      NEW.loss_of_conciousness_details,
-                      NEW.hearing_problems_blank_yes_no_dont_know,
-                      NEW.cochlear_implants_blank_yes_no_dont_know,
-                      NEW.metal_blank_yes_no_dont_know,
-                      NEW.metal_details,
-                      NEW.neurostimulator_blank_yes_no_dont_know,
-                      NEW.neurostimulator_details,
-                      NEW.med_infusion_device_blank_yes_no_dont_know,
-                      NEW.med_infusion_device_details,
-                      NEW.past_tms_blank_yes_no_dont_know,
-                      NEW.past_tms_details,
-                      NEW.current_meds_blank_yes_no_dont_know,
-                      NEW.current_meds_details,
-                      NEW.other_chronic_problems_blank_yes_no_dont_know,
-                      NEW.other_chronic_problems_details,
-                      NEW.hospital_visits_blank_yes_no_dont_know,
-                      NEW.hospital_visits_details,
-                      NEW.dietary_restrictions_blank_yes_no_dont_know,
-                      NEW.dietary_restrictions_details,
-                      NEW.anything_else_blank_yes_no,
-                      NEW.anything_else_details,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_ipa_station_contact_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_ipa_station_contact_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO ipa_station_contact_history
-                  (
-                      first_name,
-                      last_name,
-                      role,
-                      select_availability,
-                      phone,
-                      alt_phone,
-                      email,
-                      alt_email,
-                      notes,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      ipa_station_contact_id
-                      )
-                  SELECT
-                      NEW.first_name,
-                      NEW.last_name,
-                      NEW.role,
-                      NEW.phone,
-                      NEW.select_availability,
-                      NEW.alt_phone,
-                      NEW.email,
-                      NEW.alt_email,
-                      NEW.notes,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_ipa_survey_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_ipa_survey_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO ipa_survey_history
-                  (
-                      master_id,
-                      select_survey_type,
-                      sent_date,
-                      completed_date,
-                      send_next_survey_when,
-                      notes,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      ipa_survey_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.select_survey_type,
-                      NEW.sent_date,
-                      NEW.completed_date,
-                      NEW.send_next_survey_when,
-                      NEW.notes,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_ipa_transportation_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_ipa_transportation_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO ipa_transportation_history
-                  (
-                      master_id,
-                      travel_date,
-                      travel_confirmed_no_yes,
-                      select_direction,
-                      origin_city_and_state,
-                      destination_city_and_state,
-                      select_mode_of_transport,
-                      airline,
-                      flight_number,
-                      departure_time,
-                      arrival_time,
-                      notes,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      ipa_transportation_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.travel_date,
-                      NEW.travel_confirmed_no_yes,
-                      NEW.select_direction,
-                      NEW.origin_city_and_state,
-                      NEW.destination_city_and_state,
-                      NEW.select_mode_of_transport,
-                      NEW.airline,
-                      NEW.flight_number,
-                      NEW.departure_time,
-                      NEW.arrival_time,
-                      NEW.notes,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_ipa_withdrawal_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_ipa_withdrawal_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-        BEGIN
-            INSERT INTO ipa_withdrawal_history
-            (
-                master_id,
-                select_subject_withdrew_reason,
-                select_investigator_terminated,
-                lost_to_follow_up_no_yes,
-                no_longer_participating_no_yes,
-                notes,
-                user_id,
-                created_at,
-                updated_at,
-                ipa_withdrawal_id
-                )
-            SELECT
-                NEW.master_id,
-                NEW.select_subject_withdrew_reason,
-                NEW.select_investigator_terminated,
-                NEW.lost_to_follow_up_no_yes,
-                NEW.no_longer_participating_no_yes,
-                NEW.notes,
-                NEW.user_id,
-                NEW.created_at,
-                NEW.updated_at,
-                NEW.id
             ;
             RETURN NEW;
         END;
@@ -4981,11 +2012,11 @@ CREATE FUNCTION ml_app.log_item_flag_name_update() RETURNS trigger
                     updated_at ,
                     disabled ,
                     admin_id
-                )                 
-            SELECT                 
+                )
+            SELECT
                 NEW.id,
                 NEW.name ,
-                    NEW.item_type ,                    
+                    NEW.item_type ,
                     NEW.created_at ,
                     NEW.updated_at ,
                     NEW.disabled ,
@@ -5014,8 +2045,8 @@ CREATE FUNCTION ml_app.log_item_flag_update() RETURNS trigger
                     updated_at ,
                     user_id ,
                     disabled
-                )                 
-            SELECT                 
+                )
+            SELECT
                 NEW.id,
                 NEW.item_id ,
                     NEW.item_type,
@@ -5066,70 +2097,6 @@ CREATE FUNCTION ml_app.log_message_template_update() RETURNS trigger
                       RETURN NEW;
                   END;
               $$;
-
-
---
--- Name: log_mrn_number_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_mrn_number_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO mrn_number_history
-                  (
-                      master_id,
-                      mrn_id,
-                      user_id,
-                      admin_id,
-                      created_at,
-                      updated_at,
-                      mrn_number_table_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.mrn_id,
-                      NEW.user_id,
-                      NEW.admin_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_new_test_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_new_test_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO new_test_history
-                  (
-                      master_id,
-                      new_test_ext_id,
-                      user_id,
-                      admin_id,
-                      created_at,
-                      updated_at,
-                      new_test_table_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.new_test_ext_id,
-                      NEW.user_id,
-                      NEW.admin_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
 
 
 --
@@ -5375,8 +2342,8 @@ CREATE FUNCTION ml_app.log_player_contact_update() RETURNS trigger
                     user_id,
                     created_at,
                     updated_at
-                )                 
-            SELECT                 
+                )
+            SELECT
                 NEW.id,
                 NEW.master_id,
                 NEW.rec_type,
@@ -5399,53 +2366,53 @@ CREATE FUNCTION ml_app.log_player_contact_update() RETURNS trigger
 CREATE FUNCTION ml_app.log_player_info_update() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
- BEGIN
- INSERT INTO player_info_history
- (
- master_id,
- first_name,
- last_name,
- middle_name,
- nick_name,
- birth_date,
- death_date,
- user_id,
- created_at,
- updated_at,
- contact_pref,
- start_year,
- rank,
- notes,
- contact_id,
- college,
- end_year,
- source,
- player_info_id
- ) 
- SELECT
- NEW.master_id,
- NEW.first_name,
- NEW.last_name,
- NEW.middle_name,
- NEW.nick_name,
- NEW.birth_date,
- NEW.death_date,
- NEW.user_id,
- NEW.created_at,
- NEW.updated_at,
- NEW.contact_pref,
- NEW.start_year,
- NEW.rank,
- NEW.notes,
- NEW.contact_id,
- NEW.college,
- NEW.end_year, 
- NEW.source, 
- NEW.id
- ;
- RETURN NEW;
- END;
- $$;
+        BEGIN
+            INSERT INTO player_info_history
+            (
+                    master_id,
+                    first_name,
+                    last_name,
+                    middle_name,
+                    nick_name,
+                    birth_date,
+                    death_date,
+                    user_id,
+                    created_at,
+                    updated_at,
+                    contact_pref,
+                    start_year,
+                    rank,
+                    notes,
+                    contact_id,
+                    college,
+                    end_year,
+                    source,
+                    player_info_id
+                )
+            SELECT
+                NEW.master_id,
+                NEW.first_name,
+                NEW.last_name,
+                NEW.middle_name,
+                NEW.nick_name,
+                NEW.birth_date,
+                NEW.death_date,
+                NEW.user_id,
+                NEW.created_at,
+                NEW.updated_at,
+                NEW.contact_pref,
+                NEW.start_year,
+                NEW.rank,
+                NEW.notes,
+                NEW.contact_id,
+                NEW.college,
+                NEW.end_year,
+                NEW.source,
+                NEW.id
+            ;
+            RETURN NEW;
+        END;
+    $$;
 
 
 --
@@ -5458,7 +2425,7 @@ CREATE FUNCTION ml_app.log_protocol_event_update() RETURNS trigger
         BEGIN
             INSERT INTO protocol_event_history
             (
-                    protocol_event_id,                    
+                    protocol_event_id,
     name ,
     admin_id,
     created_at,
@@ -5468,10 +2435,10 @@ CREATE FUNCTION ml_app.log_protocol_event_update() RETURNS trigger
     milestone ,
     description
 
-                )                 
-            SELECT                 
+                )
+            SELECT
                 NEW.id,
-                NEW.name ,                    
+                NEW.name ,
                     NEW.admin_id,
     NEW.created_at,
     NEW.updated_at,
@@ -5496,16 +2463,16 @@ CREATE FUNCTION ml_app.log_protocol_update() RETURNS trigger
             INSERT INTO protocol_history
             (
                     protocol_id,
-                    name ,                    
+                    name ,
                     created_at ,
                     updated_at ,
                     disabled,
                     admin_id ,
                     "position"
-                )                 
-            SELECT                 
+                )
+            SELECT
                 NEW.id,
-                NEW.name ,                    
+                NEW.name ,
                     NEW.created_at ,
                     NEW.updated_at ,
                     NEW.disabled,
@@ -5572,94 +2539,6 @@ CREATE FUNCTION ml_app.log_report_update() RETURNS trigger
 
 
 --
--- Name: log_sage_two_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_sage_two_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-        BEGIN
-            INSERT INTO sage_two_history
-            (
-                    sage_two_id,                    
-                    external_id,
-                    user_id,
-                    created_at,
-                    updated_at
-                )                 
-            SELECT                 
-                NEW.id,
-                NEW.external_id,
-                NEW.user_id,
-                NEW.created_at,
-                NEW.updated_at 
-            ;
-            RETURN NEW;
-        END;
-    $$;
-
-
---
--- Name: log_scantron_q2_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_scantron_q2_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO scantron_q2_history
-                  (
-                      master_id,
-                      q2_scantron_id,
-                      user_id,
-                      admin_id,
-                      created_at,
-                      updated_at,
-                      scantron_q2_table_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.q2_scantron_id,
-                      NEW.user_id,
-                      NEW.admin_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_scantron_series_two_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_scantron_series_two_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-        BEGIN
-            INSERT INTO scantron_series_two_history
-            (
-                    scantron_series_two_id,                    
-                    external_id,
-                    user_id,
-                    created_at,
-                    updated_at
-                )                 
-            SELECT                 
-                NEW.id,
-                NEW.external_id,
-                NEW.user_id,
-                NEW.created_at,
-                NEW.updated_at 
-            ;
-            RETURN NEW;
-        END;
-    $$;
-
-
---
 -- Name: log_scantron_update(); Type: FUNCTION; Schema: ml_app; Owner: -
 --
 
@@ -5675,7 +2554,7 @@ CREATE FUNCTION ml_app.log_scantron_update() RETURNS trigger
                 created_at,
                 updated_at,
                 scantron_table_id
-                )                 
+                )
             SELECT
                 NEW.master_id,
                 NEW.scantron_id,
@@ -5690,38 +2569,6 @@ CREATE FUNCTION ml_app.log_scantron_update() RETURNS trigger
 
 
 --
--- Name: log_sleep_assignment_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_sleep_assignment_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO sleep_assignment_history
-                  (
-                      master_id,
-                      sleep_id,
-                      user_id,
-                      admin_id,
-                      created_at,
-                      updated_at,
-                      sleep_assignment_table_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.sleep_id,
-                      NEW.user_id,
-                      NEW.admin_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
 -- Name: log_sub_process_update(); Type: FUNCTION; Schema: ml_app; Owner: -
 --
 
@@ -5731,8 +2578,8 @@ CREATE FUNCTION ml_app.log_sub_process_update() RETURNS trigger
         BEGIN
             INSERT INTO sub_process_history
             (
-                    sub_process_id,                    
-    
+                    sub_process_id,
+
     name,
     disabled,
     protocol_id,
@@ -5740,8 +2587,8 @@ CREATE FUNCTION ml_app.log_sub_process_update() RETURNS trigger
     created_at,
     updated_at
 
-                )                 
-            SELECT                 
+                )
+            SELECT
                 NEW.id,
                 NEW.name,
     NEW.disabled,
@@ -5749,688 +2596,6 @@ CREATE FUNCTION ml_app.log_sub_process_update() RETURNS trigger
     NEW.admin_id ,
     NEW.created_at,
     NEW.updated_at
-            ;
-            RETURN NEW;
-        END;
-    $$;
-
-
---
--- Name: log_test1_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_test1_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO test1_history
-                  (
-                      master_id,
-                      test1_id,
-                      user_id,
-                      admin_id,
-                      created_at,
-                      updated_at,
-                      test1_table_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.test1_id,
-                      NEW.user_id,
-                      NEW.admin_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_test2_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_test2_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO test2_history
-                  (
-                      master_id,
-                      test_2ext_id,
-                      user_id,
-                      admin_id,
-                      created_at,
-                      updated_at,
-                      test2_table_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.test_2ext_id,
-                      NEW.user_id,
-                      NEW.admin_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_test_2_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_test_2_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO test_2_history
-                  (
-                      master_id,
-                      test_2ext_id,
-                      user_id,
-                      admin_id,
-                      created_at,
-                      updated_at,
-                      test_2_table_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.test_2ext_id,
-                      NEW.user_id,
-                      NEW.admin_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_test_baseline_study_exit_interview_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_test_baseline_study_exit_interview_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO test_baseline_study_exit_interview_history
-                  (
-                      master_id,
-                      select_all_results_returned,
-                      notes,
-                      labs_returned_yes_no,
-                      labs_notes,
-                      dexa_returned_yes_no,
-                      dexa_notes,
-                      brain_mri_returned_yes_no,
-                      brain_mri_notes,
-                      neuro_psych_returned_yes_no,
-                      neuro_psych_notes,
-                      assisted_finding_provider_yes_no,
-                      assistance_notes,
-                      other_notes,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      test_baseline_study_exit_interview_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.select_all_results_returned,
-                      NEW.notes,
-                      NEW.labs_returned_yes_no,
-                      NEW.labs_notes,
-                      NEW.dexa_returned_yes_no,
-                      NEW.dexa_notes,
-                      NEW.brain_mri_returned_yes_no,
-                      NEW.brain_mri_notes,
-                      NEW.neuro_psych_returned_yes_no,
-                      NEW.neuro_psych_notes,
-                      NEW.assisted_finding_provider_yes_no,
-                      NEW.assistance_notes,
-                      NEW.other_notes,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_test_baseline_study_four_wk_followup_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_test_baseline_study_four_wk_followup_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO test_baseline_study_four_wk_followup_history
-                  (
-                      master_id,
-                      select_all_results_returned,
-                      select_sensory_testing_returned,
-                      sensory_testing_notes,
-                      select_liver_mri_returned,
-                      liver_mri_notes,
-                      select_physical_function_returned,
-                      physical_function_notes,
-                      select_eeg_returned,
-                      eeg_notes,
-                      select_sleep_returned,
-                      sleep_notes,
-                      select_cardiology_returned,
-                      cardiology_notes,
-                      select_xray_returned,
-                      xray_notes,
-                      assisted_finding_provider_yes_no,
-                      assistance_notes,
-                      other_notes,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      test_baseline_study_four_wk_followup_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.select_all_results_returned,
-                      NEW.select_sensory_testing_returned,
-                      NEW.sensory_testing_notes,
-                      NEW.select_liver_mri_returned,
-                      NEW.liver_mri_notes,
-                      NEW.select_physical_function_returned,
-                      NEW.physical_function_notes,
-                      NEW.select_eeg_returned,
-                      NEW.eeg_notes,
-                      NEW.select_sleep_returned,
-                      NEW.sleep_notes,
-                      NEW.select_cardiology_returned,
-                      NEW.cardiology_notes,
-                      NEW.select_xray_returned,
-                      NEW.xray_notes,
-                      NEW.assisted_finding_provider_yes_no,
-                      NEW.assistance_notes,
-                      NEW.other_notes,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_test_baseline_study_incidental_finding_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_test_baseline_study_incidental_finding_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO test_baseline_study_incidental_finding_history
-                  (
-                      master_id,
-                      anthropometrics_check,
-                      anthropometrics_date,
-                      anthropometrics_notes,
-                      lab_results_check,
-                      lab_results_date,
-                      lab_results_notes,
-                      dexa_check,
-                      dexa_date,
-                      dexa_notes,
-                      brain_mri_check,
-                      brain_mri_date,
-                      brain_mri_notes,
-                      neuro_psych_check,
-                      neuro_psych_date,
-                      neuro_psych_notes,
-                      sensory_testing_check,
-                      sensory_testing_date,
-                      sensory_testing_notes,
-                      liver_mri_check,
-                      liver_mri_date,
-                      liver_mri_notes,
-                      physical_function_check,
-                      physical_function_date,
-                      physical_function_notes,
-                      eeg_check,
-                      eeg_date,
-                      eeg_notes,
-                      sleep_check,
-                      sleep_date,
-                      sleep_notes,
-                      cardiac_check,
-                      cardiac_date,
-                      cardiac_notes,
-                      xray_check,
-                      xray_date,
-                      xray_notes,
-                      other_notes,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      test_baseline_study_incidental_finding_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.anthropometrics_check,
-                      NEW.anthropometrics_date,
-                      NEW.anthropometrics_notes,
-                      NEW.lab_results_check,
-                      NEW.lab_results_date,
-                      NEW.lab_results_notes,
-                      NEW.dexa_check,
-                      NEW.dexa_date,
-                      NEW.dexa_notes,
-                      NEW.brain_mri_check,
-                      NEW.brain_mri_date,
-                      NEW.brain_mri_notes,
-                      NEW.neuro_psych_check,
-                      NEW.neuro_psych_date,
-                      NEW.neuro_psych_notes,
-                      NEW.sensory_testing_check,
-                      NEW.sensory_testing_date,
-                      NEW.sensory_testing_notes,
-                      NEW.liver_mri_check,
-                      NEW.liver_mri_date,
-                      NEW.liver_mri_notes,
-                      NEW.physical_function_check,
-                      NEW.physical_function_date,
-                      NEW.physical_function_notes,
-                      NEW.eeg_check,
-                      NEW.eeg_date,
-                      NEW.eeg_notes,
-                      NEW.sleep_check,
-                      NEW.sleep_date,
-                      NEW.sleep_notes,
-                      NEW.cardiac_check,
-                      NEW.cardiac_date,
-                      NEW.cardiac_notes,
-                      NEW.xray_check,
-                      NEW.xray_date,
-                      NEW.xray_notes,
-                      NEW.other_notes,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_test_baseline_study_mednav_followup_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_test_baseline_study_mednav_followup_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO test_baseline_study_mednav_followup_history
-                  (
-                      master_id,
-                      anthropometrics_check,
-                      anthropometrics_notes,
-                      lab_results_check,
-                      lab_results_notes,
-                      dexa_check,
-                      dexa_notes,
-                      brain_mri_check,
-                      brain_mri_notes,
-                      neuro_psych_check,
-                      neuro_psych_notes,
-                      sensory_testing_check,
-                      sensory_testing_notes,
-                      liver_mri_check,
-                      liver_mri_notes,
-                      physical_function_check,
-                      physical_function_notes,
-                      eeg_check,
-                      eeg_notes,
-                      sleep_check,
-                      sleep_notes,
-                      cardiac_check,
-                      cardiac_notes,
-                      xray_check,
-                      xray_notes,
-                      assisted_finding_provider_yes_no,
-                      assistance_notes,
-                      other_notes,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      test_baseline_study_mednav_followup_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.anthropometrics_check,
-                      NEW.anthropometrics_notes,
-                      NEW.lab_results_check,
-                      NEW.lab_results_notes,
-                      NEW.dexa_check,
-                      NEW.dexa_notes,
-                      NEW.brain_mri_check,
-                      NEW.brain_mri_notes,
-                      NEW.neuro_psych_check,
-                      NEW.neuro_psych_notes,
-                      NEW.sensory_testing_check,
-                      NEW.sensory_testing_notes,
-                      NEW.liver_mri_check,
-                      NEW.liver_mri_notes,
-                      NEW.physical_function_check,
-                      NEW.physical_function_notes,
-                      NEW.eeg_check,
-                      NEW.eeg_notes,
-                      NEW.sleep_check,
-                      NEW.sleep_notes,
-                      NEW.cardiac_check,
-                      NEW.cardiac_notes,
-                      NEW.xray_check,
-                      NEW.xray_notes,
-                      NEW.assisted_finding_provider_yes_no,
-                      NEW.assistance_notes,
-                      NEW.other_notes,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_test_baseline_study_mednav_provider_comm_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_test_baseline_study_mednav_provider_comm_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO test_baseline_study_mednav_provider_comm_history
-                  (
-                      master_id,
-                      anthropometrics_check,
-                      anthropometrics_notes,
-                      lab_results_check,
-                      lab_results_notes,
-                      dexa_check,
-                      dexa_notes,
-                      brain_mri_check,
-                      brain_mri_notes,
-                      neuro_psych_check,
-                      neuro_psych_notes,
-                      sensory_testing_check,
-                      sensory_testing_notes,
-                      liver_mri_check,
-                      liver_mri_notes,
-                      physical_function_check,
-                      physical_function_notes,
-                      eeg_check,
-                      eeg_notes,
-                      sleep_check,
-                      sleep_notes,
-                      cardiac_check,
-                      cardiac_notes,
-                      xray_check,
-                      xray_notes,
-                      other_notes,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      test_baseline_study_mednav_provider_comm_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.anthropometrics_check,
-                      NEW.anthropometrics_notes,
-                      NEW.lab_results_check,
-                      NEW.lab_results_notes,
-                      NEW.dexa_check,
-                      NEW.dexa_notes,
-                      NEW.brain_mri_check,
-                      NEW.brain_mri_notes,
-                      NEW.neuro_psych_check,
-                      NEW.neuro_psych_notes,
-                      NEW.sensory_testing_check,
-                      NEW.sensory_testing_notes,
-                      NEW.liver_mri_check,
-                      NEW.liver_mri_notes,
-                      NEW.physical_function_check,
-                      NEW.physical_function_notes,
-                      NEW.eeg_check,
-                      NEW.eeg_notes,
-                      NEW.sleep_check,
-                      NEW.sleep_notes,
-                      NEW.cardiac_check,
-                      NEW.cardiac_notes,
-                      NEW.xray_check,
-                      NEW.xray_notes,
-                      NEW.other_notes,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_test_baseline_study_mednav_provider_report_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_test_baseline_study_mednav_provider_report_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO test_baseline_study_mednav_provider_report_history
-                  (
-                      master_id,
-                      report_delivery_date,
-                      anthropometrics_check,
-                      anthropometrics_notes,
-                      lab_results_check,
-                      lab_results_notes,
-                      dexa_check,
-                      dexa_notes,
-                      brain_mri_check,
-                      brain_mri_notes,
-                      neuro_psych_check,
-                      neuro_psych_notes,
-                      sensory_testing_check,
-                      sensory_testing_notes,
-                      liver_mri_check,
-                      liver_mri_notes,
-                      physical_function_check,
-                      physical_function_notes,
-                      eeg_check,
-                      eeg_notes,
-                      sleep_check,
-                      sleep_notes,
-                      cardiac_check,
-                      cardiac_notes,
-                      xray_check,
-                      xray_notes,
-                      other_notes,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      test_baseline_study_mednav_provider_report_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.report_delivery_date,
-                      NEW.anthropometrics_check,
-                      NEW.anthropometrics_notes,
-                      NEW.lab_results_check,
-                      NEW.lab_results_notes,
-                      NEW.dexa_check,
-                      NEW.dexa_notes,
-                      NEW.brain_mri_check,
-                      NEW.brain_mri_notes,
-                      NEW.neuro_psych_check,
-                      NEW.neuro_psych_notes,
-                      NEW.sensory_testing_check,
-                      NEW.sensory_testing_notes,
-                      NEW.liver_mri_check,
-                      NEW.liver_mri_notes,
-                      NEW.physical_function_check,
-                      NEW.physical_function_notes,
-                      NEW.eeg_check,
-                      NEW.eeg_notes,
-                      NEW.sleep_check,
-                      NEW.sleep_notes,
-                      NEW.cardiac_check,
-                      NEW.cardiac_notes,
-                      NEW.xray_check,
-                      NEW.xray_notes,
-                      NEW.other_notes,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_test_baseline_study_two_wk_followup_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_test_baseline_study_two_wk_followup_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-              BEGIN
-                  INSERT INTO test_baseline_study_two_wk_followup_history
-                  (
-                      master_id,
-                      participant_had_qs_yes_no,
-                      participant_qs_notes,
-                      assisted_finding_provider_yes_no,
-                      assistance_notes,
-                      other_notes,
-                      user_id,
-                      created_at,
-                      updated_at,
-                      test_baseline_study_two_wk_followup_id
-                      )
-                  SELECT
-                      NEW.master_id,
-                      NEW.participant_had_qs_yes_no,
-                      NEW.participant_qs_notes,
-                      NEW.assisted_finding_provider_yes_no,
-                      NEW.assistance_notes,
-                      NEW.other_notes,
-                      NEW.user_id,
-                      NEW.created_at,
-                      NEW.updated_at,
-                      NEW.id
-                  ;
-                  RETURN NEW;
-              END;
-          $$;
-
-
---
--- Name: log_test_ext2_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_test_ext2_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-            BEGIN
-                INSERT INTO test_ext2_history
-                (
-                    master_id,
-                    test_e2_id,
-                    user_id,
-                    created_at,
-                    updated_at,
-                    test_ext2_table_id
-                    )
-                SELECT
-                    NEW.master_id,
-                    NEW.test_e2_id,
-                    NEW.user_id,
-                    NEW.created_at,
-                    NEW.updated_at,
-                    NEW.id
-                ;
-                RETURN NEW;
-            END;
-        $$;
-
-
---
--- Name: log_test_ext_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_test_ext_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-            BEGIN
-                INSERT INTO test_ext_history
-                (
-                    master_id,
-                    test_e_id,
-                    user_id,
-                    created_at,
-                    updated_at,
-                    test_ext_table_id
-                    )
-                SELECT
-                    NEW.master_id,
-                    NEW.test_e_id,
-                    NEW.user_id,
-                    NEW.created_at,
-                    NEW.updated_at,
-                    NEW.id
-                ;
-                RETURN NEW;
-            END;
-        $$;
-
-
---
--- Name: log_test_item_update(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.log_test_item_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-        BEGIN
-            INSERT INTO test_item_history
-            (
-                    test_item_id,                    
-                    external_id,
-                    user_id,
-                    created_at,
-                    updated_at
-                )                 
-            SELECT                 
-                NEW.id,
-                NEW.external_id,
-                NEW.user_id,
-                NEW.created_at,
-                NEW.updated_at 
             ;
             RETURN NEW;
         END;
@@ -6446,13 +2611,13 @@ CREATE FUNCTION ml_app.log_tracker_update() RETURNS trigger
     AS $$
         BEGIN
 
-          -- Check to see if there is an existing record in tracker_history that matches the 
+          -- Check to see if there is an existing record in tracker_history that matches the
           -- that inserted or updated in trackers.
           -- If there is, just skip the insert into tracker_history, otherwise make the insert happen.
 
-          PERFORM * from tracker_history 
+          PERFORM * from tracker_history
             WHERE
-              master_id = NEW.master_id 
+              master_id = NEW.master_id
               AND protocol_id = NEW.protocol_id
               AND coalesce(protocol_event_id,-1) = coalesce(NEW.protocol_event_id,-1)
               AND coalesce(event_date, '1900-01-01'::date)::date = coalesce(NEW.event_date, '1900-01-01')::date
@@ -6463,24 +2628,24 @@ CREATE FUNCTION ml_app.log_tracker_update() RETURNS trigger
               -- do not check created_at --
               AND updated_at::timestamp = NEW.updated_at::timestamp
               AND coalesce(user_id,-1) = coalesce(NEW.user_id,-1);
-              
+
             IF NOT FOUND THEN
-              INSERT INTO tracker_history 
-                  (tracker_id, master_id, protocol_id, 
+              INSERT INTO tracker_history
+                  (tracker_id, master_id, protocol_id,
                    protocol_event_id, event_date, sub_process_id, notes,
                    item_id, item_type,
                    created_at, updated_at, user_id)
 
-                  SELECT NEW.id, NEW.master_id, NEW.protocol_id, 
-                     NEW.protocol_event_id, NEW.event_date, 
-                     NEW.sub_process_id, NEW.notes, 
+                  SELECT NEW.id, NEW.master_id, NEW.protocol_id,
+                     NEW.protocol_event_id, NEW.event_date,
+                     NEW.sub_process_id, NEW.notes,
                      NEW.item_id, NEW.item_type,
                      NEW.created_at, NEW.updated_at, NEW.user_id  ;
             END IF;
 
             RETURN NEW;
-            
-        END;   
+
+        END;
     $$;
 
 
@@ -6537,18 +2702,18 @@ CREATE FUNCTION ml_app.log_user_authorization_update() RETURNS trigger
             INSERT INTO user_authorization_history
             (
                     user_authorization_id,
-                    user_id,                    
-                    has_authorization,                    
+                    user_id,
+                    has_authorization,
                     admin_id,
-                    disabled,                    
+                    disabled,
                     created_at,
                     updated_at
-                )                 
-            SELECT                 
+                )
+            SELECT
                 NEW.id,
-                NEW.user_id,                
-                NEW.has_authorization,               
-                NEW.admin_id,                
+                NEW.user_id,
+                NEW.has_authorization,
+                NEW.admin_id,
                 NEW.disabled,
                 NEW.created_at,
                 NEW.updated_at
@@ -6764,14 +2929,14 @@ CREATE FUNCTION ml_app.tracker_upsert() RETURNS trigger
         latest_tracker trackers%ROWTYPE;
       BEGIN
 
-        
+
 
         -- Look for a row in trackers for the inserted master / protocol pair
-        SELECT * into latest_tracker 
-          FROM trackers 
+        SELECT * into latest_tracker
+          FROM trackers
           WHERE
-            master_id = NEW.master_id 
-            AND protocol_id = NEW.protocol_id              
+            master_id = NEW.master_id
+            AND protocol_id = NEW.protocol_id
           ORDER BY
             event_date DESC NULLS LAST, updated_at DESC NULLS LAST
           LIMIT 1
@@ -6779,15 +2944,15 @@ CREATE FUNCTION ml_app.tracker_upsert() RETURNS trigger
 
         IF NOT FOUND THEN
           -- Nothing was found, so just allow the insert to continue
-          
+
           RETURN NEW;
 
-        ELSE   
+        ELSE
           -- A trackers row for the master / protocol pair was found.
-          -- Check if it is more recent, by having an event date either later than the insert, or 
+          -- Check if it is more recent, by having an event date either later than the insert, or
           -- has an event_date the same as the insert but with later updated_at time (unlikely)
 
-          IF latest_tracker.event_date > NEW.event_date OR 
+          IF latest_tracker.event_date > NEW.event_date OR
               latest_tracker.event_date = NEW.event_date AND latest_tracker.updated_at > NEW.updated_at
               THEN
 
@@ -6797,45 +2962,45 @@ CREATE FUNCTION ml_app.tracker_upsert() RETURNS trigger
             -- We use the trackers record ID that was retrieved as the tracker_id in tracker_history
 
             INSERT INTO tracker_history (
-                tracker_id, master_id, protocol_id, 
+                tracker_id, master_id, protocol_id,
                 protocol_event_id, event_date, sub_process_id, notes,
                 item_id, item_type,
                 created_at, updated_at, user_id
-              )                 
-              SELECT 
-                latest_tracker.id, NEW.master_id, NEW.protocol_id, 
-                NEW.protocol_event_id, NEW.event_date, 
-                NEW.sub_process_id, NEW.notes, 
+              )
+              SELECT
+                latest_tracker.id, NEW.master_id, NEW.protocol_id,
+                NEW.protocol_event_id, NEW.event_date,
+                NEW.sub_process_id, NEW.notes,
                 NEW.item_id, NEW.item_type,
                 NEW.created_at, NEW.updated_at, NEW.user_id  ;
-            
+
             RETURN NULL;
 
           ELSE
             -- The tracker record for the master / protocol pair exists and was not more recent, therefore it
-            -- needs to be replaced by the intended NEW record. Complete with an update and allow the cascading 
+            -- needs to be replaced by the intended NEW record. Complete with an update and allow the cascading
             -- trackers update trigger to handle the insert into tracker_history.
 
             UPDATE trackers SET
-              master_id = NEW.master_id, 
-              protocol_id = NEW.protocol_id, 
-              protocol_event_id = NEW.protocol_event_id, 
-              event_date = NEW.event_date, 
-              sub_process_id = NEW.sub_process_id, 
-              notes = NEW.notes, 
-              item_id = NEW.item_id, 
+              master_id = NEW.master_id,
+              protocol_id = NEW.protocol_id,
+              protocol_event_id = NEW.protocol_event_id,
+              event_date = NEW.event_date,
+              sub_process_id = NEW.sub_process_id,
+              notes = NEW.notes,
+              item_id = NEW.item_id,
               item_type = NEW.item_type,
               -- do not update created_at --
-              updated_at = NEW.updated_at, 
+              updated_at = NEW.updated_at,
               user_id = NEW.user_id
-            WHERE master_id = NEW.master_id AND 
+            WHERE master_id = NEW.master_id AND
               protocol_id = NEW.protocol_id
             ;
 
             -- Prevent the original insert from actually completing.
             RETURN NULL;
           END IF;
-        END IF;      
+        END IF;
       END;
     $$;
 
@@ -6850,142 +3015,29 @@ CREATE FUNCTION ml_app.update_address_ranks(set_master_id integer) RETURNS integ
         DECLARE
           latest_primary RECORD;
         BEGIN
-  
-          SELECT * into latest_primary 
+
+          SELECT * into latest_primary
           FROM addresses
           WHERE master_id = set_master_id
           AND rank = 10
           ORDER BY updated_at DESC
           LIMIT 1;
-        
+
           IF NOT FOUND THEN
             RETURN NULL;
           END IF;
 
-          
-          UPDATE addresses SET rank = 5 
-          WHERE 
-            master_id = set_master_id 
+
+          UPDATE addresses SET rank = 5
+          WHERE
+            master_id = set_master_id
             AND rank = 10
             AND id <> latest_primary.id;
-          
+
 
           RETURN 1;
         END;
     $$;
-
-
---
--- Name: update_all_primary_sleep_records(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.update_all_primary_sleep_records() RETURNS integer
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-	sleep_record RECORD;
-	primary_count integer;
-	event_count integer;
-BEGIN
-
-	primary_count := 0;
-	event_count := 0;
-
-	FOR sleep_record IN
-	  SELECT * from temp_sleep_assignments ORDER BY record_updated_at
-	LOOP
-
-
-		IF sleep_record.event IS NULL THEN
-
-			PERFORM update_primary_sleep_record(
-				sleep_record.record_updated_at,
-				sleep_record.sleep_id::BIGINT,
-				(SELECT (pi::varchar)::player_infos FROM temp_player_infos pi WHERE master_id = sleep_record.master_id LIMIT 1),
-				ARRAY(SELECT distinct (pc::varchar)::player_contacts FROM temp_player_contacts pc WHERE master_id = sleep_record.master_id),
-				ARRAY(SELECT distinct (a::varchar)::addresses FROM temp_addresses a WHERE master_id = sleep_record.master_id)
-			);
-
-			primary_count := primary_count + 1;
-
-		ELSE
-
-			PERFORM updated_sleep_tracker(
-				sleep_record.record_updated_at,
-				sleep_record.sleep_id::BIGINT,
-				sleep_record.event,
-				sleep_record.record_updated_at,
-				'Activity recorded in Athena: ' || sleep_record.event
-			);
-
-			event_count := event_count + 1;
-
-		END IF;
-
-	END LOOP;
-
-	RAISE NOTICE 'Performed updates on primary records (%) and events (%)', primary_count, event_count;
-
-	return 1;
-
-END;
-$$;
-
-
---
--- Name: update_ipa_transfer_record_results(character varying, character varying, character varying); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.update_ipa_transfer_record_results(new_from_db character varying, new_to_db character varying, for_external_type character varying) RETURNS integer
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-
-  UPDATE ml_app.sync_statuses sync
-  SET
-    select_status = t.status,
-    to_master_id = t.to_master_id,
-    updated_at = now()
-  FROM (
-    SELECT * FROM temp_ipa_assignments_results
-  ) AS t
-  WHERE
-    from_master_id = t.master_id
-    AND from_db = new_from_db
-    AND to_db = new_to_db
-    AND external_id = t.ipa_id::varchar
-    AND external_type = for_external_type
-    AND (t.event IS NULL and sync.event IS NULL OR sync.event = t.event)
-    AND sync.record_updated_at = t.record_updated_at
-    AND coalesce(select_status, '') NOT IN ('completed', 'already transferred');
-
-  RETURN 1;
-
-END;
-$$;
-
-
---
--- Name: update_master_msid(); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.update_master_msid() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-      BEGIN
-          UPDATE ml_app.masters
-              set msid = (
-              case when NEW.msid is null and rank in (11,12)
-				  then (select max(msid) from ml_app.masters)+1
-                   else new.msid
-              end
-              )
-
-          WHERE masters.id = NEW.id;
-
-          RETURN NEW;
-      END;
-      $$;
 
 
 --
@@ -6996,10 +3048,10 @@ CREATE FUNCTION ml_app.update_master_with_player_info() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
       BEGIN
-          UPDATE masters 
+          UPDATE masters
               set rank = (
-              case when NEW.rank is null then null 
-                   when (NEW.rank > 12) then NEW.rank * -1 
+              case when NEW.rank is null then null
+                   when (NEW.rank > 12) then NEW.rank * -1
                    else new.rank
               end
               )
@@ -7019,8 +3071,8 @@ CREATE FUNCTION ml_app.update_master_with_pro_info() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
     BEGIN
-        UPDATE masters 
-            set pro_info_id = NEW.id, pro_id = NEW.pro_id             
+        UPDATE masters
+            set pro_info_id = NEW.id, pro_id = NEW.pro_id
         WHERE masters.id = NEW.master_id;
 
         RETURN NEW;
@@ -7038,258 +3090,31 @@ CREATE FUNCTION ml_app.update_player_contact_ranks(set_master_id integer, set_re
         DECLARE
           latest_primary RECORD;
         BEGIN
-  
-          SELECT * into latest_primary 
+
+          SELECT * into latest_primary
           FROM player_contacts
           WHERE master_id = set_master_id
           AND rank = 10
           AND rec_type = set_rec_type
           ORDER BY updated_at DESC
           LIMIT 1;
-        
+
           IF NOT FOUND THEN
             RETURN NULL;
           END IF;
 
-          
-          UPDATE player_contacts SET rank = 5 
-          WHERE 
-            master_id = set_master_id 
+
+          UPDATE player_contacts SET rank = 5
+          WHERE
+            master_id = set_master_id
             AND rank = 10
             AND rec_type = set_rec_type
             AND id <> latest_primary.id;
-          
+
 
           RETURN 1;
         END;
     $$;
-
-
---
--- Name: update_sleep_transfer_record_results(character varying, character varying, character varying); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.update_sleep_transfer_record_results(new_from_db character varying, new_to_db character varying, for_external_type character varying) RETURNS integer
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-
-  UPDATE ml_app.sync_statuses sync
-  SET
-    select_status = t.status,
-    to_master_id = t.to_master_id,
-    updated_at = now()
-  FROM (
-    SELECT * FROM temp_sleep_assignments_results
-  ) AS t
-  WHERE
-    from_master_id = t.master_id
-    AND from_db = new_from_db
-    AND to_db = new_to_db
-    AND external_id = t.sleep_id::varchar
-    AND external_type = for_external_type
-    AND (t.event IS NULL and sync.event IS NULL OR sync.event = t.event)
-    AND sync.record_updated_at = t.record_updated_at
-    AND coalesce(select_status, '') NOT IN ('completed', 'already transferred');
-
-  RETURN 1;
-
-END;
-$$;
-
-
---
--- Name: updated_sleep_tracker(timestamp without time zone, bigint, character varying, timestamp without time zone, character varying); Type: FUNCTION; Schema: ml_app; Owner: -
---
-
-CREATE FUNCTION ml_app.updated_sleep_tracker(rec_updated_at timestamp without time zone, match_sleep_id bigint, for_event character varying, event_date timestamp without time zone, add_notes character varying) RETURNS integer
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-	rec_id integer;
-  etl_user_id integer;
-	found_sleep record;
-	new_master_id integer;
-	this_protocol_id integer;
-	opt_out_id integer;
-	complete_id integer;
-	withdrew_id integer;
-	screened_id integer;
-	eligible_id integer;
-	ineligible_id integer;
-	enrolled_id integer;
-	contacted_id integer;
-	l2fu_id integer;
-
-BEGIN
-
-	-- We create new records setting user_id for the user with email fphsetl@hms.harvard.edu, rather than the original
-	-- value from the source database, which probably would not match the user IDs in the remote database.
-	SELECT id FROM get_etl_user()
-	INTO etl_user_id
-	LIMIT 1;
-
-
-	-- Find the sleep_assignments external identifier record for this master record and
-	-- validate that it exists
-	SELECT *
-	INTO found_sleep
-	FROM sleep_assignments sleep
-	WHERE sleep.sleep_id = match_sleep_id
-	LIMIT 1;
-
-	new_master_id := found_sleep.master_id;
-
-	-- If the Sleep external identifier does not exist then the sync should fail.
-
-	IF NOT FOUND THEN
-		RAISE NOTICE 'Attempting to transfer trackers back for an external ID that does not exist: sleep_assigments record found for Sleep_ID %', (match_sleep_id);
-		UPDATE temp_sleep_assignments SET status='invalid tracker sync-back', to_master_id=new_master_id WHERE sleep_id = match_sleep_id AND event = for_event and record_updated_at = rec_updated_at;
-	  RETURN NULL;
-	END IF;
-
-	SELECT id
-	FROM protocols
-	WHERE
-		name = 'Sleep Study Phase 2'
-		AND coalesce(disabled, FALSE) = FALSE
-	LIMIT 1
-	INTO this_protocol_id;
-
-
-	SELECT id
-	FROM sub_processes
-	WHERE
-		protocol_id = this_protocol_id
-		AND name = 'Opt Out'
-		AND coalesce(disabled, FALSE) = FALSE
-	LIMIT 1
-	INTO opt_out_id;
-
-	SELECT id
-	FROM sub_processes
-	WHERE
-		protocol_id = this_protocol_id
-		AND name = 'Complete'
-		AND coalesce(disabled, FALSE) = FALSE
-	LIMIT 1
-	INTO complete_id;
-
-	SELECT id
-	FROM sub_processes
-	WHERE
-		protocol_id = this_protocol_id
-		AND name = 'Withdrew'
-		AND coalesce(disabled, FALSE) = FALSE
-	LIMIT 1
-	INTO withdrew_id;
-
-	SELECT id
-	FROM sub_processes
-	WHERE
-		protocol_id = this_protocol_id
-		AND name = 'Screened'
-		AND coalesce(disabled, FALSE) = FALSE
-	LIMIT 1
-	INTO screened_id;
-
-	SELECT id
-	FROM sub_processes
-	WHERE
-		protocol_id = this_protocol_id
-		AND name = 'Eligible'
-		AND coalesce(disabled, FALSE) = FALSE
-	LIMIT 1
-	INTO eligible_id;
-
-	SELECT id
-	FROM sub_processes
-	WHERE
-		protocol_id = this_protocol_id
-		AND name = 'Ineligible'
-		AND coalesce(disabled, FALSE) = FALSE
-	LIMIT 1
-	INTO ineligible_id;
-
-	SELECT id
-	FROM sub_processes
-	WHERE
-		protocol_id = this_protocol_id
-		AND name = 'Enrolled'
-		AND coalesce(disabled, FALSE) = FALSE
-	LIMIT 1
-	INTO enrolled_id;
-
-	SELECT id
-	FROM sub_processes
-	WHERE
-		protocol_id = this_protocol_id
-		AND name = 'Lost to Follow Up, Not Enrolled'
-		AND coalesce(disabled, FALSE) = FALSE
-	LIMIT 1
-	INTO l2fu_id;
-
-	SELECT id
-	FROM sub_processes
-	WHERE
-	protocol_id = this_protocol_id
-	AND name = 'Contacted'
-	AND coalesce(disabled, FALSE) = FALSE
-	LIMIT 1
-	INTO contacted_id;
-
-
-	INSERT INTO trackers
-	(
-		master_id,
-		protocol_id,
-		sub_process_id,
-		protocol_event_id,
-		event_date,
-		notes,
-		created_at,
-		updated_at,
-		user_id
-	)
-	VALUES
-	(
-		found_sleep.master_id,
-		this_protocol_id,
-		CASE for_event
-			WHEN 'exit (opt out)' THEN opt_out_id
-			WHEN 'exit during hms phone screen' THEN opt_out_id
-			WHEN 'exit during bwh phone screen' THEN opt_out_id
-			WHEN 'exit during informed consent review' THEN opt_out_id
-			WHEN 'lost to follow up' THEN l2fu_id
-			WHEN 'hms screened' THEN screened_id
-			WHEN 'bwh eligible' THEN eligible_id
-			WHEN 'hms or bwh ineligible' THEN ineligible_id
-			WHEN 'enrolled' THEN enrolled_id
-			WHEN 'completed' THEN complete_id
-			WHEN 'withdrawn' THEN withdrew_id
-			WHEN 'pi follow up before enrollment' THEN contacted_id
-			WHEN 'general communication' THEN contacted_id
-		END,
-		NULL,
-		event_date,
-		add_notes,
-		now(),
-		now(),
-		etl_user_id
-
-	)
-	RETURNING id
-	INTO rec_id
-	;
-
-	UPDATE temp_sleep_assignments SET status='completed', to_master_id=new_master_id WHERE sleep_id = match_sleep_id AND event = for_event and record_updated_at = rec_updated_at;
-
-	RAISE NOTICE 'Inserted Event "%" for Sleep_ID %', for_event, match_sleep_id;
-
-	return new_master_id;
-
-END;
-$$;
 
 
 --
@@ -7311,6 +3136,60 @@ BEGIN
     NEW.app_type_id, NEW.role_name, NEW.role_template, NEW.name, NEW.description,
     NEW.disabled,
     NEW.admin_id,
+    NEW.created_at,
+    NEW.updated_at,
+    NEW.id;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: log_q2_demo_rcs_update(); Type: FUNCTION; Schema: redcap; Owner: -
+--
+
+CREATE FUNCTION redcap.log_q2_demo_rcs_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  INSERT INTO q2_demo_rc_history (
+    
+    record_id, dob, current_weight, domestic_status, living_situation, current_employment, student_looking, current_fbjob, current_fbjob_oth, job_industry, job_title, job_title_entry, smoke, smoketime_chosen_array, smoketime___pnfl, smoketime___dnfl, smoketime___anfl, smoke_start, smoke_stop, smoke_curr, smoke_totyrs, smoke_prenfl, smoke_nfl, smoke_postnfl, edu_player, edu_mother, edu_father, occ_mother, occ_mother_exp, occ_father, occ_father_exp, yrsplayed_prehs, playhsfb___no, hsposition1, hsposition2, yrsplayed_hs, collposition1, collposition2, yrsplayed_coll, college_div, collpreprac, collpreprac_pads, collregprac, collregprac_pads, collsnap_ol, collsnap_wr, collsnap_dl, collsnap_te, collsnap_lb, collsnap_qb, collsnap_db, collsnap_kick, collsnap_rb, collsnap_special, nflpreprac, nflpreprac_pads, nflregprac, nflregprac_pads, prosnap_ol, prosnap_wr, prosnap_dl, prosnap_te, prosnap_lb, prosnap_qb, prosnap_db, prosnap_kick, prosnap_rb, prosnap_special, gmsplyd_career, gmsplyd_season, prsqd, prsqd_seasons, othleague, othleague_seasons, othleaguenm_chosen_array, othleaguenm___afl, othleaguenm___cfl, othleaguenm___efl, othleaguenm___ufl, othleaguenm___wfl, othleaguenm___xfl, othleaguenm___oth, othleague_exp, nonnfl_seasons, prsqd_nonnfl, prsqd_nonnfl_seasons, firstpro_age, finalpro_age, leftfb_chosen_array, leftfb___age, leftfb___cut, leftfb___fbinj, leftfb___inj, leftfb___retire, postfb_hlthprac, postfb_degree, postfb_charity, postfb_fbjob, postfb_job, postfbjob_occ, postfbjob_occexp, postfbex_walk, postfbex_jog, postfbex_run, postfbex_other, postfbex_lowint, postfbex_wttrain, postfbex_endsprt, postfbex_reclg, pastyrex_walk, pastyrex_jog, pastyrex_run, pastyrex_oth, pastyrex_lowint, pastyrex_wttrain, pastyrex_endsprt, pastyrex_reclg, ex150min, ex150min_exp, ex150min_oth, demog___complete, demog_date, postfb_wt2yr, postfb_wt2yrdelta, postfb_wt5yr, postfb_wt5yrdelta, cardiac_rehab, cvtest_ecg, cvtest_ecg_exp, cvtest_echo, cvtest_echo_exp, cvtest_cpxt, cvtest_cpxt_exp, cvtest_cvmri, cvtest_cvmri_exp, cvtest_corct, cvtest_corct_exp, cvtest_cvcath, cvtest_cvcath_exp, cvdx_mi, cvdx_stroke, cvdx_tia, cvmedrec_highbp, cvmedrec_hrtfail, cvmedrec_afib, cvmedrec_otharrhyth, cvmedrec_highchol, cvmedrec_diabetes, cvsurg_bypass, cvsurg_ablation, cvsurg_carotidart, cvmed_chol, cvmed_othchol, cvmed_novchol, cvmed_bldthin, cvmed_anticoag, cvmed_arrhyth, cvmed_digoxin, cvmed_furosemide, cvmed_thiazide, cvmed_calciumblk, cvmed_antihyp, dbmed_metformin, dbmed_glimeperide, dbmed_insulin, dbmed_other, cardiac___complete, cardiac_date, ad8_1, ad8_2, ad8_3, ad8_4, ad8_5, ad8_6, ad8_7, ad8_8, nqcog64q2, nqcog65q2, nqcog66q2, nqcog68q2, nqcog72q2, nqcog75q2, nqcog77q2, nqcog80q2, nqper02, nqper05, nqper06, nqper07, nqper11, nqper12, nqper17, nqper19, phq1, phq2, phq3, phq4, phq5, phq6, phq7, phq8, phq9, gad7_1, gad7_2, gad7_3, gad7_4, gad7_5, gad7_6, gad7_7, lotr1, lotr3, lotr4, lotr7, lotr9, lotr10, stpbng_snore, stpbng_tired, stpbng_obser, stpbng_bp, stpbng_neck, cpapuse, cpapuse_days, ncmedrec_hdache, ncmedrec_anx, ncmedrec_dep, ncmedrec_memloss, ncmedrec_add, ncdx_alz, ncdx_cte, ncdx_vascdem, ncdx_othdem, ncdx_als, ncdx_parkins, ncdx_ms, ncmed_ssri, ncmed_tricydep, ncmed_othdep, ncmed_slpaid, neurocog___complete, neurocog_date, bpi1, bpi2_chosen_array, bpi2___head, bpi2___neck, bpi2___shoul, bpi2___chest, bpi2___arm, bpi2___hand, bpi2___uback, bpi2___lbak, bpi2___hip, bpi2___leg, bpi2___knee, bpi2___ankle, bpi2___foot, bpi2___oth, bpi2_othexp, bpi2most, bpi2most_othexp, bpi3, bpi4, bpi5, bpi6, bpi7_chosen_array, bpi7___none, bpi7___otc, bpi7___prmed, bpi7___mass, bpi7___pt, bpi7___acup, bpi7___marij, bpi7___intpm, bpi7___oth, bpi7_othexp, bpi8, bpi9a, bpi9b, bpi9c, bpi9d, bpi9e, bpi9f, bpi9g, bpi9h, pnmedfb_acetamin, pnmedfb_aspirin, pnmedfb_ibuprof, pnmedfb_othantiinf, pnmedfb_oralster, pnmedfb_opioid, pnmed5yr_acetamin, pnmed5yr_aspirin, pnmed5yr_ibuprof, pnmed5yr_antiinf, pnmed5yr_oralster, pnmed5yr_opioid, pnmed_acetamin, pnmed_acetamin_days, pnmed_acetamin_tabs, pnmed_acetamin_dose, pnmed_aspirin, pnmed_aspirin_days, pnmed_aspirin_tabs, pnmed_aspirin_dose, pnmed_ibuprof, pnmed_ibuprof_days, pnmed_ibuprof_tabs, pnmed_ibuprof_dose, pnmed_antiinf, pnmed_antiinf_days, pnmed_antiinf_tabs, pnmed_antiinf_dose, pnmed_oralster, pnmed_oralster_days, pnmed_oralster_tabs, pnmed_oralster_dose, pnmed_opioid, pnmed_opioid_days, pnmed_opioid_tab, pnmed_opioid_dose, pnsurg_nckspin, pnsurg_back, pnsurg_hip, pnsurg_knee, pain___complete, pain_date, wealth, wealth_emerg_chosen_array, wealth_emerg___1, wealth_emerg___2, wealth_emerg___3, wealth_emerg___4, wealth_emerg___5, wealth_emerg___6, wealth_emerg___7, wealth_emerg___8, wealth_emerg___9, wealth_emerg_oth, ladder_wealth, ladder_comm, household_number, hcutil_pcp, hcutil_pcp_exp, hcutil_pcp_oth, hcutil_othprov, selfrpt_cte, otdx_arthritis, otdx_slpapnea, otdx_prostcanc, otdx_basalcanc, otdx_squamcanc, otdx_melanom, otdx_lymphom, otdx_othcanc, otdx_renalfail, otdx_alcdep, otdx_livcirrhosis, otdx_livfail, otmedrec_pncond, otmedrec_livprob, otmedrec_lowtest, otmedrec_ed, massage, acupuncture, chiropractic, yoga, taichi, meditation, othaltmed, othaltmed_exp, famhxmoth_chosen_array, famhxmoth___na, famhxmoth___lung, famhxmoth___colrec, famhxmoth___diab, famhxmoth___mela, famhxmoth___hypert, famhxmoth___dem, famhxmoth___alc, famhxfsib_chosen_array, famhxfsib___na, famhxfsib___lung, famhxfsib___colrec, famhxfsib___diab, famhxfsib___mela, famhxfsib___hypert, famhxfsib___dem, famhxfsib___alc, femsib_number, famhxfath_chosen_array, famhxfath___na, famhxfath___lung, famhxfath___colrec, famhxfath___prost, famhxfath___diab, famhxfath___mela, famhxfath___hypert, famhxfath___dem, famhxfath___alc, famhxmsib_chosen_array, famhxmsib___na, famhxmsib___lung, famhxmsib___colrec, famhxmsib___prost, famhxmsib___diab, famhxmsib___mela, famhxmsib___hypert, famhxmsib___dem, famhxmsib___alc, sib_number, sib1age, sib1ht_feet, sib1ht_inch, sib1sport_chosen_array, sib1sport___none, sib1sport___hsfb, sib1sport___colfb, sib1sport___oth, sib1sport_oth, sib2age, sib2ht_feet, sib2ht_inch, sib2sport_chosen_array, sib2sport___none, sib2sport___hsfb, sib2sport___colfb, sib2sport___oth, sib2sport_oth, sib3age, sib3ht_feet, sib3ht_inch, sib3sport_chosen_array, sib3sport___none, sib3sport___hsfb, sib3sport___colfb, sib3sport___oth, sib3sport_oth, sib4age, sib4ht_feet, sib4ht_inch, sib4sport_chosen_array, sib4sport___none, sib4sport___hsfb, sib4sport___colfb, sib4sport___oth, sib4sportoth, sib5age, sib5ht_feet, sib5ht_inch, sib5sport_chosen_array, sib5sport___none, sib5sport___hsfb, sib5sport___colfb, sib5sport___oth, sib5sport_oth, pedcaff_chosen_array, pedcaff___noans, pedcaff___no, pedcaff___fb, pedcaff___cur, pededrink_chosen_array, pededrink___noans, pededrink___no, pededrink___fb, pededrink___cur, pedcreat_chosen_array, pedcreat___noans, pedcreat___no, pedcreat___fb, pedcreat___cur, pedsteroid_chosen_array, pedsteroid___noans, pedsteroid___no, pedsteroid___fb, pedsteroid___cur, pedgh_chosen_array, pedgh___noans, pedgh___no, pedgh___fb, pedgh___cur, pedephed_chosen_array, pedephed___noans, pedephed___no, pedephed___fb, pedephed___cur, pedbetahy_chosen_array, pedbetahy___noans, pedbetahy___no, pedbetahy___fb, pedbetahy___cur, pednoncaf_chosen_array, pednoncaf___noans, pednoncaf___no, pednoncaf___fb, pednoncaf___cur, pedrcell_chosen_array, pedrcell___noans, pedrcell___no, pedrcell___fb, pedrcell___cur, pedinos_chosen_array, pedinos___noans, pedinos___no, pedinos___fb, pedinos___cur, alcohol_days, alcohol_drinks, marijuana, marijuana_start, marijuana_stop, marijuana_totyrs, marijtime_chosen_array, marijtime___pnfl, marijtime___dnfl, marijtime___anfl, marijreas_chosen_array, marijreas___fun, marijreas___relx, marijreas___pain, marijreas___anx, marijreas___dep, marijreas___oth, marijreas_exp, born_address, born_city, born_state, born_zip, twelveyrs_address, twelveyrs_city, twelveyrs_state, twelveyrs_zip, infertility, infert_age, infert_hcp, infertreas_chosen_array, infertreas___fem, infertreas___mal, infertreas___unex, infertreas___oth, infertreas_oth, actout_dreams, smell_problem, taste_problem, bowel_move, laxative_use, workplace_harass, coach_discrim, coach_discrimstr, player_discrim, player_discrimstr, job_discrim, job_discrimstr, ace1, ace2, ace3, ace4, ace5, ace6, ace7, ace8, ace9, ace10, foodins_worry, foodins_ranout, q2help, othealth___complete, othealth_date, q2_survey_complete, q2_survey_timestamp, sdfsdaf_chosen_array, sdfsdaf___0, sdfsdaf___1, sdfsdaf___2, rtyrtyrt_chosen_array, rtyrtyrt___0, rtyrtyrt___1, rtyrtyrt___2, test_field, test_phone, i57, f57, dd, yes_or_no, true_or_false, file1, signature, slider, test_complete, test_timestamp, base_field, non_survey_complete, non_survey_timestamp, redcap_survey_identifier,
+    user_id,
+    created_at,
+    updated_at,
+    q2_demo_rc_id)
+  SELECT
+    
+    NEW.record_id, NEW.dob, NEW.current_weight, NEW.domestic_status, NEW.living_situation, NEW.current_employment, NEW.student_looking, NEW.current_fbjob, NEW.current_fbjob_oth, NEW.job_industry, NEW.job_title, NEW.job_title_entry, NEW.smoke, NEW.smoketime_chosen_array, NEW.smoketime___pnfl, NEW.smoketime___dnfl, NEW.smoketime___anfl, NEW.smoke_start, NEW.smoke_stop, NEW.smoke_curr, NEW.smoke_totyrs, NEW.smoke_prenfl, NEW.smoke_nfl, NEW.smoke_postnfl, NEW.edu_player, NEW.edu_mother, NEW.edu_father, NEW.occ_mother, NEW.occ_mother_exp, NEW.occ_father, NEW.occ_father_exp, NEW.yrsplayed_prehs, NEW.playhsfb___no, NEW.hsposition1, NEW.hsposition2, NEW.yrsplayed_hs, NEW.collposition1, NEW.collposition2, NEW.yrsplayed_coll, NEW.college_div, NEW.collpreprac, NEW.collpreprac_pads, NEW.collregprac, NEW.collregprac_pads, NEW.collsnap_ol, NEW.collsnap_wr, NEW.collsnap_dl, NEW.collsnap_te, NEW.collsnap_lb, NEW.collsnap_qb, NEW.collsnap_db, NEW.collsnap_kick, NEW.collsnap_rb, NEW.collsnap_special, NEW.nflpreprac, NEW.nflpreprac_pads, NEW.nflregprac, NEW.nflregprac_pads, NEW.prosnap_ol, NEW.prosnap_wr, NEW.prosnap_dl, NEW.prosnap_te, NEW.prosnap_lb, NEW.prosnap_qb, NEW.prosnap_db, NEW.prosnap_kick, NEW.prosnap_rb, NEW.prosnap_special, NEW.gmsplyd_career, NEW.gmsplyd_season, NEW.prsqd, NEW.prsqd_seasons, NEW.othleague, NEW.othleague_seasons, NEW.othleaguenm_chosen_array, NEW.othleaguenm___afl, NEW.othleaguenm___cfl, NEW.othleaguenm___efl, NEW.othleaguenm___ufl, NEW.othleaguenm___wfl, NEW.othleaguenm___xfl, NEW.othleaguenm___oth, NEW.othleague_exp, NEW.nonnfl_seasons, NEW.prsqd_nonnfl, NEW.prsqd_nonnfl_seasons, NEW.firstpro_age, NEW.finalpro_age, NEW.leftfb_chosen_array, NEW.leftfb___age, NEW.leftfb___cut, NEW.leftfb___fbinj, NEW.leftfb___inj, NEW.leftfb___retire, NEW.postfb_hlthprac, NEW.postfb_degree, NEW.postfb_charity, NEW.postfb_fbjob, NEW.postfb_job, NEW.postfbjob_occ, NEW.postfbjob_occexp, NEW.postfbex_walk, NEW.postfbex_jog, NEW.postfbex_run, NEW.postfbex_other, NEW.postfbex_lowint, NEW.postfbex_wttrain, NEW.postfbex_endsprt, NEW.postfbex_reclg, NEW.pastyrex_walk, NEW.pastyrex_jog, NEW.pastyrex_run, NEW.pastyrex_oth, NEW.pastyrex_lowint, NEW.pastyrex_wttrain, NEW.pastyrex_endsprt, NEW.pastyrex_reclg, NEW.ex150min, NEW.ex150min_exp, NEW.ex150min_oth, NEW.demog___complete, NEW.demog_date, NEW.postfb_wt2yr, NEW.postfb_wt2yrdelta, NEW.postfb_wt5yr, NEW.postfb_wt5yrdelta, NEW.cardiac_rehab, NEW.cvtest_ecg, NEW.cvtest_ecg_exp, NEW.cvtest_echo, NEW.cvtest_echo_exp, NEW.cvtest_cpxt, NEW.cvtest_cpxt_exp, NEW.cvtest_cvmri, NEW.cvtest_cvmri_exp, NEW.cvtest_corct, NEW.cvtest_corct_exp, NEW.cvtest_cvcath, NEW.cvtest_cvcath_exp, NEW.cvdx_mi, NEW.cvdx_stroke, NEW.cvdx_tia, NEW.cvmedrec_highbp, NEW.cvmedrec_hrtfail, NEW.cvmedrec_afib, NEW.cvmedrec_otharrhyth, NEW.cvmedrec_highchol, NEW.cvmedrec_diabetes, NEW.cvsurg_bypass, NEW.cvsurg_ablation, NEW.cvsurg_carotidart, NEW.cvmed_chol, NEW.cvmed_othchol, NEW.cvmed_novchol, NEW.cvmed_bldthin, NEW.cvmed_anticoag, NEW.cvmed_arrhyth, NEW.cvmed_digoxin, NEW.cvmed_furosemide, NEW.cvmed_thiazide, NEW.cvmed_calciumblk, NEW.cvmed_antihyp, NEW.dbmed_metformin, NEW.dbmed_glimeperide, NEW.dbmed_insulin, NEW.dbmed_other, NEW.cardiac___complete, NEW.cardiac_date, NEW.ad8_1, NEW.ad8_2, NEW.ad8_3, NEW.ad8_4, NEW.ad8_5, NEW.ad8_6, NEW.ad8_7, NEW.ad8_8, NEW.nqcog64q2, NEW.nqcog65q2, NEW.nqcog66q2, NEW.nqcog68q2, NEW.nqcog72q2, NEW.nqcog75q2, NEW.nqcog77q2, NEW.nqcog80q2, NEW.nqper02, NEW.nqper05, NEW.nqper06, NEW.nqper07, NEW.nqper11, NEW.nqper12, NEW.nqper17, NEW.nqper19, NEW.phq1, NEW.phq2, NEW.phq3, NEW.phq4, NEW.phq5, NEW.phq6, NEW.phq7, NEW.phq8, NEW.phq9, NEW.gad7_1, NEW.gad7_2, NEW.gad7_3, NEW.gad7_4, NEW.gad7_5, NEW.gad7_6, NEW.gad7_7, NEW.lotr1, NEW.lotr3, NEW.lotr4, NEW.lotr7, NEW.lotr9, NEW.lotr10, NEW.stpbng_snore, NEW.stpbng_tired, NEW.stpbng_obser, NEW.stpbng_bp, NEW.stpbng_neck, NEW.cpapuse, NEW.cpapuse_days, NEW.ncmedrec_hdache, NEW.ncmedrec_anx, NEW.ncmedrec_dep, NEW.ncmedrec_memloss, NEW.ncmedrec_add, NEW.ncdx_alz, NEW.ncdx_cte, NEW.ncdx_vascdem, NEW.ncdx_othdem, NEW.ncdx_als, NEW.ncdx_parkins, NEW.ncdx_ms, NEW.ncmed_ssri, NEW.ncmed_tricydep, NEW.ncmed_othdep, NEW.ncmed_slpaid, NEW.neurocog___complete, NEW.neurocog_date, NEW.bpi1, NEW.bpi2_chosen_array, NEW.bpi2___head, NEW.bpi2___neck, NEW.bpi2___shoul, NEW.bpi2___chest, NEW.bpi2___arm, NEW.bpi2___hand, NEW.bpi2___uback, NEW.bpi2___lbak, NEW.bpi2___hip, NEW.bpi2___leg, NEW.bpi2___knee, NEW.bpi2___ankle, NEW.bpi2___foot, NEW.bpi2___oth, NEW.bpi2_othexp, NEW.bpi2most, NEW.bpi2most_othexp, NEW.bpi3, NEW.bpi4, NEW.bpi5, NEW.bpi6, NEW.bpi7_chosen_array, NEW.bpi7___none, NEW.bpi7___otc, NEW.bpi7___prmed, NEW.bpi7___mass, NEW.bpi7___pt, NEW.bpi7___acup, NEW.bpi7___marij, NEW.bpi7___intpm, NEW.bpi7___oth, NEW.bpi7_othexp, NEW.bpi8, NEW.bpi9a, NEW.bpi9b, NEW.bpi9c, NEW.bpi9d, NEW.bpi9e, NEW.bpi9f, NEW.bpi9g, NEW.bpi9h, NEW.pnmedfb_acetamin, NEW.pnmedfb_aspirin, NEW.pnmedfb_ibuprof, NEW.pnmedfb_othantiinf, NEW.pnmedfb_oralster, NEW.pnmedfb_opioid, NEW.pnmed5yr_acetamin, NEW.pnmed5yr_aspirin, NEW.pnmed5yr_ibuprof, NEW.pnmed5yr_antiinf, NEW.pnmed5yr_oralster, NEW.pnmed5yr_opioid, NEW.pnmed_acetamin, NEW.pnmed_acetamin_days, NEW.pnmed_acetamin_tabs, NEW.pnmed_acetamin_dose, NEW.pnmed_aspirin, NEW.pnmed_aspirin_days, NEW.pnmed_aspirin_tabs, NEW.pnmed_aspirin_dose, NEW.pnmed_ibuprof, NEW.pnmed_ibuprof_days, NEW.pnmed_ibuprof_tabs, NEW.pnmed_ibuprof_dose, NEW.pnmed_antiinf, NEW.pnmed_antiinf_days, NEW.pnmed_antiinf_tabs, NEW.pnmed_antiinf_dose, NEW.pnmed_oralster, NEW.pnmed_oralster_days, NEW.pnmed_oralster_tabs, NEW.pnmed_oralster_dose, NEW.pnmed_opioid, NEW.pnmed_opioid_days, NEW.pnmed_opioid_tab, NEW.pnmed_opioid_dose, NEW.pnsurg_nckspin, NEW.pnsurg_back, NEW.pnsurg_hip, NEW.pnsurg_knee, NEW.pain___complete, NEW.pain_date, NEW.wealth, NEW.wealth_emerg_chosen_array, NEW.wealth_emerg___1, NEW.wealth_emerg___2, NEW.wealth_emerg___3, NEW.wealth_emerg___4, NEW.wealth_emerg___5, NEW.wealth_emerg___6, NEW.wealth_emerg___7, NEW.wealth_emerg___8, NEW.wealth_emerg___9, NEW.wealth_emerg_oth, NEW.ladder_wealth, NEW.ladder_comm, NEW.household_number, NEW.hcutil_pcp, NEW.hcutil_pcp_exp, NEW.hcutil_pcp_oth, NEW.hcutil_othprov, NEW.selfrpt_cte, NEW.otdx_arthritis, NEW.otdx_slpapnea, NEW.otdx_prostcanc, NEW.otdx_basalcanc, NEW.otdx_squamcanc, NEW.otdx_melanom, NEW.otdx_lymphom, NEW.otdx_othcanc, NEW.otdx_renalfail, NEW.otdx_alcdep, NEW.otdx_livcirrhosis, NEW.otdx_livfail, NEW.otmedrec_pncond, NEW.otmedrec_livprob, NEW.otmedrec_lowtest, NEW.otmedrec_ed, NEW.massage, NEW.acupuncture, NEW.chiropractic, NEW.yoga, NEW.taichi, NEW.meditation, NEW.othaltmed, NEW.othaltmed_exp, NEW.famhxmoth_chosen_array, NEW.famhxmoth___na, NEW.famhxmoth___lung, NEW.famhxmoth___colrec, NEW.famhxmoth___diab, NEW.famhxmoth___mela, NEW.famhxmoth___hypert, NEW.famhxmoth___dem, NEW.famhxmoth___alc, NEW.famhxfsib_chosen_array, NEW.famhxfsib___na, NEW.famhxfsib___lung, NEW.famhxfsib___colrec, NEW.famhxfsib___diab, NEW.famhxfsib___mela, NEW.famhxfsib___hypert, NEW.famhxfsib___dem, NEW.famhxfsib___alc, NEW.femsib_number, NEW.famhxfath_chosen_array, NEW.famhxfath___na, NEW.famhxfath___lung, NEW.famhxfath___colrec, NEW.famhxfath___prost, NEW.famhxfath___diab, NEW.famhxfath___mela, NEW.famhxfath___hypert, NEW.famhxfath___dem, NEW.famhxfath___alc, NEW.famhxmsib_chosen_array, NEW.famhxmsib___na, NEW.famhxmsib___lung, NEW.famhxmsib___colrec, NEW.famhxmsib___prost, NEW.famhxmsib___diab, NEW.famhxmsib___mela, NEW.famhxmsib___hypert, NEW.famhxmsib___dem, NEW.famhxmsib___alc, NEW.sib_number, NEW.sib1age, NEW.sib1ht_feet, NEW.sib1ht_inch, NEW.sib1sport_chosen_array, NEW.sib1sport___none, NEW.sib1sport___hsfb, NEW.sib1sport___colfb, NEW.sib1sport___oth, NEW.sib1sport_oth, NEW.sib2age, NEW.sib2ht_feet, NEW.sib2ht_inch, NEW.sib2sport_chosen_array, NEW.sib2sport___none, NEW.sib2sport___hsfb, NEW.sib2sport___colfb, NEW.sib2sport___oth, NEW.sib2sport_oth, NEW.sib3age, NEW.sib3ht_feet, NEW.sib3ht_inch, NEW.sib3sport_chosen_array, NEW.sib3sport___none, NEW.sib3sport___hsfb, NEW.sib3sport___colfb, NEW.sib3sport___oth, NEW.sib3sport_oth, NEW.sib4age, NEW.sib4ht_feet, NEW.sib4ht_inch, NEW.sib4sport_chosen_array, NEW.sib4sport___none, NEW.sib4sport___hsfb, NEW.sib4sport___colfb, NEW.sib4sport___oth, NEW.sib4sportoth, NEW.sib5age, NEW.sib5ht_feet, NEW.sib5ht_inch, NEW.sib5sport_chosen_array, NEW.sib5sport___none, NEW.sib5sport___hsfb, NEW.sib5sport___colfb, NEW.sib5sport___oth, NEW.sib5sport_oth, NEW.pedcaff_chosen_array, NEW.pedcaff___noans, NEW.pedcaff___no, NEW.pedcaff___fb, NEW.pedcaff___cur, NEW.pededrink_chosen_array, NEW.pededrink___noans, NEW.pededrink___no, NEW.pededrink___fb, NEW.pededrink___cur, NEW.pedcreat_chosen_array, NEW.pedcreat___noans, NEW.pedcreat___no, NEW.pedcreat___fb, NEW.pedcreat___cur, NEW.pedsteroid_chosen_array, NEW.pedsteroid___noans, NEW.pedsteroid___no, NEW.pedsteroid___fb, NEW.pedsteroid___cur, NEW.pedgh_chosen_array, NEW.pedgh___noans, NEW.pedgh___no, NEW.pedgh___fb, NEW.pedgh___cur, NEW.pedephed_chosen_array, NEW.pedephed___noans, NEW.pedephed___no, NEW.pedephed___fb, NEW.pedephed___cur, NEW.pedbetahy_chosen_array, NEW.pedbetahy___noans, NEW.pedbetahy___no, NEW.pedbetahy___fb, NEW.pedbetahy___cur, NEW.pednoncaf_chosen_array, NEW.pednoncaf___noans, NEW.pednoncaf___no, NEW.pednoncaf___fb, NEW.pednoncaf___cur, NEW.pedrcell_chosen_array, NEW.pedrcell___noans, NEW.pedrcell___no, NEW.pedrcell___fb, NEW.pedrcell___cur, NEW.pedinos_chosen_array, NEW.pedinos___noans, NEW.pedinos___no, NEW.pedinos___fb, NEW.pedinos___cur, NEW.alcohol_days, NEW.alcohol_drinks, NEW.marijuana, NEW.marijuana_start, NEW.marijuana_stop, NEW.marijuana_totyrs, NEW.marijtime_chosen_array, NEW.marijtime___pnfl, NEW.marijtime___dnfl, NEW.marijtime___anfl, NEW.marijreas_chosen_array, NEW.marijreas___fun, NEW.marijreas___relx, NEW.marijreas___pain, NEW.marijreas___anx, NEW.marijreas___dep, NEW.marijreas___oth, NEW.marijreas_exp, NEW.born_address, NEW.born_city, NEW.born_state, NEW.born_zip, NEW.twelveyrs_address, NEW.twelveyrs_city, NEW.twelveyrs_state, NEW.twelveyrs_zip, NEW.infertility, NEW.infert_age, NEW.infert_hcp, NEW.infertreas_chosen_array, NEW.infertreas___fem, NEW.infertreas___mal, NEW.infertreas___unex, NEW.infertreas___oth, NEW.infertreas_oth, NEW.actout_dreams, NEW.smell_problem, NEW.taste_problem, NEW.bowel_move, NEW.laxative_use, NEW.workplace_harass, NEW.coach_discrim, NEW.coach_discrimstr, NEW.player_discrim, NEW.player_discrimstr, NEW.job_discrim, NEW.job_discrimstr, NEW.ace1, NEW.ace2, NEW.ace3, NEW.ace4, NEW.ace5, NEW.ace6, NEW.ace7, NEW.ace8, NEW.ace9, NEW.ace10, NEW.foodins_worry, NEW.foodins_ranout, NEW.q2help, NEW.othealth___complete, NEW.othealth_date, NEW.q2_survey_complete, NEW.q2_survey_timestamp, NEW.sdfsdaf_chosen_array, NEW.sdfsdaf___0, NEW.sdfsdaf___1, NEW.sdfsdaf___2, NEW.rtyrtyrt_chosen_array, NEW.rtyrtyrt___0, NEW.rtyrtyrt___1, NEW.rtyrtyrt___2, NEW.test_field, NEW.test_phone, NEW.i57, NEW.f57, NEW.dd, NEW.yes_or_no, NEW.true_or_false, NEW.file1, NEW.signature, NEW.slider, NEW.test_complete, NEW.test_timestamp, NEW.base_field, NEW.non_survey_complete, NEW.non_survey_timestamp, NEW.redcap_survey_identifier,
+    NEW.user_id,
+    NEW.created_at,
+    NEW.updated_at,
+    NEW.id;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: log_viva_meta_variables_update(); Type: FUNCTION; Schema: redcap; Owner: -
+--
+
+CREATE FUNCTION redcap.log_viva_meta_variables_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  INSERT INTO viva_meta_variable_history (
+    
+    varname, var_label, var_type, restrict_var___0, restrict_var___1, restrict_var___2, restrict_var___3, restrict_var___4, oth_restrict, domain_viva, subdomain___1, subdomain___2, target_of_q, data_source, val_instr, ext_instrument, internal_instrument, doc_yn, doc_link, long_yn, long_timepts___1, long_timepts___2, long_timepts___3, long_timepts___4, long_timepts___5, long_timepts___6, long_timepts___7, long_timepts___8, long_timepts___9, long_timepts___10, long_timepts___11, long_timepts___12, long_timepts___13, long_timepts___14, long_timepts___15, long_timepts___16, long_timepts___17, long_timepts___18, long_timepts___19, long_timepts___20, long_timepts___21, long_timepts___22, long_timepts___23, static_variable_information_complete, static_variable_information_timestamp, event_type, visit_name, visit_time, assay_specimen, assay_type, lab_assay_dataset, form_label_ep, form_version_ep___1, form_version_ep___2, form_version_ep___3, form_version_ep___4, form_version_ep___5, form_version_ep___6, form_version_ep___7, form_version_ep___8, form_label_mp, form_version_mp___1, form_version_mp___2, form_version_mp___3, form_version_mp___4, form_label_del, form_version_del___1, form_version_del___2, form_version_del___3, form_version_del___4, form_version_del___5, form_version_del___6, form_version_del___7, form_label_6m, form_version_6m___1, form_version_6m___2, form_version_6m___3, form_version_6m___4, form_version_6m___5, form_version_6m___6, form_version_6m___7, form_version_6m___8, form_version_6m___9, form_version_6m___10, form_label_1y, form_version_1y___1, form_label_2y, form_version_2y___1, form_label_3y, form_version_3y___1, form_version_3y___2, form_version_3y___3, form_version_3y___4, form_version_3y___5, form_version_3y___6, form_version_3y___7, form_version_3y___8, form_version_3y___9, form_version_3y___10, form_version_3y___11, form_version_3y___12, form_version_3y___13, form_version_3y___14, form_label_4y, form_version_4y___1, form_label_5y, form_version_5y___1, form_label_6y, form_version_6y___1, form_label_7y, form_version_7y___1, form_version_7y___2, form_version_7y___3, form_version_7y___4, form_version_7y___5, form_version_7y___6, form_version_7y___7, form_version_7y___8, form_version_7y___9, form_version_7y___10, form_version_7y___11, form_version_7y___12, form_version_7y___13, form_version_7y___14, form_version_7y___15, form_version_7y___16, form_version_7y___17, form_label_8y, form_version_8y___1, form_label_9y, form_version_9y___1, form_version_9y___2, form_label_10y, form_version_10y___1, form_version_10y___2, form_label_11y, form_version_11y___1, form_version_11y___2, form_label_12y, form_version_12y___1, form_version_12y___2, form_version_12y___3, form_version_12y___4, form_version_12y___5, form_version_12y___6, form_version_12y___7, form_version_12y___8, form_version_12y___9, form_version_12y___10, form_version_12y___11, form_version_12y___12, form_version_12y___13, form_version_12y___14, form_version_12y___15, form_version_12y___16, form_label_14y, form_version_14y___1, form_version_14y___2, form_label_15y, form_version_15y___1, form_version_15y___2, form_label_16y, form_version_16y___1, form_version_16y___2, form_label_mt, form_version_mt, form_label_19y, form_version_19y___1, form_version_19y___2, not_time_specific, var_level, units, model_type, response_options, elig_sample, elig_n, actual_n, an_var, orig_deriv, corr_derived_yn___0, corr_derived_yn___1, der_varname, dervar_explain, orig_varnames, visitspecific_information_complete, visitspecific_information_timestamp, redcap_survey_identifier, redcap_repeat_instrument, redcap_repeat_instance,
+    user_id,
+    created_at,
+    updated_at,
+    viva_meta_variable_id)
+  SELECT
+    
+    NEW.varname, NEW.var_label, NEW.var_type, NEW.restrict_var___0, NEW.restrict_var___1, NEW.restrict_var___2, NEW.restrict_var___3, NEW.restrict_var___4, NEW.oth_restrict, NEW.domain_viva, NEW.subdomain___1, NEW.subdomain___2, NEW.target_of_q, NEW.data_source, NEW.val_instr, NEW.ext_instrument, NEW.internal_instrument, NEW.doc_yn, NEW.doc_link, NEW.long_yn, NEW.long_timepts___1, NEW.long_timepts___2, NEW.long_timepts___3, NEW.long_timepts___4, NEW.long_timepts___5, NEW.long_timepts___6, NEW.long_timepts___7, NEW.long_timepts___8, NEW.long_timepts___9, NEW.long_timepts___10, NEW.long_timepts___11, NEW.long_timepts___12, NEW.long_timepts___13, NEW.long_timepts___14, NEW.long_timepts___15, NEW.long_timepts___16, NEW.long_timepts___17, NEW.long_timepts___18, NEW.long_timepts___19, NEW.long_timepts___20, NEW.long_timepts___21, NEW.long_timepts___22, NEW.long_timepts___23, NEW.static_variable_information_complete, NEW.static_variable_information_timestamp, NEW.event_type, NEW.visit_name, NEW.visit_time, NEW.assay_specimen, NEW.assay_type, NEW.lab_assay_dataset, NEW.form_label_ep, NEW.form_version_ep___1, NEW.form_version_ep___2, NEW.form_version_ep___3, NEW.form_version_ep___4, NEW.form_version_ep___5, NEW.form_version_ep___6, NEW.form_version_ep___7, NEW.form_version_ep___8, NEW.form_label_mp, NEW.form_version_mp___1, NEW.form_version_mp___2, NEW.form_version_mp___3, NEW.form_version_mp___4, NEW.form_label_del, NEW.form_version_del___1, NEW.form_version_del___2, NEW.form_version_del___3, NEW.form_version_del___4, NEW.form_version_del___5, NEW.form_version_del___6, NEW.form_version_del___7, NEW.form_label_6m, NEW.form_version_6m___1, NEW.form_version_6m___2, NEW.form_version_6m___3, NEW.form_version_6m___4, NEW.form_version_6m___5, NEW.form_version_6m___6, NEW.form_version_6m___7, NEW.form_version_6m___8, NEW.form_version_6m___9, NEW.form_version_6m___10, NEW.form_label_1y, NEW.form_version_1y___1, NEW.form_label_2y, NEW.form_version_2y___1, NEW.form_label_3y, NEW.form_version_3y___1, NEW.form_version_3y___2, NEW.form_version_3y___3, NEW.form_version_3y___4, NEW.form_version_3y___5, NEW.form_version_3y___6, NEW.form_version_3y___7, NEW.form_version_3y___8, NEW.form_version_3y___9, NEW.form_version_3y___10, NEW.form_version_3y___11, NEW.form_version_3y___12, NEW.form_version_3y___13, NEW.form_version_3y___14, NEW.form_label_4y, NEW.form_version_4y___1, NEW.form_label_5y, NEW.form_version_5y___1, NEW.form_label_6y, NEW.form_version_6y___1, NEW.form_label_7y, NEW.form_version_7y___1, NEW.form_version_7y___2, NEW.form_version_7y___3, NEW.form_version_7y___4, NEW.form_version_7y___5, NEW.form_version_7y___6, NEW.form_version_7y___7, NEW.form_version_7y___8, NEW.form_version_7y___9, NEW.form_version_7y___10, NEW.form_version_7y___11, NEW.form_version_7y___12, NEW.form_version_7y___13, NEW.form_version_7y___14, NEW.form_version_7y___15, NEW.form_version_7y___16, NEW.form_version_7y___17, NEW.form_label_8y, NEW.form_version_8y___1, NEW.form_label_9y, NEW.form_version_9y___1, NEW.form_version_9y___2, NEW.form_label_10y, NEW.form_version_10y___1, NEW.form_version_10y___2, NEW.form_label_11y, NEW.form_version_11y___1, NEW.form_version_11y___2, NEW.form_label_12y, NEW.form_version_12y___1, NEW.form_version_12y___2, NEW.form_version_12y___3, NEW.form_version_12y___4, NEW.form_version_12y___5, NEW.form_version_12y___6, NEW.form_version_12y___7, NEW.form_version_12y___8, NEW.form_version_12y___9, NEW.form_version_12y___10, NEW.form_version_12y___11, NEW.form_version_12y___12, NEW.form_version_12y___13, NEW.form_version_12y___14, NEW.form_version_12y___15, NEW.form_version_12y___16, NEW.form_label_14y, NEW.form_version_14y___1, NEW.form_version_14y___2, NEW.form_label_15y, NEW.form_version_15y___1, NEW.form_version_15y___2, NEW.form_label_16y, NEW.form_version_16y___1, NEW.form_version_16y___2, NEW.form_label_mt, NEW.form_version_mt, NEW.form_label_19y, NEW.form_version_19y___1, NEW.form_version_19y___2, NEW.not_time_specific, NEW.var_level, NEW.units, NEW.model_type, NEW.response_options, NEW.elig_sample, NEW.elig_n, NEW.actual_n, NEW.an_var, NEW.orig_deriv, NEW.corr_derived_yn___0, NEW.corr_derived_yn___1, NEW.der_varname, NEW.dervar_explain, NEW.orig_varnames, NEW.visitspecific_information_complete, NEW.visitspecific_information_timestamp, NEW.redcap_survey_identifier, NEW.redcap_repeat_instrument, NEW.redcap_repeat_instance,
+    NEW.user_id,
     NEW.created_at,
     NEW.updated_at,
     NEW.id;
@@ -7611,60 +3490,6 @@ $_$;
 
 
 --
--- Name: log_data_variable_package_vars_update(); Type: FUNCTION; Schema: ref_data; Owner: -
---
-
-CREATE FUNCTION ref_data.log_data_variable_package_vars_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  INSERT INTO data_variable_package_var_history (
-    
-    data_variable_package_id, domain, record_id, variable_name, record_type, disabled,
-    user_id,
-    created_at,
-    updated_at,
-    data_variable_package_var_id)
-  SELECT
-    
-    NEW.data_variable_package_id, NEW.domain, NEW.record_id, NEW.variable_name, NEW.record_type, NEW.disabled,
-    NEW.user_id,
-    NEW.created_at,
-    NEW.updated_at,
-    NEW.id;
-  RETURN NEW;
-END;
-$$;
-
-
---
--- Name: log_data_variable_packages_update(); Type: FUNCTION; Schema: ref_data; Owner: -
---
-
-CREATE FUNCTION ref_data.log_data_variable_packages_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  INSERT INTO data_variable_package_history (
-    
-    name, tag_select_health_categories, package_type, storage_type, db_or_fs, schema_or_path, table_or_file, is_static, sourced_from_packages, n_for_timepoints, contact_email, key_fields, description, info_url, disabled,
-    user_id,
-    created_at,
-    updated_at,
-    data_variable_package_id)
-  SELECT
-    
-    NEW.name, NEW.tag_select_health_categories, NEW.package_type, NEW.storage_type, NEW.db_or_fs, NEW.schema_or_path, NEW.table_or_file, NEW.is_static, NEW.sourced_from_packages, NEW.n_for_timepoints, NEW.contact_email, NEW.key_fields, NEW.description, NEW.info_url, NEW.disabled,
-    NEW.user_id,
-    NEW.created_at,
-    NEW.updated_at,
-    NEW.id;
-  RETURN NEW;
-END;
-$$;
-
-
---
 -- Name: log_datadic_variables_update(); Type: FUNCTION; Schema: ref_data; Owner: -
 --
 
@@ -7682,60 +3507,6 @@ BEGIN
   SELECT
     
     NEW.study, NEW.source_name, NEW.source_type, NEW.domain, NEW.form_name, NEW.variable_name, NEW.variable_type, NEW.presentation_type, NEW.label, NEW.label_note, NEW.annotation, NEW.is_required, NEW.valid_type, NEW.valid_min, NEW.valid_max, NEW.multi_valid_choices, NEW.is_identifier, NEW.is_derived_var, NEW.multi_derived_from_id, NEW.doc_url, NEW.target_type, NEW.owner_email, NEW.classification, NEW.other_classification, NEW.multi_timepoints, NEW.equivalent_to_id, NEW.storage_type, NEW.db_or_fs, NEW.schema_or_path, NEW.table_or_file, NEW.disabled, NEW.admin_id, NEW.redcap_data_dictionary_id, NEW.position, NEW.section_id, NEW.sub_section_id, NEW.title, NEW.storage_varname, NEW.contributor_type, NEW.n_for_timepoints, NEW.notes,
-    NEW.user_id,
-    NEW.created_at,
-    NEW.updated_at,
-    NEW.id;
-  RETURN NEW;
-END;
-$$;
-
-
---
--- Name: log_domain_mappings_update(); Type: FUNCTION; Schema: ref_data; Owner: -
---
-
-CREATE FUNCTION ref_data.log_domain_mappings_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  INSERT INTO domain_mapping_history (
-    
-    domain, domain_title, tag_select_health_categories, notes, hide_from_datadic, disabled,
-    user_id,
-    created_at,
-    updated_at,
-    domain_mapping_id)
-  SELECT
-    
-    NEW.domain, NEW.domain_title, NEW.tag_select_health_categories, NEW.notes, NEW.hide_from_datadic, NEW.disabled,
-    NEW.user_id,
-    NEW.created_at,
-    NEW.updated_at,
-    NEW.id;
-  RETURN NEW;
-END;
-$$;
-
-
---
--- Name: log_redcap_user_status_recs_update(); Type: FUNCTION; Schema: ref_data; Owner: -
---
-
-CREATE FUNCTION ref_data.log_redcap_user_status_recs_update() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  INSERT INTO redcap_user_status_rec_history (
-    
-    username, first_name, last_name, email_address, administrator, users_sponsor, institution_id, comments, first_activity, last_activity, last_login, time_of_suspension, expiration_date,
-    user_id,
-    created_at,
-    updated_at,
-    redcap_user_status_rec_id)
-  SELECT
-    
-    NEW.username, NEW.first_name, NEW.last_name, NEW.email_address, NEW.administrator, NEW.users_sponsor, NEW.institution_id, NEW.comments, NEW.first_activity, NEW.last_activity, NEW.last_login, NEW.time_of_suspension, NEW.expiration_date,
     NEW.user_id,
     NEW.created_at,
     NEW.updated_at,
@@ -7800,40 +3571,6 @@ $$;
 
 
 --
--- Name: statsummary_completers(character varying); Type: FUNCTION; Schema: ref_data; Owner: -
---
-
-CREATE FUNCTION ref_data.statsummary_completers(id_field character varying) RETURNS TABLE(participant_id integer, colname character varying, tablename character varying, colval integer)
-    LANGUAGE plpgsql
-    AS $_$
-declare sql varchar;
-BEGIN 
-	with table_with_participant_id as (
-	select table_schema, table_name
-	from information_schema."columns" tabcol
-	where tabcol.column_name = id_field
-	)
-	select
-	  string_agg(
-	    'select ' || id_field || '::int, ''' || col.column_name || '''::varchar colname, ''' || col.table_name || '''::varchar tablename, ' || col.column_name || ' colval  from ' || col.table_schema || '.' || col.table_name,
-	    ' union '
-	  )
-	from information_schema."columns" col
-	inner join ref_data.view_redcap_project_details rpd
-	on col.table_name = rpd.tablename and col.table_schema = rpd.schemaname
-	inner join table_with_participant_id tp
-	on col.table_name = tp.table_name and col.table_schema = tp.table_schema 
-	where
-	col.column_name ~ '_complete$'
-	and col.data_type='integer'
-  into sql
-  ;
-  RETURN QUERY execute sql;  
-END
-$_$;
-
-
---
 -- Name: model_references; Type: TABLE; Schema: ml_app; Owner: -
 --
 
@@ -7849,24 +3586,6 @@ CREATE TABLE ml_app.model_references (
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     disabled boolean
-);
-
-
---
--- Name: masters; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.masters (
-    id integer NOT NULL,
-    msid integer,
-    pro_id integer,
-    pro_info_id integer,
-    rank integer,
-    created_at timestamp without time zone,
-    updated_at timestamp without time zone,
-    user_id integer,
-    contact_id integer,
-    created_by_user_id bigint
 );
 
 
@@ -7888,17 +3607,1715 @@ CREATE TABLE ml_app.nfs_store_containers (
 
 
 --
--- Name: scantrons; Type: TABLE; Schema: ml_app; Owner: -
+-- Name: activity_log_project_assignment_simple_test_history; Type: TABLE; Schema: dynamic; Owner: -
 --
 
-CREATE TABLE ml_app.scantrons (
-    id integer NOT NULL,
-    master_id integer,
-    scantron_id integer,
-    user_id integer,
+CREATE TABLE dynamic.activity_log_project_assignment_simple_test_history (
+    id bigint NOT NULL,
+    master_id bigint,
+    project_assignment_id bigint,
+    created_by_user_id bigint,
+    next_step character varying,
+    status character varying,
+    event_time time without time zone,
+    disabled boolean DEFAULT false,
+    notes character varying,
+    extra_log_type character varying,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    activity_log_project_assignment_simple_test_id bigint
+);
+
+
+--
+-- Name: activity_log_project_assignment_simple_test_history_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.activity_log_project_assignment_simple_test_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: activity_log_project_assignment_simple_test_history_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.activity_log_project_assignment_simple_test_history_id_seq OWNED BY dynamic.activity_log_project_assignment_simple_test_history.id;
+
+
+--
+-- Name: activity_log_project_assignment_simple_tests; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.activity_log_project_assignment_simple_tests (
+    id bigint NOT NULL,
+    master_id bigint,
+    project_assignment_id bigint,
+    created_by_user_id bigint,
+    next_step character varying,
+    status character varying,
+    event_time time without time zone,
+    disabled boolean DEFAULT false,
+    notes character varying,
+    extra_log_type character varying,
+    user_id bigint,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL
 );
+
+
+--
+-- Name: TABLE activity_log_project_assignment_simple_tests; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON TABLE dynamic.activity_log_project_assignment_simple_tests IS 'Activitylog: Simple Test';
+
+
+--
+-- Name: activity_log_project_assignment_simple_tests_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.activity_log_project_assignment_simple_tests_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: activity_log_project_assignment_simple_tests_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.activity_log_project_assignment_simple_tests_id_seq OWNED BY dynamic.activity_log_project_assignment_simple_tests.id;
+
+
+--
+-- Name: al_project_assignment_work_products_from_al_project_assignment_; Type: VIEW; Schema: dynamic; Owner: -
+--
+
+CREATE VIEW dynamic.al_project_assignment_work_products_from_al_project_assignment_ AS
+ SELECT dest.id,
+    dest.master_id,
+    dest.project_assignment_id,
+    dest.created_by_user_id,
+    dest.next_step,
+    dest.status,
+    dest.disabled,
+    dest.event_time,
+    dest.notes,
+    dest.extra_log_type,
+    dest.user_id,
+    dest.created_at,
+    dest.updated_at,
+    mr.from_record_master_id,
+    mr.from_record_type,
+    mr.from_record_id,
+    mr.id AS model_reference_id,
+    'projects.activity_log_project_assignment_work_products'::character varying AS from_table
+   FROM (projects.activity_log_project_assignment_work_products dest
+     JOIN ml_app.model_references mr ON (((dest.id = mr.to_record_id) AND (dest.master_id = mr.to_record_master_id) AND (NOT COALESCE(mr.disabled, false)) AND ((mr.from_record_type)::text = 'ActivityLog::ProjectAssignmentSimpleTest'::text) AND ((mr.to_record_type)::text = 'ActivityLog::ProjectAssignmentWorkProduct'::text))));
+
+
+--
+-- Name: nfs_store_containers_from_al_project_assignment_simple_tests; Type: VIEW; Schema: dynamic; Owner: -
+--
+
+CREATE VIEW dynamic.nfs_store_containers_from_al_project_assignment_simple_tests AS
+ SELECT dest.id,
+    dest.name,
+    dest.user_id,
+    dest.app_type_id,
+    dest.nfs_store_container_id,
+    dest.master_id,
+    dest.created_at,
+    dest.updated_at,
+    dest.created_by_user_id,
+    mr.from_record_master_id,
+    mr.from_record_type,
+    mr.from_record_id,
+    mr.id AS model_reference_id,
+    'nfs_store_containers'::character varying AS from_table
+   FROM (ml_app.nfs_store_containers dest
+     JOIN ml_app.model_references mr ON (((dest.id = mr.to_record_id) AND (dest.master_id = mr.to_record_master_id) AND (NOT COALESCE(mr.disabled, false)) AND ((mr.from_record_type)::text = 'ActivityLog::ProjectAssignmentSimpleTest'::text) AND ((mr.to_record_type)::text = 'NfsStore::Manage::Container'::text))));
+
+
+--
+-- Name: project_import_history; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.project_import_history (
+    id bigint NOT NULL,
+    master_id bigint,
+    ap_title character varying,
+    investigator_name character varying,
+    co_i_mentor character varying,
+    ap_presentation_date date,
+    meeting_ap_presented character varying,
+    approval_status character varying,
+    irb_title character varying,
+    irb_status character varying,
+    cv character varying,
+    citi_equiv character varying,
+    ack character varying,
+    data_ready character varying,
+    data_update_date date,
+    meeting_data_update character varying,
+    data_update2_date date,
+    meeting_data_update2 character varying,
+    grant_association character varying,
+    publication_1 character varying,
+    publication_2 character varying,
+    notes character varying,
+    investigator_name2 character varying,
+    orig_id integer,
+    import_status character varying,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    project_import_id bigint,
+    sci_approval_status character varying
+);
+
+
+--
+-- Name: COLUMN project_import_history.ap_title; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_import_history.ap_title IS 'AP Title';
+
+
+--
+-- Name: COLUMN project_import_history.investigator_name; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_import_history.investigator_name IS 'Investigator Name';
+
+
+--
+-- Name: COLUMN project_import_history.co_i_mentor; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_import_history.co_i_mentor IS 'Co-I Mentor';
+
+
+--
+-- Name: COLUMN project_import_history.ap_presentation_date; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_import_history.ap_presentation_date IS 'AP Presentation Date';
+
+
+--
+-- Name: COLUMN project_import_history.meeting_ap_presented; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_import_history.meeting_ap_presented IS 'AP Presentation Meeting';
+
+
+--
+-- Name: COLUMN project_import_history.approval_status; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_import_history.approval_status IS 'Approval Status';
+
+
+--
+-- Name: COLUMN project_import_history.irb_title; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_import_history.irb_title IS 'IRB Title';
+
+
+--
+-- Name: COLUMN project_import_history.irb_status; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_import_history.irb_status IS 'IRB Status';
+
+
+--
+-- Name: COLUMN project_import_history.cv; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_import_history.cv IS 'CV';
+
+
+--
+-- Name: COLUMN project_import_history.citi_equiv; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_import_history.citi_equiv IS 'Citi Equiv.';
+
+
+--
+-- Name: COLUMN project_import_history.ack; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_import_history.ack IS 'Ack';
+
+
+--
+-- Name: COLUMN project_import_history.data_ready; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_import_history.data_ready IS 'Data Ready';
+
+
+--
+-- Name: COLUMN project_import_history.data_update_date; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_import_history.data_update_date IS 'Data Update Date';
+
+
+--
+-- Name: COLUMN project_import_history.meeting_data_update; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_import_history.meeting_data_update IS 'Data Update Meeting';
+
+
+--
+-- Name: COLUMN project_import_history.data_update2_date; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_import_history.data_update2_date IS 'Data Update Date 2';
+
+
+--
+-- Name: COLUMN project_import_history.meeting_data_update2; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_import_history.meeting_data_update2 IS 'Data Update Meeting 2';
+
+
+--
+-- Name: COLUMN project_import_history.grant_association; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_import_history.grant_association IS 'Grant Association';
+
+
+--
+-- Name: COLUMN project_import_history.publication_1; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_import_history.publication_1 IS 'Publication 1';
+
+
+--
+-- Name: COLUMN project_import_history.publication_2; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_import_history.publication_2 IS 'Publication 2';
+
+
+--
+-- Name: COLUMN project_import_history.notes; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_import_history.notes IS 'Notes';
+
+
+--
+-- Name: COLUMN project_import_history.investigator_name2; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_import_history.investigator_name2 IS 'Investigator Name 2';
+
+
+--
+-- Name: COLUMN project_import_history.orig_id; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_import_history.orig_id IS 'Original ID';
+
+
+--
+-- Name: COLUMN project_import_history.import_status; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_import_history.import_status IS 'Import Status';
+
+
+--
+-- Name: project_import_history_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.project_import_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: project_import_history_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.project_import_history_id_seq OWNED BY dynamic.project_import_history.id;
+
+
+--
+-- Name: project_imports; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.project_imports (
+    id bigint NOT NULL,
+    master_id bigint,
+    ap_title character varying,
+    investigator_name character varying,
+    co_i_mentor character varying,
+    ap_presentation_date date,
+    meeting_ap_presented character varying,
+    approval_status character varying,
+    irb_title character varying,
+    irb_status character varying,
+    cv character varying,
+    citi_equiv character varying,
+    ack character varying,
+    data_ready character varying,
+    data_update_date date,
+    meeting_data_update character varying,
+    data_update2_date date,
+    meeting_data_update2 character varying,
+    grant_association character varying,
+    publication_1 character varying,
+    publication_2 character varying,
+    notes character varying,
+    investigator_name2 character varying,
+    orig_id integer,
+    import_status character varying,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    sci_approval_status character varying
+);
+
+
+--
+-- Name: TABLE project_imports; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON TABLE dynamic.project_imports IS 'Project Imports';
+
+
+--
+-- Name: COLUMN project_imports.ap_title; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_imports.ap_title IS 'AP Title';
+
+
+--
+-- Name: COLUMN project_imports.investigator_name; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_imports.investigator_name IS 'Investigator Name';
+
+
+--
+-- Name: COLUMN project_imports.co_i_mentor; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_imports.co_i_mentor IS 'Co-I Mentor';
+
+
+--
+-- Name: COLUMN project_imports.ap_presentation_date; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_imports.ap_presentation_date IS 'AP Presentation Date';
+
+
+--
+-- Name: COLUMN project_imports.meeting_ap_presented; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_imports.meeting_ap_presented IS 'AP Presentation Meeting';
+
+
+--
+-- Name: COLUMN project_imports.approval_status; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_imports.approval_status IS 'Approval Status';
+
+
+--
+-- Name: COLUMN project_imports.irb_title; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_imports.irb_title IS 'IRB Title';
+
+
+--
+-- Name: COLUMN project_imports.irb_status; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_imports.irb_status IS 'IRB Status';
+
+
+--
+-- Name: COLUMN project_imports.cv; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_imports.cv IS 'CV';
+
+
+--
+-- Name: COLUMN project_imports.citi_equiv; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_imports.citi_equiv IS 'Citi Equiv.';
+
+
+--
+-- Name: COLUMN project_imports.ack; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_imports.ack IS 'Ack';
+
+
+--
+-- Name: COLUMN project_imports.data_ready; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_imports.data_ready IS 'Data Ready';
+
+
+--
+-- Name: COLUMN project_imports.data_update_date; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_imports.data_update_date IS 'Data Update Date';
+
+
+--
+-- Name: COLUMN project_imports.meeting_data_update; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_imports.meeting_data_update IS 'Data Update Meeting';
+
+
+--
+-- Name: COLUMN project_imports.data_update2_date; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_imports.data_update2_date IS 'Data Update Date 2';
+
+
+--
+-- Name: COLUMN project_imports.meeting_data_update2; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_imports.meeting_data_update2 IS 'Data Update Meeting 2';
+
+
+--
+-- Name: COLUMN project_imports.grant_association; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_imports.grant_association IS 'Grant Association';
+
+
+--
+-- Name: COLUMN project_imports.publication_1; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_imports.publication_1 IS 'Publication 1';
+
+
+--
+-- Name: COLUMN project_imports.publication_2; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_imports.publication_2 IS 'Publication 2';
+
+
+--
+-- Name: COLUMN project_imports.notes; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_imports.notes IS 'Notes';
+
+
+--
+-- Name: COLUMN project_imports.investigator_name2; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_imports.investigator_name2 IS 'Investigator Name 2';
+
+
+--
+-- Name: COLUMN project_imports.orig_id; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_imports.orig_id IS 'Original ID';
+
+
+--
+-- Name: COLUMN project_imports.import_status; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON COLUMN dynamic.project_imports.import_status IS 'Import Status';
+
+
+--
+-- Name: project_imports_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.project_imports_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: project_imports_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.project_imports_id_seq OWNED BY dynamic.project_imports.id;
+
+
+--
+-- Name: project_pubmed_recs_from_al_project_assignment_simple_tests; Type: VIEW; Schema: dynamic; Owner: -
+--
+
+CREATE VIEW dynamic.project_pubmed_recs_from_al_project_assignment_simple_tests AS
+ SELECT dest.id,
+    dest.master_id,
+    dest.pmid,
+    dest.status,
+    dest.pubmed_json,
+    dest.user_id,
+    dest.created_at,
+    dest.updated_at,
+    dest.abstract,
+    dest.article_title,
+    dest.retrieved_pmid,
+    dest.citation_text,
+    dest.citation_json,
+    dest.c_status,
+    dest.pmcid,
+    dest.ids_json,
+    dest.ids_status,
+    dest.grant_list_json,
+    mr.from_record_master_id,
+    mr.from_record_type,
+    mr.from_record_id,
+    mr.id AS model_reference_id,
+    'projects.project_pubmed_recs'::character varying AS from_table
+   FROM (projects.project_pubmed_recs dest
+     JOIN ml_app.model_references mr ON (((dest.id = mr.to_record_id) AND (dest.master_id = mr.to_record_master_id) AND (NOT COALESCE(mr.disabled, false)) AND ((mr.from_record_type)::text = 'ActivityLog::ProjectAssignmentSimpleTest'::text) AND ((mr.to_record_type)::text = 'DynamicModel::ProjectPubmedRec'::text))));
+
+
+--
+-- Name: publications_from_al_project_assignment_simple_tests; Type: VIEW; Schema: dynamic; Owner: -
+--
+
+CREATE VIEW dynamic.publications_from_al_project_assignment_simple_tests AS
+ SELECT dest.id,
+    dest.master_id,
+    dest.select_type,
+    dest.other_type,
+    dest.title,
+    dest.summary_details,
+    dest.citation_details,
+    dest.pubmed_url,
+    dest.tag_select_pub_tags,
+    dest.keywords,
+    dest.status,
+    dest.user_id,
+    dest.created_at,
+    dest.updated_at,
+    dest.date_published,
+    dest.created_by_user_id,
+    dest.pmid,
+    dest.pmcidtext,
+    dest.grant_list_json,
+    mr.from_record_master_id,
+    mr.from_record_type,
+    mr.from_record_id,
+    mr.id AS model_reference_id,
+    'projects.publications'::character varying AS from_table
+   FROM (projects.publications dest
+     JOIN ml_app.model_references mr ON (((dest.id = mr.to_record_id) AND (dest.master_id = mr.to_record_master_id) AND (NOT COALESCE(mr.disabled, false)) AND ((mr.from_record_type)::text = 'ActivityLog::ProjectAssignmentSimpleTest'::text) AND ((mr.to_record_type)::text = 'DynamicModel::Publication'::text))));
+
+
+--
+-- Name: test_field_history; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.test_field_history (
+    id bigint NOT NULL,
+    test_id bigint,
+    test_boolean boolean,
+    test_integer integer,
+    test_float double precision,
+    test_decimal numeric,
+    test_date date,
+    test_datetime timestamp without time zone,
+    test_at timestamp without time zone,
+    test_yes_no character varying,
+    test_no_yes character varying,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    test_field_id bigint,
+    tag_select_record_id_from_dynamic_model__test_field integer[],
+    tag_select_record_from_dynamic_model__test_field character varying[],
+    select_record_from_dynamic_model__test_field character varying,
+    select_record_from_table_dynamic_model__test_field character varying,
+    master_id bigint
+);
+
+
+--
+-- Name: test_field_history_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.test_field_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: test_field_history_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.test_field_history_id_seq OWNED BY dynamic.test_field_history.id;
+
+
+--
+-- Name: test_fields; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.test_fields (
+    id bigint NOT NULL,
+    test_id bigint,
+    test_boolean boolean,
+    test_integer integer,
+    test_float double precision,
+    test_decimal numeric,
+    test_date date,
+    test_datetime timestamp without time zone,
+    test_at timestamp without time zone,
+    test_yes_no character varying,
+    test_no_yes character varying,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    tag_select_record_id_from_dynamic_model__test_field integer[],
+    tag_select_record_from_dynamic_model__test_field character varying[],
+    select_record_from_dynamic_model__test_field character varying,
+    select_record_from_table_dynamic_model__test_field character varying,
+    master_id bigint
+);
+
+
+--
+-- Name: TABLE test_fields; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON TABLE dynamic.test_fields IS 'Dynamicmodel: Field Test';
+
+
+--
+-- Name: test_fields_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.test_fields_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: test_fields_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.test_fields_id_seq OWNED BY dynamic.test_fields.id;
+
+
+--
+-- Name: test_history; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.test_history (
+    id bigint NOT NULL,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    test_id bigint
+);
+
+
+--
+-- Name: test_history_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.test_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: test_history_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.test_history_id_seq OWNED BY dynamic.test_history.id;
+
+
+--
+-- Name: test_model_b_embed_history; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.test_model_b_embed_history (
+    id bigint NOT NULL,
+    master_id bigint,
+    first_name character varying,
+    last_name character varying,
+    embed_resource_name character varying,
+    embed_resource_id bigint,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    test_model_b_embed_id bigint
+);
+
+
+--
+-- Name: test_model_b_embed_history_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.test_model_b_embed_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: test_model_b_embed_history_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.test_model_b_embed_history_id_seq OWNED BY dynamic.test_model_b_embed_history.id;
+
+
+--
+-- Name: test_model_b_embed_rec_history; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.test_model_b_embed_rec_history (
+    id bigint NOT NULL,
+    master_id bigint,
+    street_address character varying,
+    city character varying,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    test_model_b_embed_rec_id bigint
+);
+
+
+--
+-- Name: test_model_b_embed_rec_history_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.test_model_b_embed_rec_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: test_model_b_embed_rec_history_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.test_model_b_embed_rec_history_id_seq OWNED BY dynamic.test_model_b_embed_rec_history.id;
+
+
+--
+-- Name: test_model_b_embed_recs; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.test_model_b_embed_recs (
+    id bigint NOT NULL,
+    master_id bigint,
+    street_address character varying,
+    city character varying,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: TABLE test_model_b_embed_recs; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON TABLE dynamic.test_model_b_embed_recs IS 'Dynamicmodel: Test Model B Embed Rec';
+
+
+--
+-- Name: test_model_b_embed_recs_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.test_model_b_embed_recs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: test_model_b_embed_recs_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.test_model_b_embed_recs_id_seq OWNED BY dynamic.test_model_b_embed_recs.id;
+
+
+--
+-- Name: test_model_b_embeds; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.test_model_b_embeds (
+    id bigint NOT NULL,
+    master_id bigint,
+    first_name character varying,
+    last_name character varying,
+    embed_resource_name character varying,
+    embed_resource_id bigint,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: TABLE test_model_b_embeds; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON TABLE dynamic.test_model_b_embeds IS 'Dynamicmodel: Test Model Embed';
+
+
+--
+-- Name: test_model_b_embeds_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.test_model_b_embeds_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: test_model_b_embeds_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.test_model_b_embeds_id_seq OWNED BY dynamic.test_model_b_embeds.id;
+
+
+--
+-- Name: test_model_c_embed_history; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.test_model_c_embed_history (
+    id bigint NOT NULL,
+    master_id bigint,
+    first_name character varying,
+    last_name character varying,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    test_model_c_embed_id bigint
+);
+
+
+--
+-- Name: test_model_c_embed_history_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.test_model_c_embed_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: test_model_c_embed_history_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.test_model_c_embed_history_id_seq OWNED BY dynamic.test_model_c_embed_history.id;
+
+
+--
+-- Name: test_model_c_embed_rec_history; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.test_model_c_embed_rec_history (
+    id bigint NOT NULL,
+    master_id bigint,
+    street_address character varying,
+    city character varying,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    test_model_c_embed_rec_id bigint,
+    test_model_c_embed_id bigint
+);
+
+
+--
+-- Name: test_model_c_embed_rec_history_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.test_model_c_embed_rec_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: test_model_c_embed_rec_history_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.test_model_c_embed_rec_history_id_seq OWNED BY dynamic.test_model_c_embed_rec_history.id;
+
+
+--
+-- Name: test_model_c_embed_recs; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.test_model_c_embed_recs (
+    id bigint NOT NULL,
+    master_id bigint,
+    street_address character varying,
+    city character varying,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    test_model_c_embed_id bigint
+);
+
+
+--
+-- Name: TABLE test_model_c_embed_recs; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON TABLE dynamic.test_model_c_embed_recs IS 'Dynamicmodel: Test Model C Embed Rec';
+
+
+--
+-- Name: test_model_c_embed_recs_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.test_model_c_embed_recs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: test_model_c_embed_recs_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.test_model_c_embed_recs_id_seq OWNED BY dynamic.test_model_c_embed_recs.id;
+
+
+--
+-- Name: test_model_c_embeds; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.test_model_c_embeds (
+    id bigint NOT NULL,
+    master_id bigint,
+    first_name character varying,
+    last_name character varying,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: TABLE test_model_c_embeds; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON TABLE dynamic.test_model_c_embeds IS 'Dynamicmodel: Test Model Embed';
+
+
+--
+-- Name: test_model_c_embeds_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.test_model_c_embeds_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: test_model_c_embeds_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.test_model_c_embeds_id_seq OWNED BY dynamic.test_model_c_embeds.id;
+
+
+--
+-- Name: test_model_embed_history; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.test_model_embed_history (
+    id bigint NOT NULL,
+    master_id bigint,
+    first_name character varying,
+    last_name character varying,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    test_model_embed_id bigint
+);
+
+
+--
+-- Name: test_model_embed_history_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.test_model_embed_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: test_model_embed_history_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.test_model_embed_history_id_seq OWNED BY dynamic.test_model_embed_history.id;
+
+
+--
+-- Name: test_model_embed_rec_history; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.test_model_embed_rec_history (
+    id bigint NOT NULL,
+    master_id bigint,
+    street_address character varying,
+    city character varying,
+    test_model_embed_id bigint,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    test_model_embed_rec_id bigint
+);
+
+
+--
+-- Name: test_model_embed_rec_history_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.test_model_embed_rec_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: test_model_embed_rec_history_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.test_model_embed_rec_history_id_seq OWNED BY dynamic.test_model_embed_rec_history.id;
+
+
+--
+-- Name: test_model_embed_recs; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.test_model_embed_recs (
+    id bigint NOT NULL,
+    master_id bigint,
+    street_address character varying,
+    city character varying,
+    test_model_embed_id bigint,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: TABLE test_model_embed_recs; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON TABLE dynamic.test_model_embed_recs IS 'Dynamicmodel: Test Model Embed Rec';
+
+
+--
+-- Name: test_model_embed_recs_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.test_model_embed_recs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: test_model_embed_recs_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.test_model_embed_recs_id_seq OWNED BY dynamic.test_model_embed_recs.id;
+
+
+--
+-- Name: test_model_embeds; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.test_model_embeds (
+    id bigint NOT NULL,
+    master_id bigint,
+    first_name character varying,
+    last_name character varying,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: TABLE test_model_embeds; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON TABLE dynamic.test_model_embeds IS 'Dynamicmodel: Test Model Embed';
+
+
+--
+-- Name: test_model_embeds_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.test_model_embeds_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: test_model_embeds_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.test_model_embeds_id_seq OWNED BY dynamic.test_model_embeds.id;
+
+
+--
+-- Name: test_ref_history; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.test_ref_history (
+    id bigint NOT NULL,
+    test1 character varying,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    test_ref_id bigint
+);
+
+
+--
+-- Name: test_ref_history_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.test_ref_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: test_ref_history_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.test_ref_history_id_seq OWNED BY dynamic.test_ref_history.id;
+
+
+--
+-- Name: test_reference_history; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.test_reference_history (
+    id bigint NOT NULL,
+    master_id bigint,
+    first_name character varying,
+    last_name character varying,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    test_reference_id bigint
+);
+
+
+--
+-- Name: test_reference_history_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.test_reference_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: test_reference_history_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.test_reference_history_id_seq OWNED BY dynamic.test_reference_history.id;
+
+
+--
+-- Name: test_references; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.test_references (
+    id bigint NOT NULL,
+    master_id bigint,
+    first_name character varying,
+    last_name character varying,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: TABLE test_references; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON TABLE dynamic.test_references IS 'Dynamicmodel: Test Model Reference';
+
+
+--
+-- Name: test_references_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.test_references_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: test_references_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.test_references_id_seq OWNED BY dynamic.test_references.id;
+
+
+--
+-- Name: test_refs; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.test_refs (
+    id bigint NOT NULL,
+    test1 character varying,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: TABLE test_refs; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON TABLE dynamic.test_refs IS 'Dynamicmodel: Test Ref';
+
+
+--
+-- Name: test_refs_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.test_refs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: test_refs_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.test_refs_id_seq OWNED BY dynamic.test_refs.id;
+
+
+--
+-- Name: test_time_history; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.test_time_history (
+    id bigint NOT NULL,
+    test_time time without time zone,
+    test2_time time without time zone,
+    test_date date,
+    timezone character varying,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    test_time_id bigint
+);
+
+
+--
+-- Name: test_time_history_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.test_time_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: test_time_history_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.test_time_history_id_seq OWNED BY dynamic.test_time_history.id;
+
+
+--
+-- Name: test_times; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.test_times (
+    id bigint NOT NULL,
+    test_time time without time zone,
+    test2_time time without time zone,
+    test_date date,
+    timezone character varying,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: TABLE test_times; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON TABLE dynamic.test_times IS 'Dynamicmodel: Test Times';
+
+
+--
+-- Name: test_times_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.test_times_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: test_times_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.test_times_id_seq OWNED BY dynamic.test_times.id;
+
+
+--
+-- Name: tests; Type: TABLE; Schema: dynamic; Owner: -
+--
+
+CREATE TABLE dynamic.tests (
+    id bigint NOT NULL,
+    user_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: TABLE tests; Type: COMMENT; Schema: dynamic; Owner: -
+--
+
+COMMENT ON TABLE dynamic.tests IS 'Dynamicmodel: Tests';
+
+
+--
+-- Name: tests_id_seq; Type: SEQUENCE; Schema: dynamic; Owner: -
+--
+
+CREATE SEQUENCE dynamic.tests_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: tests_id_seq; Type: SEQUENCE OWNED BY; Schema: dynamic; Owner: -
+--
+
+ALTER SEQUENCE dynamic.tests_id_seq OWNED BY dynamic.tests.id;
+
+
+--
+-- Name: grit_assignment_history; Type: TABLE; Schema: extra_app; Owner: -
+--
+
+CREATE TABLE extra_app.grit_assignment_history (
+    id bigint NOT NULL,
+    master_id bigint,
+    grit_id bigint,
+    user_id bigint,
+    admin_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    grit_assignment_table_id bigint
+);
+
+
+--
+-- Name: grit_assignment_history_id_seq; Type: SEQUENCE; Schema: extra_app; Owner: -
+--
+
+CREATE SEQUENCE extra_app.grit_assignment_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: grit_assignment_history_id_seq; Type: SEQUENCE OWNED BY; Schema: extra_app; Owner: -
+--
+
+ALTER SEQUENCE extra_app.grit_assignment_history_id_seq OWNED BY extra_app.grit_assignment_history.id;
+
+
+--
+-- Name: grit_assignments; Type: TABLE; Schema: extra_app; Owner: -
+--
+
+CREATE TABLE extra_app.grit_assignments (
+    id bigint NOT NULL,
+    master_id bigint,
+    grit_id bigint,
+    user_id bigint,
+    admin_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: grit_assignments_id_seq; Type: SEQUENCE; Schema: extra_app; Owner: -
+--
+
+CREATE SEQUENCE extra_app.grit_assignments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: grit_assignments_id_seq; Type: SEQUENCE OWNED BY; Schema: extra_app; Owner: -
+--
+
+ALTER SEQUENCE extra_app.grit_assignments_id_seq OWNED BY extra_app.grit_assignments.id;
+
+
+--
+-- Name: pitt_bhi_assignment_history; Type: TABLE; Schema: extra_app; Owner: -
+--
+
+CREATE TABLE extra_app.pitt_bhi_assignment_history (
+    id bigint NOT NULL,
+    master_id bigint,
+    pitt_bhi_id bigint,
+    user_id bigint,
+    admin_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    pitt_bhi_assignment_table_id bigint
+);
+
+
+--
+-- Name: pitt_bhi_assignment_history_id_seq; Type: SEQUENCE; Schema: extra_app; Owner: -
+--
+
+CREATE SEQUENCE extra_app.pitt_bhi_assignment_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: pitt_bhi_assignment_history_id_seq; Type: SEQUENCE OWNED BY; Schema: extra_app; Owner: -
+--
+
+ALTER SEQUENCE extra_app.pitt_bhi_assignment_history_id_seq OWNED BY extra_app.pitt_bhi_assignment_history.id;
+
+
+--
+-- Name: pitt_bhi_assignments; Type: TABLE; Schema: extra_app; Owner: -
+--
+
+CREATE TABLE extra_app.pitt_bhi_assignments (
+    id bigint NOT NULL,
+    master_id bigint,
+    pitt_bhi_id bigint,
+    user_id bigint,
+    admin_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: pitt_bhi_assignments_id_seq; Type: SEQUENCE; Schema: extra_app; Owner: -
+--
+
+CREATE SEQUENCE extra_app.pitt_bhi_assignments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: pitt_bhi_assignments_id_seq; Type: SEQUENCE OWNED BY; Schema: extra_app; Owner: -
+--
+
+ALTER SEQUENCE extra_app.pitt_bhi_assignments_id_seq OWNED BY extra_app.pitt_bhi_assignments.id;
+
+
+--
+-- Name: sleep_assignment_history; Type: TABLE; Schema: extra_app; Owner: -
+--
+
+CREATE TABLE extra_app.sleep_assignment_history (
+    id bigint NOT NULL,
+    master_id bigint,
+    sleep_id bigint,
+    user_id bigint,
+    admin_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    sleep_assignment_table_id bigint
+);
+
+
+--
+-- Name: sleep_assignment_history_id_seq; Type: SEQUENCE; Schema: extra_app; Owner: -
+--
+
+CREATE SEQUENCE extra_app.sleep_assignment_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: sleep_assignment_history_id_seq; Type: SEQUENCE OWNED BY; Schema: extra_app; Owner: -
+--
+
+ALTER SEQUENCE extra_app.sleep_assignment_history_id_seq OWNED BY extra_app.sleep_assignment_history.id;
+
+
+--
+-- Name: sleep_assignments; Type: TABLE; Schema: extra_app; Owner: -
+--
+
+CREATE TABLE extra_app.sleep_assignments (
+    id bigint NOT NULL,
+    master_id bigint,
+    sleep_id bigint,
+    user_id bigint,
+    admin_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: sleep_assignments_id_seq; Type: SEQUENCE; Schema: extra_app; Owner: -
+--
+
+CREATE SEQUENCE extra_app.sleep_assignments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: sleep_assignments_id_seq; Type: SEQUENCE OWNED BY; Schema: extra_app; Owner: -
+--
+
+ALTER SEQUENCE extra_app.sleep_assignments_id_seq OWNED BY extra_app.sleep_assignments.id;
 
 
 --
@@ -7971,168 +5388,6 @@ ALTER SEQUENCE ml_app.accuracy_scores_id_seq OWNED BY ml_app.accuracy_scores.id;
 
 
 --
--- Name: activity_log_bhs_assignment_history; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.activity_log_bhs_assignment_history (
-    id integer NOT NULL,
-    master_id integer,
-    bhs_assignment_id integer,
-    select_record_from_player_contact_phones character varying,
-    return_call_availability_notes character varying,
-    questions_from_call_notes character varying,
-    results_link character varying,
-    select_result character varying,
-    completed_q1_no_yes character varying,
-    completed_teamstudy_no_yes character varying,
-    previous_contact_with_team_no_yes character varying,
-    previous_contact_with_team_notes character varying,
-    extra_log_type character varying,
-    user_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    activity_log_bhs_assignment_id integer,
-    notes character varying,
-    pi_return_call_notes character varying
-);
-
-
---
--- Name: activity_log_bhs_assignment_history_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.activity_log_bhs_assignment_history_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: activity_log_bhs_assignment_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.activity_log_bhs_assignment_history_id_seq OWNED BY ml_app.activity_log_bhs_assignment_history.id;
-
-
---
--- Name: activity_log_bhs_assignments; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.activity_log_bhs_assignments (
-    id integer NOT NULL,
-    master_id integer,
-    select_record_from_player_contact_phones character varying,
-    return_call_availability_notes character varying,
-    questions_from_call_notes character varying,
-    results_link character varying,
-    select_result character varying,
-    extra_log_type character varying,
-    user_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    pi_notes_from_return_call character varying,
-    bhs_assignment_id bigint,
-    pi_return_call_notes character varying
-);
-
-
---
--- Name: activity_log_bhs_assignments_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.activity_log_bhs_assignments_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: activity_log_bhs_assignments_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.activity_log_bhs_assignments_id_seq OWNED BY ml_app.activity_log_bhs_assignments.id;
-
-
---
--- Name: activity_log_ext_assignment_history; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.activity_log_ext_assignment_history (
-    id integer NOT NULL,
-    master_id integer,
-    ext_assignment_id integer,
-    do_when date,
-    notes character varying,
-    user_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    activity_log_ext_assignment_id integer
-);
-
-
---
--- Name: activity_log_ext_assignment_history_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.activity_log_ext_assignment_history_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: activity_log_ext_assignment_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.activity_log_ext_assignment_history_id_seq OWNED BY ml_app.activity_log_ext_assignment_history.id;
-
-
---
--- Name: activity_log_ext_assignments; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.activity_log_ext_assignments (
-    id integer NOT NULL,
-    master_id integer,
-    ext_assignment_id integer,
-    do_when date,
-    notes character varying,
-    user_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    select_call_direction character varying,
-    select_who character varying,
-    extra_text character varying,
-    extra_log_type character varying
-);
-
-
---
--- Name: activity_log_ext_assignments_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.activity_log_ext_assignments_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: activity_log_ext_assignments_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.activity_log_ext_assignments_id_seq OWNED BY ml_app.activity_log_ext_assignments.id;
-
-
---
 -- Name: activity_log_history; Type: TABLE; Schema: ml_app; Owner: -
 --
 
@@ -8180,82 +5435,6 @@ ALTER SEQUENCE ml_app.activity_log_history_id_seq OWNED BY ml_app.activity_log_h
 
 
 --
--- Name: activity_log_new_test_history; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.activity_log_new_test_history (
-    id integer NOT NULL,
-    master_id integer,
-    new_test_id integer,
-    done_when date,
-    select_result character varying,
-    notes character varying,
-    protocol_id integer,
-    user_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    activity_log_new_test_id integer
-);
-
-
---
--- Name: activity_log_new_test_history_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.activity_log_new_test_history_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: activity_log_new_test_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.activity_log_new_test_history_id_seq OWNED BY ml_app.activity_log_new_test_history.id;
-
-
---
--- Name: activity_log_new_tests; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.activity_log_new_tests (
-    id integer NOT NULL,
-    master_id integer,
-    new_test_id integer,
-    done_when date,
-    select_result character varying,
-    notes character varying,
-    protocol_id integer,
-    user_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    new_test_ext_id bigint
-);
-
-
---
--- Name: activity_log_new_tests_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.activity_log_new_tests_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: activity_log_new_tests_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.activity_log_new_tests_id_seq OWNED BY ml_app.activity_log_new_tests.id;
-
-
---
 -- Name: activity_log_player_contact_phone_history; Type: TABLE; Schema: ml_app; Owner: -
 --
 
@@ -8277,8 +5456,7 @@ CREATE TABLE ml_app.activity_log_player_contact_phone_history (
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     activity_log_player_contact_phone_id integer,
-    extra_log_type character varying,
-    disabled boolean
+    extra_log_type character varying
 );
 
 
@@ -8317,35 +5495,14 @@ CREATE TABLE ml_app.activity_log_player_contact_phones (
     protocol_id integer,
     notes character varying,
     user_id integer,
+    player_contact_id integer,
     master_id integer,
+    disabled boolean,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     set_related_player_contact_rank character varying,
-    extra_log_type character varying,
-    player_contact_id integer,
-    disabled boolean
+    extra_log_type character varying
 );
-
-
---
--- Name: TABLE activity_log_player_contact_phones; Type: COMMENT; Schema: ml_app; Owner: -
---
-
-COMMENT ON TABLE ml_app.activity_log_player_contact_phones IS 'Phone Log process for Zeus';
-
-
---
--- Name: COLUMN activity_log_player_contact_phones.data; Type: COMMENT; Schema: ml_app; Owner: -
---
-
-COMMENT ON COLUMN ml_app.activity_log_player_contact_phones.data IS 'Phone number related to this activity';
-
-
---
--- Name: COLUMN activity_log_player_contact_phones.select_call_direction; Type: COMMENT; Schema: ml_app; Owner: -
---
-
-COMMENT ON COLUMN ml_app.activity_log_player_contact_phones.select_call_direction IS 'Was this call received by staff or to subject';
 
 
 --
@@ -8365,81 +5522,6 @@ CREATE SEQUENCE ml_app.activity_log_player_contact_phones_id_seq
 --
 
 ALTER SEQUENCE ml_app.activity_log_player_contact_phones_id_seq OWNED BY ml_app.activity_log_player_contact_phones.id;
-
-
---
--- Name: activity_log_player_info_history; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.activity_log_player_info_history (
-    id integer NOT NULL,
-    master_id integer,
-    player_info_id integer,
-    done_when date,
-    notes character varying,
-    protocol_id integer,
-    select_who character varying,
-    user_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    activity_log_player_info_id integer
-);
-
-
---
--- Name: activity_log_player_info_history_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.activity_log_player_info_history_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: activity_log_player_info_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.activity_log_player_info_history_id_seq OWNED BY ml_app.activity_log_player_info_history.id;
-
-
---
--- Name: activity_log_player_infos; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.activity_log_player_infos (
-    id integer NOT NULL,
-    master_id integer,
-    player_info_id integer,
-    done_when date,
-    notes character varying,
-    protocol_id integer,
-    select_who character varying,
-    user_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: activity_log_player_infos_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.activity_log_player_infos_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: activity_log_player_infos_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.activity_log_player_infos_id_seq OWNED BY ml_app.activity_log_player_infos.id;
 
 
 --
@@ -8506,7 +5588,7 @@ CREATE TABLE ml_app.address_history (
     rec_type character varying,
     user_id integer,
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone DEFAULT '2017-09-25 15:43:35.841791'::timestamp without time zone,
+    updated_at timestamp without time zone DEFAULT now(),
     country character varying(3),
     postal_code character varying,
     region character varying,
@@ -8531,6 +5613,31 @@ CREATE SEQUENCE ml_app.address_history_id_seq
 --
 
 ALTER SEQUENCE ml_app.address_history_id_seq OWNED BY ml_app.address_history.id;
+
+
+--
+-- Name: addresses; Type: TABLE; Schema: ml_app; Owner: -
+--
+
+CREATE TABLE ml_app.addresses (
+    id integer NOT NULL,
+    master_id integer,
+    street character varying,
+    street2 character varying,
+    street3 character varying,
+    city character varying,
+    state character varying,
+    zip character varying,
+    source character varying,
+    rank integer,
+    rec_type character varying,
+    user_id integer,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone DEFAULT now(),
+    country character varying(3),
+    postal_code character varying,
+    region character varying
+);
 
 
 --
@@ -8847,75 +5954,6 @@ CREATE TABLE ml_app.ar_internal_metadata (
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL
 );
-
-
---
--- Name: bhs_assignment_history; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.bhs_assignment_history (
-    id integer NOT NULL,
-    master_id integer,
-    bhs_id bigint,
-    user_id integer,
-    admin_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    bhs_assignment_table_id integer
-);
-
-
---
--- Name: bhs_assignment_history_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.bhs_assignment_history_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: bhs_assignment_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.bhs_assignment_history_id_seq OWNED BY ml_app.bhs_assignment_history.id;
-
-
---
--- Name: bhs_assignments; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.bhs_assignments (
-    id integer NOT NULL,
-    master_id integer,
-    bhs_id bigint,
-    user_id integer,
-    admin_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: bhs_assignments_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.bhs_assignments_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: bhs_assignments_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.bhs_assignments_id_seq OWNED BY ml_app.bhs_assignments.id;
 
 
 --
@@ -9254,142 +6292,6 @@ ALTER SEQUENCE ml_app.exception_logs_id_seq OWNED BY ml_app.exception_logs.id;
 
 
 --
--- Name: ext_assignment_history; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.ext_assignment_history (
-    id integer NOT NULL,
-    master_id integer,
-    ext_id integer,
-    user_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    ext_assignment_table_id integer
-);
-
-
---
--- Name: ext_assignment_history_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.ext_assignment_history_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: ext_assignment_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.ext_assignment_history_id_seq OWNED BY ml_app.ext_assignment_history.id;
-
-
---
--- Name: ext_assignments; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.ext_assignments (
-    id integer NOT NULL,
-    master_id integer,
-    ext_id integer,
-    user_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: ext_assignments_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.ext_assignments_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: ext_assignments_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.ext_assignments_id_seq OWNED BY ml_app.ext_assignments.id;
-
-
---
--- Name: ext_gen_assignment_history; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.ext_gen_assignment_history (
-    id integer NOT NULL,
-    master_id integer,
-    ext_gen_id integer,
-    user_id integer,
-    admin_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    ext_gen_assignment_table_id integer
-);
-
-
---
--- Name: ext_gen_assignment_history_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.ext_gen_assignment_history_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: ext_gen_assignment_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.ext_gen_assignment_history_id_seq OWNED BY ml_app.ext_gen_assignment_history.id;
-
-
---
--- Name: ext_gen_assignments; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.ext_gen_assignments (
-    id integer NOT NULL,
-    master_id integer,
-    ext_gen_id integer,
-    user_id integer,
-    admin_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: ext_gen_assignments_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.ext_gen_assignments_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: ext_gen_assignments_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.ext_gen_assignments_id_seq OWNED BY ml_app.ext_gen_assignments.id;
-
-
---
 -- Name: external_identifier_history; Type: TABLE; Schema: ml_app; Owner: -
 --
 
@@ -9634,75 +6536,6 @@ ALTER SEQUENCE ml_app.general_selections_id_seq OWNED BY ml_app.general_selectio
 
 
 --
--- Name: grit_assignment_history; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.grit_assignment_history (
-    id integer NOT NULL,
-    master_id integer,
-    grit_id bigint,
-    user_id integer,
-    admin_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    grit_assignment_table_id integer
-);
-
-
---
--- Name: grit_assignment_history_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.grit_assignment_history_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: grit_assignment_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.grit_assignment_history_id_seq OWNED BY ml_app.grit_assignment_history.id;
-
-
---
--- Name: grit_assignments; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.grit_assignments (
-    id integer NOT NULL,
-    master_id integer,
-    grit_id bigint,
-    user_id integer,
-    admin_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: grit_assignments_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.grit_assignments_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: grit_assignments_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.grit_assignments_id_seq OWNED BY ml_app.grit_assignments.id;
-
-
---
 -- Name: imports; Type: TABLE; Schema: ml_app; Owner: -
 --
 
@@ -9943,47 +6776,21 @@ ALTER SEQUENCE ml_app.manage_users_id_seq OWNED BY ml_app.manage_users.id;
 
 
 --
--- Name: marketo_ids; Type: TABLE; Schema: ml_app; Owner: -
+-- Name: masters; Type: TABLE; Schema: ml_app; Owner: -
 --
 
-CREATE TABLE ml_app.marketo_ids (
+CREATE TABLE ml_app.masters (
     id integer NOT NULL,
-    email character varying
+    msid integer,
+    pro_id integer,
+    pro_info_id integer,
+    rank integer,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone,
+    user_id integer,
+    contact_id integer,
+    created_by_user_id bigint
 );
-
-
---
--- Name: marketo_ids_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.marketo_ids_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: marketo_ids_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.marketo_ids_id_seq OWNED BY ml_app.marketo_ids.id;
-
-
---
--- Name: marketo_master_ids; Type: VIEW; Schema: ml_app; Owner: -
---
-
-CREATE VIEW ml_app.marketo_master_ids AS
- SELECT DISTINCT ON (mi.id) mi.id,
-    mi.id AS marketo_id,
-    pc.master_id,
-    NULL::timestamp without time zone AS created_at,
-    NULL::timestamp without time zone AS updated_at,
-    NULL::integer AS user_id
-   FROM (ml_app.marketo_ids mi
-     JOIN ml_app.player_contacts pc ON ((((pc.data)::text = (mi.email)::text) AND ((pc.rec_type)::text = 'email'::text))));
 
 
 --
@@ -10132,81 +6939,6 @@ ALTER SEQUENCE ml_app.message_templates_id_seq OWNED BY ml_app.message_templates
 
 
 --
--- Name: ml_copy; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.ml_copy (
-    procontactid integer,
-    fill_in_addresses character varying(255),
-    in_survey character varying(255),
-    verify_survey_participation character varying(255),
-    verify_player_and_or_match character varying(255),
-    accuracy character varying(255),
-    accuracy_score character varying(255),
-    contactid integer,
-    pro_id integer,
-    separator_a text,
-    first_name character varying(255),
-    middle_name character varying(255),
-    last_name character varying(255),
-    nick_name character varying(255),
-    separator_b text,
-    pro_first_name character varying(255),
-    pro_middle_name character varying(255),
-    pro_last_name character varying(255),
-    pro_nick_name character varying(255),
-    birthdate character varying(255),
-    pro_dob character varying(255),
-    pro_dod character varying(255),
-    startyear character varying(255),
-    pro_start_year character varying(255),
-    accruedseasons integer,
-    pro_end_year character varying(255),
-    first_contract character varying(255),
-    second_contract character varying(255),
-    third_contract character varying(255),
-    pro_career_info character varying(255),
-    pro_birthplace character varying(255),
-    pro_college character varying(255),
-    email character varying(255),
-    homecity character varying(255),
-    homestate character varying(50),
-    homezipcode character varying(10),
-    homestreet character varying(255),
-    homestreet2 character varying(255),
-    homestreet3 character varying(255),
-    businesscity character varying(255),
-    businessstate character varying(50),
-    businesszipcode character varying(10),
-    businessstreet character varying(255),
-    businessstreet2 character varying(255),
-    businessstreet3 character varying(255),
-    changed integer,
-    changed_column character varying(255),
-    verified integer,
-    notes text,
-    email2 character varying(255),
-    email3 character varying(255),
-    updatehomestreet character varying(255),
-    updatehomestreet2 character varying(255),
-    updatehomecity character varying(255),
-    updatehomestate character varying(50),
-    updatehomezipcode character varying(10),
-    lastmod character varying(255),
-    sourc character varying(255),
-    changed_by character varying(255),
-    msid integer,
-    mailing character varying(255),
-    outreach_vfy character varying(255),
-    lastupdate text,
-    lastupdateby text,
-    cprefs character varying(255),
-    scantronid integer,
-    insertauditkey text
-);
-
-
---
 -- Name: model_references_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
 --
 
@@ -10235,75 +6967,6 @@ CREATE SEQUENCE ml_app.msid_seq
     NO MINVALUE
     NO MAXVALUE
     CACHE 1;
-
-
---
--- Name: new_test_history; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.new_test_history (
-    id integer NOT NULL,
-    master_id integer,
-    new_test_ext_id bigint,
-    user_id integer,
-    admin_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    new_test_table_id integer
-);
-
-
---
--- Name: new_test_history_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.new_test_history_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: new_test_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.new_test_history_id_seq OWNED BY ml_app.new_test_history.id;
-
-
---
--- Name: new_tests; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.new_tests (
-    id integer NOT NULL,
-    master_id integer,
-    new_test_ext_id bigint,
-    user_id integer,
-    admin_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: new_tests_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.new_tests_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: new_tests_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.new_tests_id_seq OWNED BY ml_app.new_tests.id;
 
 
 --
@@ -10888,7 +7551,7 @@ CREATE TABLE ml_app.player_contact_history (
     rank integer,
     user_id integer,
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone DEFAULT '2017-09-25 15:43:36.835851'::timestamp without time zone,
+    updated_at timestamp without time zone DEFAULT now(),
     player_contact_id integer
 );
 
@@ -10910,6 +7573,23 @@ CREATE SEQUENCE ml_app.player_contact_history_id_seq
 --
 
 ALTER SEQUENCE ml_app.player_contact_history_id_seq OWNED BY ml_app.player_contact_history.id;
+
+
+--
+-- Name: player_contacts; Type: TABLE; Schema: ml_app; Owner: -
+--
+
+CREATE TABLE ml_app.player_contacts (
+    id integer NOT NULL,
+    master_id integer,
+    rec_type character varying,
+    data character varying,
+    source character varying,
+    rank integer,
+    user_id integer,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone DEFAULT now()
+);
 
 
 --
@@ -10946,7 +7626,7 @@ CREATE TABLE ml_app.player_info_history (
     death_date date,
     user_id integer,
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone DEFAULT '2017-09-25 15:43:36.99602'::timestamp without time zone,
+    updated_at timestamp without time zone DEFAULT now(),
     contact_pref character varying,
     start_year integer,
     rank integer,
@@ -10976,6 +7656,33 @@ CREATE SEQUENCE ml_app.player_info_history_id_seq
 --
 
 ALTER SEQUENCE ml_app.player_info_history_id_seq OWNED BY ml_app.player_info_history.id;
+
+
+--
+-- Name: player_infos; Type: TABLE; Schema: ml_app; Owner: -
+--
+
+CREATE TABLE ml_app.player_infos (
+    id integer NOT NULL,
+    master_id integer,
+    first_name character varying,
+    last_name character varying,
+    middle_name character varying,
+    nick_name character varying,
+    birth_date date,
+    death_date date,
+    user_id integer,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone DEFAULT now(),
+    contact_pref character varying,
+    start_year integer,
+    rank integer,
+    notes character varying,
+    contact_id integer,
+    college character varying,
+    end_year integer,
+    source character varying
+);
 
 
 --
@@ -11017,7 +7724,7 @@ CREATE TABLE ml_app.pro_infos (
     birthplace character varying,
     user_id integer,
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone DEFAULT '2017-09-25 15:43:37.165247'::timestamp without time zone
+    updated_at timestamp without time zone DEFAULT now()
 );
 
 
@@ -11184,35 +7891,6 @@ ALTER SEQUENCE ml_app.protocols_id_seq OWNED BY ml_app.protocols.id;
 
 
 --
--- Name: q1_rc_links; Type: VIEW; Schema: ml_app; Owner: -
---
-
-CREATE VIEW ml_app.q1_rc_links AS
- SELECT rc_links.id,
-    rc_links.master_id,
-    rc_links.link AS q1_rc_link_ext_id,
-    NULL::timestamp without time zone AS created_at,
-    NULL::timestamp without time zone AS updated_at,
-    NULL::integer AS user_id
-   FROM q1.rc_links;
-
-
---
--- Name: q2_rc_links; Type: VIEW; Schema: ml_app; Owner: -
---
-
-CREATE VIEW ml_app.q2_rc_links AS
- SELECT rc.id,
-    masters.id AS master_id,
-    split_part((rc.link)::text, '='::text, 2) AS q2_rc_link_ext_id,
-    NULL::timestamp without time zone AS created_at,
-    NULL::timestamp without time zone AS updated_at,
-    NULL::integer AS user_id
-   FROM (q2.rc_links rc
-     JOIN ml_app.masters ON ((masters.msid = rc.msid)));
-
-
---
 -- Name: rc_cis; Type: TABLE; Schema: ml_app; Owner: -
 --
 
@@ -11221,8 +7899,8 @@ CREATE TABLE ml_app.rc_cis (
     fname character varying,
     lname character varying,
     status character varying,
-    created_at timestamp without time zone DEFAULT '2017-09-25 15:43:37.367264'::timestamp without time zone,
-    updated_at timestamp without time zone DEFAULT '2017-09-25 15:43:37.367264'::timestamp without time zone,
+    created_at timestamp without time zone DEFAULT now(),
+    updated_at timestamp without time zone DEFAULT now(),
     user_id integer,
     master_id integer,
     street character varying,
@@ -11275,7 +7953,6 @@ ALTER SEQUENCE ml_app.rc_cis_id_seq OWNED BY ml_app.rc_cis.id;
 --
 
 CREATE TABLE ml_app.rc_stage_cif_copy (
-    id integer NOT NULL,
     record_id integer,
     redcap_survey_identifier integer,
     time_stamp timestamp without time zone,
@@ -11292,11 +7969,12 @@ CREATE TABLE ml_app.rc_stage_cif_copy (
     email character varying,
     hearabout character varying,
     completed integer,
+    id integer NOT NULL,
     status character varying,
-    created_at timestamp without time zone DEFAULT '2017-09-25 15:43:37.419709'::timestamp without time zone,
+    created_at timestamp without time zone DEFAULT now(),
     user_id integer,
     master_id integer,
-    updated_at timestamp without time zone DEFAULT '2017-09-25 15:43:37.419709'::timestamp without time zone,
+    updated_at timestamp without time zone DEFAULT now(),
     added_tracker boolean
 );
 
@@ -11495,6 +8173,7 @@ ALTER SEQUENCE ml_app.role_descriptions_id_seq OWNED BY ml_app.role_descriptions
 CREATE TABLE ml_app.sage_assignments (
     id integer NOT NULL,
     sage_id character varying(10),
+    assigned_by character varying,
     user_id integer,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
@@ -11520,73 +8199,6 @@ CREATE SEQUENCE ml_app.sage_assignments_id_seq
 --
 
 ALTER SEQUENCE ml_app.sage_assignments_id_seq OWNED BY ml_app.sage_assignments.id;
-
-
---
--- Name: sage_two_history; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.sage_two_history (
-    id integer NOT NULL,
-    sage_two_id integer,
-    master_id integer,
-    external_id bigint,
-    user_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: sage_two_history_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.sage_two_history_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: sage_two_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.sage_two_history_id_seq OWNED BY ml_app.sage_two_history.id;
-
-
---
--- Name: sage_twos; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.sage_twos (
-    id integer NOT NULL,
-    master_id integer,
-    external_id bigint,
-    user_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: sage_twos_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.sage_twos_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: sage_twos_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.sage_twos_id_seq OWNED BY ml_app.sage_twos.id;
 
 
 --
@@ -11624,139 +8236,17 @@ ALTER SEQUENCE ml_app.scantron_history_id_seq OWNED BY ml_app.scantron_history.i
 
 
 --
--- Name: scantron_q2_history; Type: TABLE; Schema: ml_app; Owner: -
+-- Name: scantrons; Type: TABLE; Schema: ml_app; Owner: -
 --
 
-CREATE TABLE ml_app.scantron_q2_history (
+CREATE TABLE ml_app.scantrons (
     id integer NOT NULL,
     master_id integer,
-    q2_scantron_id bigint,
-    user_id integer,
-    admin_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    scantron_q2_table_id integer
-);
-
-
---
--- Name: scantron_q2_history_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.scantron_q2_history_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: scantron_q2_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.scantron_q2_history_id_seq OWNED BY ml_app.scantron_q2_history.id;
-
-
---
--- Name: scantron_q2s; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.scantron_q2s (
-    id integer NOT NULL,
-    master_id integer,
-    q2_scantron_id bigint,
-    user_id integer,
-    admin_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: scantron_q2s_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.scantron_q2s_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: scantron_q2s_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.scantron_q2s_id_seq OWNED BY ml_app.scantron_q2s.id;
-
-
---
--- Name: scantron_series_two_history; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.scantron_series_two_history (
-    id integer NOT NULL,
-    scantron_series_two_id integer,
-    master_id integer,
-    external_id bigint,
+    scantron_id integer,
     user_id integer,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL
 );
-
-
---
--- Name: scantron_series_two_history_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.scantron_series_two_history_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: scantron_series_two_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.scantron_series_two_history_id_seq OWNED BY ml_app.scantron_series_two_history.id;
-
-
---
--- Name: scantron_series_twos; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.scantron_series_twos (
-    id integer NOT NULL,
-    master_id integer,
-    external_id bigint,
-    user_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: scantron_series_twos_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.scantron_series_twos_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: scantron_series_twos_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.scantron_series_twos_id_seq OWNED BY ml_app.scantron_series_twos.id;
 
 
 --
@@ -11817,75 +8307,6 @@ CREATE SEQUENCE ml_app.sessions_id_seq
 --
 
 ALTER SEQUENCE ml_app.sessions_id_seq OWNED BY ml_app.sessions.id;
-
-
---
--- Name: sleep_assignment_history; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.sleep_assignment_history (
-    id integer NOT NULL,
-    master_id integer,
-    sleep_id bigint,
-    user_id integer,
-    admin_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    sleep_assignment_table_id integer
-);
-
-
---
--- Name: sleep_assignment_history_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.sleep_assignment_history_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: sleep_assignment_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.sleep_assignment_history_id_seq OWNED BY ml_app.sleep_assignment_history.id;
-
-
---
--- Name: sleep_assignments; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.sleep_assignments (
-    id integer NOT NULL,
-    master_id integer,
-    sleep_id bigint,
-    user_id integer,
-    admin_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: sleep_assignments_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.sleep_assignments_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: sleep_assignments_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.sleep_assignments_id_seq OWNED BY ml_app.sleep_assignments.id;
 
 
 --
@@ -11967,452 +8388,6 @@ ALTER SEQUENCE ml_app.sub_processes_id_seq OWNED BY ml_app.sub_processes.id;
 
 
 --
--- Name: sync_statuses; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.sync_statuses (
-    id integer NOT NULL,
-    from_db character varying,
-    from_master_id integer,
-    to_db character varying,
-    to_master_id integer,
-    select_status character varying DEFAULT 'new'::character varying,
-    created_at timestamp without time zone,
-    updated_at timestamp without time zone,
-    external_id character varying,
-    external_type character varying,
-    event character varying
-);
-
-
---
--- Name: sync_statuses_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.sync_statuses_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: sync_statuses_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.sync_statuses_id_seq OWNED BY ml_app.sync_statuses.id;
-
-
---
--- Name: test1_history; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.test1_history (
-    id integer NOT NULL,
-    master_id integer,
-    test1_id bigint,
-    user_id integer,
-    admin_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    test1_table_id integer
-);
-
-
---
--- Name: test1_history_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.test1_history_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: test1_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.test1_history_id_seq OWNED BY ml_app.test1_history.id;
-
-
---
--- Name: test1s; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.test1s (
-    id integer NOT NULL,
-    master_id integer,
-    test1_id bigint,
-    user_id integer,
-    admin_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: test1s_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.test1s_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: test1s_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.test1s_id_seq OWNED BY ml_app.test1s.id;
-
-
---
--- Name: test2_history; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.test2_history (
-    id integer NOT NULL,
-    master_id integer,
-    test_2ext_id bigint,
-    user_id integer,
-    admin_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    test2_table_id integer
-);
-
-
---
--- Name: test2_history_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.test2_history_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: test2_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.test2_history_id_seq OWNED BY ml_app.test2_history.id;
-
-
---
--- Name: test2s; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.test2s (
-    id integer NOT NULL,
-    master_id integer,
-    test_2ext_id bigint,
-    user_id integer,
-    admin_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: test2s_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.test2s_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: test2s_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.test2s_id_seq OWNED BY ml_app.test2s.id;
-
-
---
--- Name: test_2_history; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.test_2_history (
-    id integer NOT NULL,
-    master_id integer,
-    test_2ext_id bigint,
-    user_id integer,
-    admin_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    test_2_table_id integer
-);
-
-
---
--- Name: test_2_history_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.test_2_history_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: test_2_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.test_2_history_id_seq OWNED BY ml_app.test_2_history.id;
-
-
---
--- Name: test_2s; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.test_2s (
-    id integer NOT NULL,
-    master_id integer,
-    test_2ext_id bigint,
-    user_id integer,
-    admin_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: test_2s_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.test_2s_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: test_2s_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.test_2s_id_seq OWNED BY ml_app.test_2s.id;
-
-
---
--- Name: test_ext2_history; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.test_ext2_history (
-    id integer NOT NULL,
-    master_id integer,
-    test_e2_id integer,
-    user_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    test_ext2_table_id integer
-);
-
-
---
--- Name: test_ext2_history_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.test_ext2_history_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: test_ext2_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.test_ext2_history_id_seq OWNED BY ml_app.test_ext2_history.id;
-
-
---
--- Name: test_ext2s; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.test_ext2s (
-    id integer NOT NULL,
-    master_id integer,
-    test_e2_id integer,
-    user_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: test_ext2s_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.test_ext2s_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: test_ext2s_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.test_ext2s_id_seq OWNED BY ml_app.test_ext2s.id;
-
-
---
--- Name: test_ext_history; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.test_ext_history (
-    id integer NOT NULL,
-    master_id integer,
-    test_e_id integer,
-    user_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    test_ext_table_id integer
-);
-
-
---
--- Name: test_ext_history_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.test_ext_history_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: test_ext_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.test_ext_history_id_seq OWNED BY ml_app.test_ext_history.id;
-
-
---
--- Name: test_exts; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.test_exts (
-    id integer NOT NULL,
-    master_id integer,
-    test_e_id integer,
-    user_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: test_exts_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.test_exts_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: test_exts_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.test_exts_id_seq OWNED BY ml_app.test_exts.id;
-
-
---
--- Name: test_item_history; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.test_item_history (
-    id integer NOT NULL,
-    test_item_id integer,
-    master_id integer,
-    external_id bigint,
-    user_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: test_item_history_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.test_item_history_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: test_item_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.test_item_history_id_seq OWNED BY ml_app.test_item_history.id;
-
-
---
--- Name: test_items; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.test_items (
-    id integer NOT NULL,
-    master_id integer,
-    external_id bigint,
-    user_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: test_items_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
---
-
-CREATE SEQUENCE ml_app.test_items_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: test_items_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
---
-
-ALTER SEQUENCE ml_app.test_items_id_seq OWNED BY ml_app.test_items.id;
-
-
---
 -- Name: tracker_history; Type: TABLE; Schema: ml_app; Owner: -
 --
 
@@ -12461,7 +8436,7 @@ CREATE TABLE ml_app.trackers (
     master_id integer,
     protocol_id integer NOT NULL,
     event_date timestamp without time zone,
-    user_id integer DEFAULT 0,
+    user_id integer DEFAULT ml_app.current_user_id(),
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     notes character varying,
@@ -12609,77 +8584,6 @@ ALTER SEQUENCE ml_app.user_action_logs_id_seq OWNED BY ml_app.user_action_logs.i
 
 
 --
--- Name: user_roles; Type: TABLE; Schema: ml_app; Owner: -
---
-
-CREATE TABLE ml_app.user_roles (
-    id integer NOT NULL,
-    app_type_id integer,
-    role_name character varying,
-    user_id integer,
-    admin_id integer,
-    disabled boolean DEFAULT false NOT NULL,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: user_app_functional_groups; Type: VIEW; Schema: ml_app; Owner: -
---
-
-CREATE VIEW ml_app.user_app_functional_groups AS
- WITH templates AS (
-         SELECT users.id AS user_id,
-            users.email AS template_name
-           FROM ml_app.users
-          WHERE (((users.email)::text ~~ '%@template'::text) AND (NOT COALESCE(users.disabled, false)))
-        ), roles AS (
-         SELECT ur.app_type_id,
-            t.template_name,
-            ur.role_name
-           FROM (ml_app.user_roles ur
-             JOIN templates t ON (((ur.user_id = t.user_id) AND (NOT COALESCE(ur.disabled, false)) AND ((ur.role_name)::text !~~ 'email %'::text) AND ((ur.role_name)::text !~~ 'sms %'::text))))
-        ), template_roles AS (
-         SELECT roles.app_type_id,
-            roles.template_name,
-            array_agg(roles.role_name) AS role_set
-           FROM roles
-          GROUP BY roles.app_type_id, roles.template_name
-        ), user_role_sets AS (
-         SELECT ur.app_type_id,
-            ur.user_id,
-            array_agg(ur.role_name) AS role_set
-           FROM (ml_app.user_roles ur
-             JOIN ml_app.users u ON ((ur.user_id = u.id)))
-          WHERE (((u.email)::text !~~ '%template'::text) AND (NOT COALESCE(u.disabled, false)) AND (NOT COALESCE(ur.disabled, false)))
-          GROUP BY ur.app_type_id, ur.user_id
-        )
- SELECT DISTINCT urs.app_type_id,
-    urs.user_id,
-    a.label AS app_name,
-    u.email AS user_email,
-    COALESCE(rd.name, tr.template_name, '(default user)'::character varying) AS group_name
-   FROM ((((user_role_sets urs
-     LEFT JOIN template_roles tr ON (((tr.app_type_id = urs.app_type_id) AND (tr.role_set <@ urs.role_set))))
-     JOIN ml_app.users u ON (((urs.user_id = u.id) AND (NOT COALESCE(u.disabled, false)))))
-     JOIN ml_app.app_types a ON ((a.id = urs.app_type_id)))
-     LEFT JOIN ml_app.role_descriptions rd ON ((((rd.role_template)::text = (tr.template_name)::text) AND (rd.app_type_id = urs.app_type_id) AND (NOT COALESCE(rd.disabled, false)))))
-UNION
- SELECT ur.app_type_id,
-    ur.user_id,
-    a.label AS app_name,
-    u.email AS user_email,
-    rd.name AS group_name
-   FROM (((ml_app.user_roles ur
-     JOIN ml_app.users u ON (((ur.user_id = u.id) AND (NOT COALESCE(u.disabled, false)))))
-     JOIN ml_app.role_descriptions rd ON ((((rd.role_name)::text = (ur.role_name)::text) AND (rd.app_type_id = ur.app_type_id) AND (NOT COALESCE(rd.disabled, false)))))
-     JOIN ml_app.app_types a ON ((a.id = ur.app_type_id)))
-  WHERE (((u.email)::text !~~ '%template'::text) AND (NOT COALESCE(ur.disabled, false)))
-  ORDER BY 1, 2, 5;
-
-
---
 -- Name: user_authorization_history; Type: TABLE; Schema: ml_app; Owner: -
 --
 
@@ -12746,6 +8650,81 @@ CREATE SEQUENCE ml_app.user_authorizations_id_seq
 --
 
 ALTER SEQUENCE ml_app.user_authorizations_id_seq OWNED BY ml_app.user_authorizations.id;
+
+
+--
+-- Name: user_description_history; Type: TABLE; Schema: ml_app; Owner: -
+--
+
+CREATE TABLE ml_app.user_description_history (
+    id bigint NOT NULL,
+    user_description_id bigint,
+    app_type_id bigint,
+    role_name character varying,
+    role_template character varying,
+    name character varying,
+    description character varying,
+    disabled boolean,
+    admin_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: user_description_history_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
+--
+
+CREATE SEQUENCE ml_app.user_description_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: user_description_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
+--
+
+ALTER SEQUENCE ml_app.user_description_history_id_seq OWNED BY ml_app.user_description_history.id;
+
+
+--
+-- Name: user_descriptions; Type: TABLE; Schema: ml_app; Owner: -
+--
+
+CREATE TABLE ml_app.user_descriptions (
+    id bigint NOT NULL,
+    app_type_id bigint,
+    role_name character varying,
+    role_template character varying,
+    name character varying,
+    description character varying,
+    disabled boolean,
+    admin_id bigint,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: user_descriptions_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
+--
+
+CREATE SEQUENCE ml_app.user_descriptions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: user_descriptions_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
+--
+
+ALTER SEQUENCE ml_app.user_descriptions_id_seq OWNED BY ml_app.user_descriptions.id;
 
 
 --
@@ -12879,6 +8858,22 @@ ALTER SEQUENCE ml_app.user_role_history_id_seq OWNED BY ml_app.user_role_history
 
 
 --
+-- Name: user_roles; Type: TABLE; Schema: ml_app; Owner: -
+--
+
+CREATE TABLE ml_app.user_roles (
+    id integer NOT NULL,
+    app_type_id integer,
+    role_name character varying,
+    user_id integer,
+    admin_id integer,
+    disabled boolean DEFAULT false NOT NULL,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
 -- Name: user_roles_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
 --
 
@@ -12895,6 +8890,48 @@ CREATE SEQUENCE ml_app.user_roles_id_seq
 --
 
 ALTER SEQUENCE ml_app.user_roles_id_seq OWNED BY ml_app.user_roles.id;
+
+
+--
+-- Name: users; Type: TABLE; Schema: ml_app; Owner: -
+--
+
+CREATE TABLE ml_app.users (
+    id integer NOT NULL,
+    email character varying DEFAULT ''::character varying NOT NULL,
+    encrypted_password character varying DEFAULT ''::character varying NOT NULL,
+    reset_password_token character varying,
+    reset_password_sent_at timestamp without time zone,
+    remember_created_at timestamp without time zone,
+    sign_in_count integer DEFAULT 0 NOT NULL,
+    current_sign_in_at timestamp without time zone,
+    last_sign_in_at timestamp without time zone,
+    current_sign_in_ip inet,
+    last_sign_in_ip inet,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    failed_attempts integer DEFAULT 0 NOT NULL,
+    unlock_token character varying,
+    locked_at timestamp without time zone,
+    disabled boolean,
+    admin_id integer,
+    app_type_id integer,
+    authentication_token character varying(30),
+    encrypted_otp_secret character varying,
+    encrypted_otp_secret_iv character varying,
+    encrypted_otp_secret_salt character varying,
+    consumed_timestep integer,
+    otp_required_for_login boolean,
+    password_updated_at timestamp without time zone,
+    first_name character varying,
+    last_name character varying,
+    do_not_email boolean DEFAULT false,
+    confirmation_token character varying,
+    confirmed_at timestamp without time zone,
+    confirmation_sent_at timestamp without time zone,
+    country_code character varying,
+    terms_of_use_accepted character varying
+);
 
 
 --
@@ -12953,144 +8990,4703 @@ ALTER SEQUENCE ml_app.users_id_seq OWNED BY ml_app.users.id;
 
 
 --
--- Name: data_variable_package_history; Type: TABLE; Schema: ref_data; Owner: -
+-- Name: view_users; Type: VIEW; Schema: ml_app; Owner: -
 --
 
-CREATE TABLE ref_data.data_variable_package_history (
+CREATE VIEW ml_app.view_users AS
+ SELECT users.email,
+    users.first_name,
+    users.last_name,
+    users.disabled
+   FROM ml_app.users;
+
+
+--
+-- Name: q2_demo_rc_history; Type: TABLE; Schema: redcap; Owner: -
+--
+
+CREATE TABLE redcap.q2_demo_rc_history (
     id bigint NOT NULL,
-    name character varying,
-    description character varying,
-    disabled boolean DEFAULT false,
+    record_id character varying,
+    dob date,
+    current_weight numeric,
+    domestic_status character varying,
+    living_situation character varying,
+    current_employment character varying,
+    student_looking character varying,
+    current_fbjob character varying,
+    current_fbjob_oth character varying,
+    job_industry character varying,
+    job_title character varying,
+    job_title_entry character varying,
+    smoke character varying,
+    smoketime___pnfl boolean,
+    smoketime___dnfl boolean,
+    smoketime___anfl boolean,
+    smoke_start numeric,
+    smoke_stop numeric,
+    smoke_curr character varying,
+    smoke_totyrs numeric,
+    smoke_prenfl character varying,
+    smoke_nfl character varying,
+    smoke_postnfl character varying,
+    edu_player character varying,
+    edu_mother character varying,
+    edu_father character varying,
+    occ_mother character varying,
+    occ_mother_exp character varying,
+    occ_father character varying,
+    occ_father_exp character varying,
+    yrsplayed_prehs numeric,
+    playhsfb___no boolean,
+    hsposition1 character varying,
+    hsposition2 character varying,
+    yrsplayed_hs character varying,
+    collposition1 character varying,
+    collposition2 character varying,
+    yrsplayed_coll character varying,
+    college_div character varying,
+    collpreprac character varying,
+    collpreprac_pads character varying,
+    collregprac character varying,
+    collregprac_pads character varying,
+    collsnap_ol character varying,
+    collsnap_wr character varying,
+    collsnap_dl character varying,
+    collsnap_te character varying,
+    collsnap_lb character varying,
+    collsnap_qb character varying,
+    collsnap_db character varying,
+    collsnap_kick character varying,
+    collsnap_rb character varying,
+    collsnap_special character varying,
+    nflpreprac character varying,
+    nflpreprac_pads character varying,
+    nflregprac character varying,
+    nflregprac_pads character varying,
+    prosnap_ol character varying,
+    prosnap_wr character varying,
+    prosnap_dl character varying,
+    prosnap_te character varying,
+    prosnap_lb character varying,
+    prosnap_qb character varying,
+    prosnap_db character varying,
+    prosnap_kick character varying,
+    prosnap_rb character varying,
+    prosnap_special character varying,
+    gmsplyd_career numeric,
+    gmsplyd_season character varying,
+    prsqd boolean,
+    prsqd_seasons numeric,
+    othleague boolean,
+    othleague_seasons character varying,
+    othleaguenm___afl boolean,
+    othleaguenm___cfl boolean,
+    othleaguenm___efl boolean,
+    othleaguenm___ufl boolean,
+    othleaguenm___wfl boolean,
+    othleaguenm___xfl boolean,
+    othleaguenm___oth boolean,
+    othleague_exp character varying,
+    nonnfl_seasons numeric,
+    prsqd_nonnfl boolean,
+    prsqd_nonnfl_seasons numeric,
+    firstpro_age numeric,
+    finalpro_age numeric,
+    leftfb___age boolean,
+    leftfb___cut boolean,
+    leftfb___fbinj boolean,
+    leftfb___inj boolean,
+    leftfb___retire boolean,
+    postfb_hlthprac character varying,
+    postfb_degree character varying,
+    postfb_charity character varying,
+    postfb_fbjob character varying,
+    postfb_job character varying,
+    postfbjob_occ character varying,
+    postfbjob_occexp character varying,
+    postfbex_walk character varying,
+    postfbex_jog character varying,
+    postfbex_run character varying,
+    postfbex_other character varying,
+    postfbex_lowint character varying,
+    postfbex_wttrain character varying,
+    postfbex_endsprt character varying,
+    postfbex_reclg character varying,
+    pastyrex_walk character varying,
+    pastyrex_jog character varying,
+    pastyrex_run character varying,
+    pastyrex_oth character varying,
+    pastyrex_lowint character varying,
+    pastyrex_wttrain character varying,
+    pastyrex_endsprt character varying,
+    pastyrex_reclg character varying,
+    ex150min boolean,
+    ex150min_exp character varying,
+    ex150min_oth character varying,
+    demog___complete boolean,
+    demog_date timestamp without time zone,
+    postfb_wt2yr character varying,
+    postfb_wt2yrdelta character varying,
+    postfb_wt5yr character varying,
+    postfb_wt5yrdelta character varying,
+    cardiac_rehab boolean,
+    cvtest_ecg character varying,
+    cvtest_ecg_exp character varying,
+    cvtest_echo character varying,
+    cvtest_echo_exp character varying,
+    cvtest_cpxt character varying,
+    cvtest_cpxt_exp character varying,
+    cvtest_cvmri character varying,
+    cvtest_cvmri_exp character varying,
+    cvtest_corct character varying,
+    cvtest_corct_exp character varying,
+    cvtest_cvcath character varying,
+    cvtest_cvcath_exp character varying,
+    cvdx_mi character varying,
+    cvdx_stroke character varying,
+    cvdx_tia character varying,
+    cvmedrec_highbp character varying,
+    cvmedrec_hrtfail character varying,
+    cvmedrec_afib character varying,
+    cvmedrec_otharrhyth character varying,
+    cvmedrec_highchol character varying,
+    cvmedrec_diabetes character varying,
+    cvsurg_bypass character varying,
+    cvsurg_ablation character varying,
+    cvsurg_carotidart character varying,
+    cvmed_chol character varying,
+    cvmed_othchol character varying,
+    cvmed_novchol character varying,
+    cvmed_bldthin character varying,
+    cvmed_anticoag character varying,
+    cvmed_arrhyth character varying,
+    cvmed_digoxin character varying,
+    cvmed_furosemide character varying,
+    cvmed_thiazide character varying,
+    cvmed_calciumblk character varying,
+    cvmed_antihyp character varying,
+    dbmed_metformin character varying,
+    dbmed_glimeperide character varying,
+    dbmed_insulin character varying,
+    dbmed_other character varying,
+    cardiac___complete boolean,
+    cardiac_date timestamp without time zone,
+    ad8_1 character varying,
+    ad8_2 character varying,
+    ad8_3 character varying,
+    ad8_4 character varying,
+    ad8_5 character varying,
+    ad8_6 character varying,
+    ad8_7 character varying,
+    ad8_8 character varying,
+    nqcog64q2 character varying,
+    nqcog65q2 character varying,
+    nqcog66q2 character varying,
+    nqcog68q2 character varying,
+    nqcog72q2 character varying,
+    nqcog75q2 character varying,
+    nqcog77q2 character varying,
+    nqcog80q2 character varying,
+    nqper02 character varying,
+    nqper05 character varying,
+    nqper06 character varying,
+    nqper07 character varying,
+    nqper11 character varying,
+    nqper12 character varying,
+    nqper17 character varying,
+    nqper19 character varying,
+    phq1 character varying,
+    phq2 character varying,
+    phq3 character varying,
+    phq4 character varying,
+    phq5 character varying,
+    phq6 character varying,
+    phq7 character varying,
+    phq8 character varying,
+    phq9 character varying,
+    gad7_1 character varying,
+    gad7_2 character varying,
+    gad7_3 character varying,
+    gad7_4 character varying,
+    gad7_5 character varying,
+    gad7_6 character varying,
+    gad7_7 character varying,
+    lotr1 character varying,
+    lotr3 character varying,
+    lotr4 character varying,
+    lotr7 character varying,
+    lotr9 character varying,
+    lotr10 character varying,
+    stpbng_snore character varying,
+    stpbng_tired character varying,
+    stpbng_obser character varying,
+    stpbng_bp character varying,
+    stpbng_neck character varying,
+    cpapuse boolean,
+    cpapuse_days character varying,
+    ncmedrec_hdache character varying,
+    ncmedrec_anx character varying,
+    ncmedrec_dep character varying,
+    ncmedrec_memloss character varying,
+    ncmedrec_add character varying,
+    ncdx_alz character varying,
+    ncdx_cte character varying,
+    ncdx_vascdem character varying,
+    ncdx_othdem character varying,
+    ncdx_als character varying,
+    ncdx_parkins character varying,
+    ncdx_ms character varying,
+    ncmed_ssri character varying,
+    ncmed_tricydep character varying,
+    ncmed_othdep character varying,
+    ncmed_slpaid character varying,
+    neurocog___complete boolean,
+    neurocog_date timestamp without time zone,
+    bpi1 boolean,
+    bpi2___head boolean,
+    bpi2___neck boolean,
+    bpi2___shoul boolean,
+    bpi2___chest boolean,
+    bpi2___arm boolean,
+    bpi2___hand boolean,
+    bpi2___uback boolean,
+    bpi2___lbak boolean,
+    bpi2___hip boolean,
+    bpi2___leg boolean,
+    bpi2___knee boolean,
+    bpi2___ankle boolean,
+    bpi2___foot boolean,
+    bpi2___oth boolean,
+    bpi2_othexp character varying,
+    bpi2most character varying,
+    bpi2most_othexp character varying,
+    bpi3 character varying,
+    bpi4 character varying,
+    bpi5 character varying,
+    bpi6 character varying,
+    bpi7___none boolean,
+    bpi7___otc boolean,
+    bpi7___prmed boolean,
+    bpi7___mass boolean,
+    bpi7___pt boolean,
+    bpi7___acup boolean,
+    bpi7___marij boolean,
+    bpi7___intpm boolean,
+    bpi7___oth boolean,
+    bpi7_othexp character varying,
+    bpi8 character varying,
+    bpi9a character varying,
+    bpi9b character varying,
+    bpi9c character varying,
+    bpi9d character varying,
+    bpi9e character varying,
+    bpi9f character varying,
+    bpi9g character varying,
+    bpi9h character varying,
+    pnmedfb_acetamin character varying,
+    pnmedfb_aspirin character varying,
+    pnmedfb_ibuprof character varying,
+    pnmedfb_othantiinf character varying,
+    pnmedfb_oralster character varying,
+    pnmedfb_opioid character varying,
+    pnmed5yr_acetamin character varying,
+    pnmed5yr_aspirin character varying,
+    pnmed5yr_ibuprof character varying,
+    pnmed5yr_antiinf character varying,
+    pnmed5yr_oralster character varying,
+    pnmed5yr_opioid character varying,
+    pnmed_acetamin boolean,
+    pnmed_acetamin_days character varying,
+    pnmed_acetamin_tabs character varying,
+    pnmed_acetamin_dose character varying,
+    pnmed_aspirin boolean,
+    pnmed_aspirin_days character varying,
+    pnmed_aspirin_tabs character varying,
+    pnmed_aspirin_dose character varying,
+    pnmed_ibuprof boolean,
+    pnmed_ibuprof_days character varying,
+    pnmed_ibuprof_tabs character varying,
+    pnmed_ibuprof_dose character varying,
+    pnmed_antiinf boolean,
+    pnmed_antiinf_days character varying,
+    pnmed_antiinf_tabs character varying,
+    pnmed_antiinf_dose character varying,
+    pnmed_oralster boolean,
+    pnmed_oralster_days character varying,
+    pnmed_oralster_tabs character varying,
+    pnmed_oralster_dose character varying,
+    pnmed_opioid boolean,
+    pnmed_opioid_days character varying,
+    pnmed_opioid_tab character varying,
+    pnmed_opioid_dose character varying,
+    pnsurg_nckspin character varying,
+    pnsurg_back character varying,
+    pnsurg_hip character varying,
+    pnsurg_knee character varying,
+    pain___complete boolean,
+    pain_date timestamp without time zone,
+    wealth character varying,
+    wealth_emerg___1 boolean,
+    wealth_emerg___2 boolean,
+    wealth_emerg___3 boolean,
+    wealth_emerg___4 boolean,
+    wealth_emerg___5 boolean,
+    wealth_emerg___6 boolean,
+    wealth_emerg___7 boolean,
+    wealth_emerg___8 boolean,
+    wealth_emerg___9 boolean,
+    wealth_emerg_oth character varying,
+    ladder_wealth character varying,
+    ladder_comm character varying,
+    household_number character varying,
+    hcutil_pcp boolean,
+    hcutil_pcp_exp character varying,
+    hcutil_pcp_oth character varying,
+    hcutil_othprov boolean,
+    selfrpt_cte boolean,
+    otdx_arthritis character varying,
+    otdx_slpapnea character varying,
+    otdx_prostcanc character varying,
+    otdx_basalcanc character varying,
+    otdx_squamcanc character varying,
+    otdx_melanom character varying,
+    otdx_lymphom character varying,
+    otdx_othcanc character varying,
+    otdx_renalfail character varying,
+    otdx_alcdep character varying,
+    otdx_livcirrhosis character varying,
+    otdx_livfail character varying,
+    otmedrec_pncond character varying,
+    otmedrec_livprob character varying,
+    otmedrec_lowtest character varying,
+    otmedrec_ed character varying,
+    massage boolean,
+    acupuncture boolean,
+    chiropractic boolean,
+    yoga boolean,
+    taichi boolean,
+    meditation boolean,
+    othaltmed boolean,
+    othaltmed_exp character varying,
+    famhxmoth___na boolean,
+    famhxmoth___lung boolean,
+    famhxmoth___colrec boolean,
+    famhxmoth___diab boolean,
+    famhxmoth___mela boolean,
+    famhxmoth___hypert boolean,
+    famhxmoth___dem boolean,
+    famhxmoth___alc boolean,
+    famhxfsib___na boolean,
+    famhxfsib___lung boolean,
+    famhxfsib___colrec boolean,
+    famhxfsib___diab boolean,
+    famhxfsib___mela boolean,
+    famhxfsib___hypert boolean,
+    famhxfsib___dem boolean,
+    famhxfsib___alc boolean,
+    femsib_number character varying,
+    famhxfath___na boolean,
+    famhxfath___lung boolean,
+    famhxfath___colrec boolean,
+    famhxfath___prost boolean,
+    famhxfath___diab boolean,
+    famhxfath___mela boolean,
+    famhxfath___hypert boolean,
+    famhxfath___dem boolean,
+    famhxfath___alc boolean,
+    famhxmsib___na boolean,
+    famhxmsib___lung boolean,
+    famhxmsib___colrec boolean,
+    famhxmsib___prost boolean,
+    famhxmsib___diab boolean,
+    famhxmsib___mela boolean,
+    famhxmsib___hypert boolean,
+    famhxmsib___dem boolean,
+    famhxmsib___alc boolean,
+    sib_number character varying,
+    sib1age numeric,
+    sib1ht_feet numeric,
+    sib1ht_inch numeric,
+    sib1sport___none boolean,
+    sib1sport___hsfb boolean,
+    sib1sport___colfb boolean,
+    sib1sport___oth boolean,
+    sib1sport_oth character varying,
+    sib2age numeric,
+    sib2ht_feet numeric,
+    sib2ht_inch numeric,
+    sib2sport___none boolean,
+    sib2sport___hsfb boolean,
+    sib2sport___colfb boolean,
+    sib2sport___oth boolean,
+    sib2sport_oth character varying,
+    sib3age numeric,
+    sib3ht_feet numeric,
+    sib3ht_inch numeric,
+    sib3sport___none boolean,
+    sib3sport___hsfb boolean,
+    sib3sport___colfb boolean,
+    sib3sport___oth boolean,
+    sib3sport_oth character varying,
+    sib4age numeric,
+    sib4ht_feet numeric,
+    sib4ht_inch numeric,
+    sib4sport___none boolean,
+    sib4sport___hsfb boolean,
+    sib4sport___colfb boolean,
+    sib4sport___oth boolean,
+    sib4sportoth character varying,
+    sib5age numeric,
+    sib5ht_feet numeric,
+    sib5ht_inch numeric,
+    sib5sport___none boolean,
+    sib5sport___hsfb boolean,
+    sib5sport___colfb boolean,
+    sib5sport___oth boolean,
+    sib5sport_oth character varying,
+    pedcaff___noans boolean,
+    pedcaff___no boolean,
+    pedcaff___fb boolean,
+    pedcaff___cur boolean,
+    pededrink___noans boolean,
+    pededrink___no boolean,
+    pededrink___fb boolean,
+    pededrink___cur boolean,
+    pedcreat___noans boolean,
+    pedcreat___no boolean,
+    pedcreat___fb boolean,
+    pedcreat___cur boolean,
+    pedsteroid___noans boolean,
+    pedsteroid___no boolean,
+    pedsteroid___fb boolean,
+    pedsteroid___cur boolean,
+    pedgh___noans boolean,
+    pedgh___no boolean,
+    pedgh___fb boolean,
+    pedgh___cur boolean,
+    pedephed___noans boolean,
+    pedephed___no boolean,
+    pedephed___fb boolean,
+    pedephed___cur boolean,
+    pedbetahy___noans boolean,
+    pedbetahy___no boolean,
+    pedbetahy___fb boolean,
+    pedbetahy___cur boolean,
+    pednoncaf___noans boolean,
+    pednoncaf___no boolean,
+    pednoncaf___fb boolean,
+    pednoncaf___cur boolean,
+    pedrcell___noans boolean,
+    pedrcell___no boolean,
+    pedrcell___fb boolean,
+    pedrcell___cur boolean,
+    pedinos___noans boolean,
+    pedinos___no boolean,
+    pedinos___fb boolean,
+    pedinos___cur boolean,
+    alcohol_days character varying,
+    alcohol_drinks character varying,
+    marijuana character varying,
+    marijuana_start numeric,
+    marijuana_stop numeric,
+    marijuana_totyrs numeric,
+    marijtime___pnfl boolean,
+    marijtime___dnfl boolean,
+    marijtime___anfl boolean,
+    marijreas___fun boolean,
+    marijreas___relx boolean,
+    marijreas___pain boolean,
+    marijreas___anx boolean,
+    marijreas___dep boolean,
+    marijreas___oth boolean,
+    marijreas_exp character varying,
+    born_address character varying,
+    born_city character varying,
+    born_state character varying,
+    born_zip character varying,
+    twelveyrs_address character varying,
+    twelveyrs_city character varying,
+    twelveyrs_state character varying,
+    twelveyrs_zip character varying,
+    infertility boolean,
+    infert_age numeric,
+    infert_hcp boolean,
+    infertreas___fem boolean,
+    infertreas___mal boolean,
+    infertreas___unex boolean,
+    infertreas___oth boolean,
+    infertreas_oth character varying,
+    actout_dreams character varying,
+    smell_problem character varying,
+    taste_problem character varying,
+    bowel_move character varying,
+    laxative_use character varying,
+    workplace_harass character varying,
+    coach_discrim character varying,
+    coach_discrimstr character varying,
+    player_discrim character varying,
+    player_discrimstr character varying,
+    job_discrim character varying,
+    job_discrimstr character varying,
+    ace1 boolean,
+    ace2 boolean,
+    ace3 boolean,
+    ace4 boolean,
+    ace5 boolean,
+    ace6 boolean,
+    ace7 boolean,
+    ace8 boolean,
+    ace9 boolean,
+    ace10 boolean,
+    foodins_worry character varying,
+    foodins_ranout character varying,
+    q2help character varying,
+    othealth___complete boolean,
+    othealth_date timestamp without time zone,
+    q2_survey_complete integer,
+    q2_survey_timestamp timestamp without time zone,
+    sdfsdaf___0 boolean,
+    sdfsdaf___1 boolean,
+    sdfsdaf___2 boolean,
+    rtyrtyrt___0 boolean,
+    rtyrtyrt___1 boolean,
+    rtyrtyrt___2 boolean,
+    test_field character varying,
+    test_phone character varying,
+    i57 integer,
+    f57 numeric,
+    dd timestamp without time zone,
+    yes_or_no boolean,
+    true_or_false boolean,
+    file1 character varying,
+    signature character varying,
+    slider integer,
+    test_complete integer,
+    test_timestamp timestamp without time zone,
+    base_field character varying,
+    non_survey_complete integer,
+    non_survey_timestamp timestamp without time zone,
+    redcap_survey_identifier character varying,
     user_id bigint,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    data_variable_package_id bigint,
-    package_type character varying,
-    storage_type character varying,
-    db_or_fs character varying,
-    schema_or_path character varying,
-    table_or_file character varying,
-    is_static boolean,
-    sourced_from_packages character varying,
-    n_for_timepoints jsonb,
-    tag_select_health_categories character varying[],
-    contact_email character varying,
-    key_fields character varying[],
-    info_url character varying
+    q2_demo_rc_id bigint,
+    smoketime_chosen_array character varying[],
+    othleaguenm_chosen_array character varying[],
+    leftfb_chosen_array character varying[],
+    bpi2_chosen_array character varying[],
+    bpi7_chosen_array character varying[],
+    wealth_emerg_chosen_array character varying[],
+    famhxmoth_chosen_array character varying[],
+    famhxfsib_chosen_array character varying[],
+    famhxfath_chosen_array character varying[],
+    famhxmsib_chosen_array character varying[],
+    sib1sport_chosen_array character varying[],
+    sib2sport_chosen_array character varying[],
+    sib3sport_chosen_array character varying[],
+    sib4sport_chosen_array character varying[],
+    sib5sport_chosen_array character varying[],
+    pedcaff_chosen_array character varying[],
+    pededrink_chosen_array character varying[],
+    pedcreat_chosen_array character varying[],
+    pedsteroid_chosen_array character varying[],
+    pedgh_chosen_array character varying[],
+    pedephed_chosen_array character varying[],
+    pedbetahy_chosen_array character varying[],
+    pednoncaf_chosen_array character varying[],
+    pedrcell_chosen_array character varying[],
+    pedinos_chosen_array character varying[],
+    marijtime_chosen_array character varying[],
+    marijreas_chosen_array character varying[],
+    infertreas_chosen_array character varying[],
+    sdfsdaf_chosen_array character varying[],
+    rtyrtyrt_chosen_array character varying[]
 );
 
 
 --
--- Name: COLUMN data_variable_package_history.name; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: COLUMN q2_demo_rc_history.record_id; Type: COMMENT; Schema: redcap; Owner: -
 --
 
-COMMENT ON COLUMN ref_data.data_variable_package_history.name IS 'Name';
-
-
---
--- Name: COLUMN data_variable_package_history.description; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.data_variable_package_history.description IS 'Description';
+COMMENT ON COLUMN redcap.q2_demo_rc_history.record_id IS 'Record ID';
 
 
 --
--- Name: COLUMN data_variable_package_history.disabled; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: COLUMN q2_demo_rc_history.dob; Type: COMMENT; Schema: redcap; Owner: -
 --
 
-COMMENT ON COLUMN ref_data.data_variable_package_history.disabled IS 'Disabled';
-
-
---
--- Name: COLUMN data_variable_package_history.package_type; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.data_variable_package_history.package_type IS 'Package type';
+COMMENT ON COLUMN redcap.q2_demo_rc_history.dob IS 'Date of birth:';
 
 
 --
--- Name: COLUMN data_variable_package_history.storage_type; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: COLUMN q2_demo_rc_history.current_weight; Type: COMMENT; Schema: redcap; Owner: -
 --
 
-COMMENT ON COLUMN ref_data.data_variable_package_history.storage_type IS 'Type of storage for dataset';
-
-
---
--- Name: COLUMN data_variable_package_history.db_or_fs; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.data_variable_package_history.db_or_fs IS 'Database or Filesystem name';
+COMMENT ON COLUMN redcap.q2_demo_rc_history.current_weight IS 'What is your current weight?';
 
 
 --
--- Name: COLUMN data_variable_package_history.schema_or_path; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: COLUMN q2_demo_rc_history.domestic_status; Type: COMMENT; Schema: redcap; Owner: -
 --
 
-COMMENT ON COLUMN ref_data.data_variable_package_history.schema_or_path IS 'Database schema or Filesystem directory path';
-
-
---
--- Name: COLUMN data_variable_package_history.table_or_file; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.data_variable_package_history.table_or_file IS 'Database table / view name, or filename in directory';
+COMMENT ON COLUMN redcap.q2_demo_rc_history.domestic_status IS 'What is your current marital status?';
 
 
 --
--- Name: COLUMN data_variable_package_history.is_static; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: COLUMN q2_demo_rc_history.living_situation; Type: COMMENT; Schema: redcap; Owner: -
 --
 
-COMMENT ON COLUMN ref_data.data_variable_package_history.is_static IS 'Static, unchanging dataset';
-
-
---
--- Name: COLUMN data_variable_package_history.sourced_from_packages; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.data_variable_package_history.sourced_from_packages IS 'List of packages dataset is sourced from (empty if it is the primary source)';
+COMMENT ON COLUMN redcap.q2_demo_rc_history.living_situation IS 'How would you describe your current living situation?';
 
 
 --
--- Name: COLUMN data_variable_package_history.n_for_timepoints; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: COLUMN q2_demo_rc_history.current_employment; Type: COMMENT; Schema: redcap; Owner: -
 --
 
-COMMENT ON COLUMN ref_data.data_variable_package_history.n_for_timepoints IS 'For each named timepoint (name:), the population or count of
-responses (n:), with notes (notes:)';
-
-
---
--- Name: COLUMN data_variable_package_history.tag_select_health_categories; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.data_variable_package_history.tag_select_health_categories IS 'Health Categories';
+COMMENT ON COLUMN redcap.q2_demo_rc_history.current_employment IS 'Are you currently employed?';
 
 
 --
--- Name: COLUMN data_variable_package_history.contact_email; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: COLUMN q2_demo_rc_history.student_looking; Type: COMMENT; Schema: redcap; Owner: -
 --
 
-COMMENT ON COLUMN ref_data.data_variable_package_history.contact_email IS 'Contact or custodian for this package';
-
-
---
--- Name: COLUMN data_variable_package_history.key_fields; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.data_variable_package_history.key_fields IS 'Participant identifier/key types';
+COMMENT ON COLUMN redcap.q2_demo_rc_history.student_looking IS 'If you are unemployed, are you currently a student or looking for work?';
 
 
 --
--- Name: COLUMN data_variable_package_history.info_url; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: COLUMN q2_demo_rc_history.current_fbjob; Type: COMMENT; Schema: redcap; Owner: -
 --
 
-COMMENT ON COLUMN ref_data.data_variable_package_history.info_url IS 'Documentation';
+COMMENT ON COLUMN redcap.q2_demo_rc_history.current_fbjob IS 'If you work in football, please provide additional information:';
 
 
 --
--- Name: data_variable_package_history_id_seq; Type: SEQUENCE; Schema: ref_data; Owner: -
+-- Name: COLUMN q2_demo_rc_history.current_fbjob_oth; Type: COMMENT; Schema: redcap; Owner: -
 --
 
-CREATE SEQUENCE ref_data.data_variable_package_history_id_seq
+COMMENT ON COLUMN redcap.q2_demo_rc_history.current_fbjob_oth IS 'If "Other", please specify:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.job_industry; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.job_industry IS 'Specify your employment industry. (If you are retired, specify the last industry in
+which you were employed.)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.job_title; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.job_title IS 'Select the option that best represents your job title. (If you are retired,
+indicate the title of your last job)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.job_title_entry; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.job_title_entry IS 'Enter your job title: (If you are retired, enter the title of your last
+job)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.smoke; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.smoke IS 'Have you ever smoked cigarettes?  (Smoked at least 100 cigarettes in your lifetime. Do not include pipe and cigars)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.smoketime___pnfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.smoketime___pnfl IS 'Before playing in the NFL';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.smoketime___dnfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.smoketime___dnfl IS 'While playing in the NFL';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.smoketime___anfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.smoketime___anfl IS 'After playing in the NFL';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.smoke_start; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.smoke_start IS 'How old were you when you started smoking?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.smoke_stop; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.smoke_stop IS 'How old were you when you stopped smoking?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.smoke_curr; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.smoke_curr IS 'On average, how many cigarettes do you currently smoke per day?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.smoke_totyrs; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.smoke_totyrs IS 'How many years, in total, have you smoked? (if you quit more than once, estimate the total years you considered yourself an active smoker)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.smoke_prenfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.smoke_prenfl IS 'How many cigarettes did you smoke per day, on average, before playing in the NFL?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.smoke_nfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.smoke_nfl IS 'How many cigarettes did you smoke per day, on average, while playing in the NFL?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.smoke_postnfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.smoke_postnfl IS 'How many cigarettes have you smoked per day, on average, since leaving the NFL? (If you have quit smoking, please provide the average number of cigarettes smoked per day while you considered yourself an active smoker)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.edu_player; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.edu_player IS 'You:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.edu_mother; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.edu_mother IS 'Mother:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.edu_father; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.edu_father IS 'Father:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.occ_mother; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.occ_mother IS 'Mother:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.occ_mother_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.occ_mother_exp IS 'Please explain:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.occ_father; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.occ_father IS 'Father:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.occ_father_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.occ_father_exp IS 'Please explain:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.yrsplayed_prehs; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.yrsplayed_prehs IS 'How many years did you play football before starting high school?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.hsposition1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.hsposition1 IS 'Primary position #1:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.hsposition2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.hsposition2 IS 'Primary position #2:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.yrsplayed_hs; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.yrsplayed_hs IS 'How many years did you play football during high school?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.collposition1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.collposition1 IS 'Primary position #1:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.collposition2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.collposition2 IS 'Primary position #2:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.yrsplayed_coll; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.yrsplayed_coll IS 'How many years did you play football during college before going pro?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.college_div; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.college_div IS 'If you played after the college \"division\" system was created, which division did you play in?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.collpreprac; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.collpreprac IS 'During your college football career, on average, how often did you practice per week during pre-season?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.collpreprac_pads; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.collpreprac_pads IS 'During your college football career, on average, how many practices a week did you wear full pads or shoulder pads during pre-season?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.collregprac; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.collregprac IS 'During your college football career, on average, how often did you practice per week during the regular season?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.collregprac_pads; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.collregprac_pads IS 'During your college football career, on average, how many practices a week did you wear full pads or shoulder pads during the regular season?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.collsnap_ol; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.collsnap_ol IS 'Offensive line:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.collsnap_wr; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.collsnap_wr IS 'Wide receiver:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.collsnap_dl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.collsnap_dl IS 'Defensive line:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.collsnap_te; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.collsnap_te IS 'Tight end:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.collsnap_lb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.collsnap_lb IS 'Linebacker:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.collsnap_qb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.collsnap_qb IS 'Quarterback:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.collsnap_db; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.collsnap_db IS 'Defensive back:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.collsnap_kick; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.collsnap_kick IS 'Kicker/punter:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.collsnap_rb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.collsnap_rb IS 'Running back:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.collsnap_special; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.collsnap_special IS 'Special teams:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.nflpreprac; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.nflpreprac IS 'Over your NFL career, on average, how often did you practice per week during pre-season?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.nflpreprac_pads; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.nflpreprac_pads IS 'Over your NFL career, on average, how many practices a week did you wear full pads or shoulder pads during pre-season?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.nflregprac; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.nflregprac IS 'Over your NFL career, on average, how often did you practice per week during the regular season?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.nflregprac_pads; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.nflregprac_pads IS 'Over your NFL career, on average, how many practices a week did you wear full pads or shoulder pads during the regular season?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.prosnap_ol; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.prosnap_ol IS 'Offensive line:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.prosnap_wr; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.prosnap_wr IS 'Wide receiver:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.prosnap_dl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.prosnap_dl IS 'Defensive line:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.prosnap_te; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.prosnap_te IS 'Tight end:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.prosnap_lb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.prosnap_lb IS 'Linebacker:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.prosnap_qb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.prosnap_qb IS 'Quarterback:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.prosnap_db; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.prosnap_db IS 'Defensive back:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.prosnap_kick; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.prosnap_kick IS 'Kicker/punter:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.prosnap_rb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.prosnap_rb IS 'Running back:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.prosnap_special; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.prosnap_special IS 'Special teams:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.gmsplyd_career; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.gmsplyd_career IS 'Over your whole professional football career, approximately how many games were you on an active roster?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.gmsplyd_season; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.gmsplyd_season IS 'Over your whole professional football career, on average, how many games were you on an active roster per season?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.prsqd; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.prsqd IS 'Did you ever spend time on a practice squad for an NFL team?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.prsqd_seasons; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.prsqd_seasons IS 'Number of seasons:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.othleague; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.othleague IS 'Did you play any seasons for a professional team that was not in the NFL? (CFL, EFL, etc.)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.othleague_seasons; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.othleague_seasons IS 'How many seasons did you play for a professional team not in the NFL? (CFL, EFL, etc.)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.othleaguenm___afl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.othleaguenm___afl IS 'Arena Football League (AFL)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.othleaguenm___cfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.othleaguenm___cfl IS 'Canadian Football League (CFL)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.othleaguenm___efl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.othleaguenm___efl IS 'European Football League (EFL)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.othleaguenm___ufl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.othleaguenm___ufl IS 'United Football League (UFL)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.othleaguenm___wfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.othleaguenm___wfl IS 'World Football League (WFL)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.othleaguenm___xfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.othleaguenm___xfl IS 'XFL';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.othleaguenm___oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.othleaguenm___oth IS 'Other';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.othleague_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.othleague_exp IS 'If "Other", please explain:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.nonnfl_seasons; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.nonnfl_seasons IS 'How many seasons did you collectively play that were not in the NFL?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.prsqd_nonnfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.prsqd_nonnfl IS 'Did you ever spend time on a practice squad for another professional non-NFL Team?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.prsqd_nonnfl_seasons; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.prsqd_nonnfl_seasons IS 'Non-NFL Practice Squad:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.firstpro_age; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.firstpro_age IS 'How old were you when you played your first professional football game (NFL, CFL, EFL, etc.)?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.finalpro_age; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.finalpro_age IS 'How old were you when you played your final professional football game (NFL, CFL, EFL, etc.)?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.leftfb___age; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.leftfb___age IS 'Age';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.leftfb___cut; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.leftfb___cut IS 'Cut from roster';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.leftfb___fbinj; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.leftfb___fbinj IS 'Injury or health problem related to football';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.leftfb___inj; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.leftfb___inj IS 'Injury or health problem not related to football';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.leftfb___retire; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.leftfb___retire IS 'Personal decision (retired)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.postfb_hlthprac; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.postfb_hlthprac IS '...First see a healthcare practitioner?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.postfb_degree; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.postfb_degree IS '...Go back to school to complete a degree or obtain an advanced degree?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.postfb_charity; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.postfb_charity IS '...Begin participating in volunteer or charity work?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.postfb_fbjob; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.postfb_fbjob IS '...Become employed in a football related activity?(e.g. coach, scout, administration, media, television, reporting etc.)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.postfb_job; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.postfb_job IS '...Become employed in a non-football related activity?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.postfbjob_occ; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.postfbjob_occ IS 'What was your first job after leaving football? (Please provide the job title)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.postfbjob_occexp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.postfbjob_occexp IS 'Please explain:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.postfbex_walk; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.postfbex_walk IS 'Walking for exercise or walking to work';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.postfbex_jog; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.postfbex_jog IS 'Jogging (slower than 10min/mile)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.postfbex_run; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.postfbex_run IS 'Running (10min/mile or faster)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.postfbex_other; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.postfbex_other IS 'Other aerobic exercise (e.g. bicycling, stationary bike, elliptical machine, stairmaster)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.postfbex_lowint; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.postfbex_lowint IS 'Low intensity exercise (e.g. yoga, pilates, stretching)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.postfbex_wttrain; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.postfbex_wttrain IS 'Weight training (e.g. lifting free weights, using weight machines)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.postfbex_endsprt; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.postfbex_endsprt IS 'Competitive endurance sports (e.g. marathon, triathlon)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.postfbex_reclg; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.postfbex_reclg IS 'Recreational team leagues (e.g. soccer, basketball, flag football, volleyball)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pastyrex_walk; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pastyrex_walk IS 'Walking for exercise or walking to work';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pastyrex_jog; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pastyrex_jog IS 'Jogging (slower than 10min/mile)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pastyrex_run; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pastyrex_run IS 'Running (10min/mile or faster)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pastyrex_oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pastyrex_oth IS 'Other aerobic exercise (e.g. bicycling, stationary bike, elliptical machine, stairmaster)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pastyrex_lowint; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pastyrex_lowint IS 'Low intensity exercise (e.g. yoga, pilates, stretching)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pastyrex_wttrain; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pastyrex_wttrain IS 'Weight training (e.g. lifting free weights, using weight machines)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pastyrex_endsprt; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pastyrex_endsprt IS 'Competitive endurance sports (e.g. marathon, triathlon)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pastyrex_reclg; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pastyrex_reclg IS 'Recreational team leagues (e.g. soccer, basketball, flag football, volleyball)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ex150min; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ex150min IS 'Do you do 2.5 hours or more of moderate intensity aerobic activity per week? (e.g. brisk walking, jogging, cycling, etc.).';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ex150min_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ex150min_exp IS 'Please select the reason that best explains why you do not do at least 2.5 hours of moderate intensity aerobic activity per week:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ex150min_oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ex150min_oth IS 'If other, please explain:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.demog___complete; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.demog___complete IS 'Check this box and press "Next Page" to save your answers and move on to the next section.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.postfb_wt2yr; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.postfb_wt2yr IS '2 years after leaving professional football play?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.postfb_wt5yr; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.postfb_wt5yr IS '5 years after leaving professional football play?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cardiac_rehab; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cardiac_rehab IS 'Have you participated in cardiac rehab therapy based on a health care provider\''s recommendation?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvtest_ecg; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvtest_ecg IS '12 lead ECG (electrocardiogram)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvtest_ecg_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvtest_ecg_exp IS 'Please specify the diagnosis, if known:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvtest_echo; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvtest_echo IS 'Heart ultrasound (echocardiogram)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvtest_echo_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvtest_echo_exp IS 'Please specify the diagnosis, if known:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvtest_cpxt; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvtest_cpxt IS 'Exercise stress test';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvtest_cpxt_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvtest_cpxt_exp IS 'Please specify the diagnosis, if known:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvtest_cvmri; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvtest_cvmri IS 'Cardiac MRI';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvtest_cvmri_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvtest_cvmri_exp IS 'Please specify the diagnosis, if known:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvtest_corct; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvtest_corct IS 'Coronary artery CT scan';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvtest_corct_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvtest_corct_exp IS 'Please specify the diagnosis, if known:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvtest_cvcath; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvtest_cvcath IS 'Cardiac catheterization (coronary angiogram)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvtest_cvcath_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvtest_cvcath_exp IS 'Please specify the diagnosis, if known:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvdx_mi; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvdx_mi IS 'Heart attack';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvdx_stroke; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvdx_stroke IS 'Stroke (CVA)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvdx_tia; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvdx_tia IS 'TIA (Transient ischemic attack/mini-stroke)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvmedrec_highbp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvmedrec_highbp IS 'High blood pressure';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvmedrec_hrtfail; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvmedrec_hrtfail IS 'Heart failure';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvmedrec_afib; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvmedrec_afib IS 'Atrial fibrillation';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvmedrec_otharrhyth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvmedrec_otharrhyth IS 'Other arrhythmias (e.g. SVT)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvmedrec_highchol; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvmedrec_highchol IS 'High cholesterol';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvmedrec_diabetes; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvmedrec_diabetes IS 'Diabetes or high blood sugar';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvsurg_bypass; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvsurg_bypass IS 'Heart bypass, angioplasty, or stent placement';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvsurg_ablation; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvsurg_ablation IS 'Ablation for atrial fibrillation';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvsurg_carotidart; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvsurg_carotidart IS 'Carotid artery surgery';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvmed_chol; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvmed_chol IS '\"Statin\" cholesterol lowering drugs \[e.g. Mervacor (lovastatin), Pravachol (pravastatin), Xocor (simvastatin), Lipitor\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvmed_othchol; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvmed_othchol IS 'Other cholesterol-lowering drugs \[e.g. Niaspan, Slo-Niacin (niacin), Lopid (gemfibrozil), Tricor (fenofibrate), Questran (cholestyramine)\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvmed_novchol; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvmed_novchol IS 'Novel cholesterol lowering drugs (PCSK-9 inhibitors) \[e.g. Repatha (evolocumab), Praluent (alirocumab)\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvmed_bldthin; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvmed_bldthin IS 'Non-aspirin blood thinners \[e.g. Coumadin (warfarin)\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvmed_anticoag; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvmed_anticoag IS 'Novel oral anti-coagulant \[e.g. Eliquis (apixaban), Pradaxa (dabigatran), Xarelto (rivaroxaban)\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvmed_arrhyth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvmed_arrhyth IS 'Anti-arrhythmia drugs for atrial fibrillation \[e.g. beta blockers (Sectral, Tenormin), sotalol (Betapace, Sotylize, Sorine), flecainide (Tambocor), droedarone (Multaq)\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvmed_digoxin; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvmed_digoxin IS 'Digoxin \[e.g. Lenoxin\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvmed_furosemide; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvmed_furosemide IS 'Furosemide-like diuretic drug \[e.g. Lasix, Bumex\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvmed_thiazide; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvmed_thiazide IS 'Thiazide diuretic \[e.g. HCTZ, Microzide\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvmed_calciumblk; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvmed_calciumblk IS 'Calcium blocker \[e.g. Calan (verapamil), Procardia (nifedipine), Cardizem (diltiazem)\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cvmed_antihyp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cvmed_antihyp IS 'Other antihypertensive \[e.g. Vasotec (enalapril), Capoten (captopril)\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.dbmed_metformin; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.dbmed_metformin IS 'Metformin \[e.g. Glumetza, Glucophage, Fortamet\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.dbmed_glimeperide; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.dbmed_glimeperide IS 'Glimeperide';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.dbmed_insulin; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.dbmed_insulin IS 'Insulin';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.dbmed_other; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.dbmed_other IS 'Other diabetes medication';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cardiac___complete; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cardiac___complete IS 'Check this box and press "Next Page" if you are ready to move on to the next section';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ad8_1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ad8_1 IS 'Problems with judgment. (e.g., problems making decisions, bad financial decisions, problems with thinking)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ad8_2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ad8_2 IS 'Less interest in hobbies/activities.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ad8_3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ad8_3 IS 'Repeats the same things over and over (questions, stories, or statements).';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ad8_4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ad8_4 IS 'Trouble learning how to use a tool, appliance, or gadget. (e.g., VCR, computer, microwave, remote control)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ad8_5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ad8_5 IS 'Forgets correct month or year.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ad8_6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ad8_6 IS 'Trouble handling complicated financial affairs. (e.g. balancing checkbook, income taxes, paying bills).';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ad8_7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ad8_7 IS 'Trouble remembering appointments.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ad8_8; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ad8_8 IS 'Daily problems with thinking and/or memory.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.nqcog64q2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.nqcog64q2 IS 'I had to read something several times to understand it.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.nqcog65q2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.nqcog65q2 IS 'I had trouble keeping track of what I was doing if I was interrupted.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.nqcog66q2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.nqcog66q2 IS 'I had difficulty doing more than one thing at a time.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.nqcog68q2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.nqcog68q2 IS 'I had trouble remembering new information, like phone numbers or simple instructions.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.nqcog72q2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.nqcog72q2 IS 'I had trouble thinking clearly.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.nqcog75q2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.nqcog75q2 IS 'My thinking was slow.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.nqcog77q2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.nqcog77q2 IS 'I had to work really hard to pay attention or I would make a mistake.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.nqcog80q2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.nqcog80q2 IS 'I had trouble concentrating.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.nqper02; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.nqper02 IS 'I had trouble controlling my temper.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.nqper05; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.nqper05 IS 'It was hard to control my behavior.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.nqper06; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.nqper06 IS 'I said or did things without thinking.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.nqper07; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.nqper07 IS 'I got impatient with other people.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.nqper11; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.nqper11 IS 'I was irritable around other people.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.nqper12; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.nqper12 IS 'I was bothered by little things.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.nqper17; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.nqper17 IS 'I became easily upset.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.nqper19; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.nqper19 IS 'I was in conflict with others.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.phq1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.phq1 IS 'Little interest or pleasure in doing things.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.phq2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.phq2 IS 'Feeling down, depressed, or hopeless.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.phq3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.phq3 IS 'Trouble falling or staying asleep, or sleeping too much.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.phq4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.phq4 IS 'Feeling tired or having little energy.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.phq5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.phq5 IS 'Poor appetite or overeating.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.phq6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.phq6 IS 'Feeling bad about yourself - or that you are a failure or have let yourself or your family down.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.phq7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.phq7 IS 'Trouble concentrating on things, such as reading the newspaper or watching television.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.phq8; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.phq8 IS 'Moving or speaking so slowly that other people could have noticed. Or the opposite - being so fidgety or restless that you have been moving around a lot more than usual.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.phq9; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.phq9 IS 'Thoughts that you would be better off dead or of hurting yourself.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.gad7_1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.gad7_1 IS 'Feeling nervous, anxious or on edge.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.gad7_2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.gad7_2 IS 'Not being able to stop or control worrying.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.gad7_3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.gad7_3 IS 'Worrying too much about different things.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.gad7_4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.gad7_4 IS 'Trouble relaxing.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.gad7_5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.gad7_5 IS 'Being so restless that it is hard to sit still.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.gad7_6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.gad7_6 IS 'Becoming easily annoyed or irritable.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.gad7_7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.gad7_7 IS 'Feeling afraid as if something awful might happen.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.lotr1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.lotr1 IS 'In uncertain times, I usually expect the best.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.lotr3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.lotr3 IS 'If something can go wrong for me, it will.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.lotr4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.lotr4 IS 'I\''m always optimistic about my future.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.lotr7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.lotr7 IS 'I hardly ever expect things to go my way.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.lotr9; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.lotr9 IS 'I rarely count on good things happening to me.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.lotr10; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.lotr10 IS 'Overall, I expect more good things to happen to me than bad.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.stpbng_snore; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.stpbng_snore IS 'Do you SNORE loudly (loud enough to be heard through closed doors or your bed-partner elbows you for snoring at night)?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.stpbng_tired; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.stpbng_tired IS 'Do you often feel TIRED, fatigued, or sleepy during the daytime? (such as falling asleep during driving or talking to someone)?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.stpbng_obser; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.stpbng_obser IS 'Has anyone observed you stop breathing or choking/gasping during your sleep?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.stpbng_bp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.stpbng_bp IS 'Do you have or are you being treated for high blood pressure?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.stpbng_neck; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.stpbng_neck IS 'What is your neck circumference (your collar size when buying a dress shirt)?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cpapuse; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cpapuse IS 'Do you currently use a CPAP device for sleep apnea?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.cpapuse_days; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.cpapuse_days IS 'About how many days per week do you use your CPAP device?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ncmedrec_hdache; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ncmedrec_hdache IS 'Headaches';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ncmedrec_anx; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ncmedrec_anx IS 'Anxiety';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ncmedrec_dep; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ncmedrec_dep IS 'Depression';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ncmedrec_memloss; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ncmedrec_memloss IS 'Memory loss';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ncmedrec_add; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ncmedrec_add IS 'ADD/ADHD';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ncdx_alz; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ncdx_alz IS 'Alzheimer\''s disease';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ncdx_cte; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ncdx_cte IS 'Chronic traumatic encephalopathy (CTE)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ncdx_vascdem; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ncdx_vascdem IS 'Vascular dementia';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ncdx_othdem; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ncdx_othdem IS 'Other dementia';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ncdx_als; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ncdx_als IS 'Amyotrophic lateral sclerosis (ALS, Lou Gehrig\''s disease)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ncdx_parkins; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ncdx_parkins IS 'Parkinson\''s disease';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ncdx_ms; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ncdx_ms IS 'Multiple sclerosis (MS)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ncmed_ssri; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ncmed_ssri IS 'Prozac, Zoloft, Paxil, Celexa';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ncmed_tricydep; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ncmed_tricydep IS 'Tricyclic antidepressant \[e.g. Elavil, Sinequan\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ncmed_othdep; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ncmed_othdep IS 'Other antidepressant \[e.g. Nardil, Marplan\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ncmed_slpaid; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ncmed_slpaid IS 'Sleep aid';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.neurocog___complete; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.neurocog___complete IS 'Check this box and press "Next Page" if you are ready to move on to the next section';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi1 IS 'Have you had pain other than these \"everyday\" kinds of pain today?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi2___head; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi2___head IS 'Head';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi2___neck; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi2___neck IS 'Neck';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi2___shoul; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi2___shoul IS 'Shoulder';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi2___chest; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi2___chest IS 'Chest';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi2___arm; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi2___arm IS 'Arm';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi2___hand; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi2___hand IS 'Hand';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi2___uback; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi2___uback IS 'Upper back';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi2___lbak; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi2___lbak IS 'Lower back';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi2___hip; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi2___hip IS 'Hip';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi2___leg; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi2___leg IS 'Leg
+';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi2___knee; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi2___knee IS 'Knee';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi2___ankle; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi2___ankle IS 'Ankle';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi2___foot; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi2___foot IS 'Foot';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi2___oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi2___oth IS 'Other';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi2_othexp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi2_othexp IS 'If you selected \"Other\", please explain:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi2most; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi2most IS 'Please indicate the area where you feel the most pain.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi2most_othexp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi2most_othexp IS 'If you selected \"Other\", please explain:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi3 IS 'Please rate your pain by marking the box beside the number that best describes your pain at its *worst* in the last 24 hours.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi4 IS 'Please rate your pain by marking the box beside the number that best describes your pain at its *least* in the last 24 hours.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi5 IS 'Please rate your pain by marking the box beside the number that best describes your pain on the *average*.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi6 IS 'Please rate your pain by marking the box beside the number that tells how much pain you have *right now*.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi7___none; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi7___none IS 'None';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi7___otc; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi7___otc IS 'Over the counter medication';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi7___prmed; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi7___prmed IS 'Prescribed medication';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi7___mass; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi7___mass IS 'Massage/acupressure';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi7___pt; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi7___pt IS 'Physical therapy';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi7___acup; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi7___acup IS 'Acupuncture';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi7___marij; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi7___marij IS 'Marijuana or medical marijuana';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi7___intpm; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi7___intpm IS 'Interventional pain management (nerve
+ blocks, joint injections or radiotherapy)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi7___oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi7___oth IS 'Other';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi7_othexp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi7_othexp IS 'If you selected \"Other\", please explain:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi8; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi8 IS 'In the last 24 hours, how much relief have pain treatments or medications provided? Please mark the box below the percentage that most shows how much relief you have received.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi9a; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi9a IS 'General activity';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi9b; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi9b IS 'Mood';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi9c; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi9c IS 'Walking ability';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi9d; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi9d IS 'Normal work (includes both work outside the home and housework)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi9e; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi9e IS 'Relations with other people';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi9f; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi9f IS 'Sleep';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi9g; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi9g IS 'Enjoyment of life';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi9h; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi9h IS 'Exercise for health and wellness';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmedfb_acetamin; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmedfb_acetamin IS 'Acetaminophen \[e.g. Tylenol\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmedfb_aspirin; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmedfb_aspirin IS 'Aspirin or aspirin containing products \[e.g. Excedrin Migraine, Alka-Seltzer with aspirin\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmedfb_ibuprof; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmedfb_ibuprof IS 'Ibuprofen \[e.g. Motrin, Advil\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmedfb_othantiinf; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmedfb_othantiinf IS 'Other anti-inflammatory analgesics \[e.g. Aleve, Naprosyn, Relafen, Frotek, Anaprox\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmedfb_oralster; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmedfb_oralster IS 'Steroid taken orally \[e.g. Prednisone, Medrol\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmedfb_opioid; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmedfb_opioid IS 'Opioid-based pain medication \[e.g. Percocet, Vicodin\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed5yr_acetamin; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed5yr_acetamin IS 'Acetaminophen \[e.g. Tylenol\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed5yr_aspirin; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed5yr_aspirin IS 'Aspirin or aspirin containing products \[e.g. Excedrin Migraine, Alka-Seltzer with aspirin\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed5yr_ibuprof; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed5yr_ibuprof IS 'Ibuprofen \[e.g. Motrin, Advil\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed5yr_antiinf; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed5yr_antiinf IS 'Other anti-inflammatory analgesics \[e.g. Aleve, Naprosyn, Relafen, Ketoprofen, Anaprox\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed5yr_oralster; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed5yr_oralster IS 'Steroid taken orally \[e.g. Prednisone, Medrol\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed5yr_opioid; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed5yr_opioid IS 'Opioid-based pain medication \[e.g. Percocet, Vicodin\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed_acetamin; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed_acetamin IS 'Acetaminophen \[e.g. Tylenol\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed_acetamin_days; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed_acetamin_days IS 'Days per week';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed_acetamin_tabs; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed_acetamin_tabs IS 'Tablets per day';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed_acetamin_dose; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed_acetamin_dose IS 'Usual dose per tab';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed_aspirin; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed_aspirin IS 'Aspirin or aspirin containing products \[e.g. Excedrin Migraine, Alka-Seltzer with aspirin\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed_aspirin_days; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed_aspirin_days IS 'Days per week';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed_aspirin_tabs; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed_aspirin_tabs IS 'Tablets per day';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed_aspirin_dose; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed_aspirin_dose IS 'Usual dose per tab';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed_ibuprof; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed_ibuprof IS 'Ibuprofen \[e.g. Motrin, Advil\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed_ibuprof_days; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed_ibuprof_days IS 'Days per week';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed_ibuprof_tabs; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed_ibuprof_tabs IS 'Tablets per day';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed_ibuprof_dose; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed_ibuprof_dose IS 'Usual dose per tab';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed_antiinf; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed_antiinf IS 'Other anti-inflammatory analgesics \[e.g. Aleve, Naprosyn, Relafen, Ketoprofen, Anaprox\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed_antiinf_days; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed_antiinf_days IS 'Days per week';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed_antiinf_tabs; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed_antiinf_tabs IS 'Tablets per day';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed_antiinf_dose; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed_antiinf_dose IS 'Usual dose per tab';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed_oralster; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed_oralster IS 'Steroid taken orally \[e.g. Prednisone, Medrol\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed_oralster_days; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed_oralster_days IS 'Days per week';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed_oralster_tabs; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed_oralster_tabs IS 'Tablets per day';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed_oralster_dose; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed_oralster_dose IS 'Usual dose per tab';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed_opioid; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed_opioid IS 'Opioid-based pain medication \[e.g. Percocet, Vicodin\]';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed_opioid_days; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed_opioid_days IS 'Days per week';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed_opioid_tab; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed_opioid_tab IS 'Tablets per days';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnmed_opioid_dose; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnmed_opioid_dose IS 'Usual dose per tab';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnsurg_nckspin; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnsurg_nckspin IS 'Neck/spine surgery';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnsurg_back; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnsurg_back IS 'Back (lumbar) surgery';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnsurg_hip; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnsurg_hip IS 'Hip replacement';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pnsurg_knee; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pnsurg_knee IS 'Knee replacement';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pain___complete; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pain___complete IS 'Check this box and press "Next Page" if you are ready to move on to the next section';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.wealth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.wealth IS 'What is your approximate household net worth? \[the value of all the assets of people in your household (like housing, cars, stock, retirement funds, and business ownership) minus any debt or loans you and household members may have (like mortgages, credit card debt or car, school, or business loans\].';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.wealth_emerg___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.wealth_emerg___1 IS 'Put it on my credit card and pay it off in full at thenext statement';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.wealth_emerg___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.wealth_emerg___2 IS 'Put it on my credit card and pay it off over time';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.wealth_emerg___3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.wealth_emerg___3 IS 'With the money currently in my checking/savings account or with cash';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.wealth_emerg___4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.wealth_emerg___4 IS 'Using money from a bank loan or line of credit';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.wealth_emerg___5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.wealth_emerg___5 IS 'By borrowing from a friend or family member';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.wealth_emerg___6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.wealth_emerg___6 IS 'Using a payday loan, deposit advance, oroverdraft';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.wealth_emerg___7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.wealth_emerg___7 IS 'By selling something';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.wealth_emerg___8; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.wealth_emerg___8 IS 'I wouldn''t be able to pay for the expense right now';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.wealth_emerg___9; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.wealth_emerg___9 IS 'Other';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.wealth_emerg_oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.wealth_emerg_oth IS 'Please explain:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ladder_wealth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ladder_wealth IS 'Where would you place yourself on this ladder? (Select the number that
+best represents where you think you stand, relative to other people in
+the United States)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ladder_comm; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ladder_comm IS 'Where would you place yourself on this ladder? (Select the number that
+best represents where you think you stand, relative to other people in
+the United States)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.household_number; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.household_number IS 'How many people are in your household?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.hcutil_pcp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.hcutil_pcp IS 'Have you seen you seen your primary care physician (PCP) in the past 3 years?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.hcutil_pcp_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.hcutil_pcp_exp IS 'If not, why?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.hcutil_pcp_oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.hcutil_pcp_oth IS 'If "Other", please explain:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.hcutil_othprov; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.hcutil_othprov IS 'Have you seen a physician or healthcare provider other than your PCP in the past 3 years? (e.g. physical therapist, cardiologist, endocrinologist, etc.)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.selfrpt_cte; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.selfrpt_cte IS 'Do *you* believe you have Chronic Traumatic Encephalopathy (CTE)?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.otdx_arthritis; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.otdx_arthritis IS 'Arthritis (e.g. osteoarthritis)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.otdx_slpapnea; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.otdx_slpapnea IS 'Sleep apnea';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.otdx_prostcanc; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.otdx_prostcanc IS 'Prostate cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.otdx_basalcanc; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.otdx_basalcanc IS 'Basal cell skin cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.otdx_squamcanc; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.otdx_squamcanc IS 'Squamous cell skin cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.otdx_melanom; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.otdx_melanom IS 'Melanoma';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.otdx_lymphom; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.otdx_lymphom IS 'Lymphoma';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.otdx_othcanc; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.otdx_othcanc IS 'Other cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.otdx_renalfail; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.otdx_renalfail IS 'Chronic renal failure';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.otdx_alcdep; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.otdx_alcdep IS 'Alcohol dependence problem';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.otdx_livcirrhosis; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.otdx_livcirrhosis IS 'Liver cirrhosis';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.otdx_livfail; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.otdx_livfail IS 'Liver failure';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.otmedrec_pncond; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.otmedrec_pncond IS 'Pain related condition';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.otmedrec_livprob; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.otmedrec_livprob IS 'Liver problem';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.otmedrec_lowtest; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.otmedrec_lowtest IS 'Low testosterone';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.otmedrec_ed; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.otmedrec_ed IS 'Erectile dysfunction (E.D.)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.massage; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.massage IS 'Massage';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.acupuncture; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.acupuncture IS 'Acupuncture';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.chiropractic; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.chiropractic IS 'Chiropractic treatment';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.yoga; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.yoga IS 'Yoga';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.taichi; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.taichi IS 'Tai chi';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.meditation; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.meditation IS 'Meditation';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.othaltmed; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.othaltmed IS 'Other alternative medication';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.othaltmed_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.othaltmed_exp IS 'Please specify:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxmoth___na; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxmoth___na IS 'Not applicable
+';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxmoth___lung; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxmoth___lung IS 'Lung
+ cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxmoth___colrec; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxmoth___colrec IS 'Colon 
+or rectal cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxmoth___diab; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxmoth___diab IS 'Diabetes ';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxmoth___mela; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxmoth___mela IS 'Melanoma';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxmoth___hypert; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxmoth___hypert IS 'Hypertension';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxmoth___dem; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxmoth___dem IS 'Dementia before
+age 70';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxmoth___alc; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxmoth___alc IS 'Alcohol problem';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxfsib___na; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxfsib___na IS 'Not applicable
+';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxfsib___lung; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxfsib___lung IS 'Lung
+ cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxfsib___colrec; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxfsib___colrec IS 'Colon 
+or rectal cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxfsib___diab; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxfsib___diab IS 'Diabetes ';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxfsib___mela; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxfsib___mela IS 'Melanoma';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxfsib___hypert; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxfsib___hypert IS 'Hypertension';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxfsib___dem; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxfsib___dem IS 'Dementia before
+age 70';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxfsib___alc; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxfsib___alc IS 'Alcohol problem';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.femsib_number; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.femsib_number IS 'How many full female siblings do you have?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxfath___na; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxfath___na IS 'Not applicable';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxfath___lung; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxfath___lung IS 'Lung cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxfath___colrec; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxfath___colrec IS 'Colon 
+or rectal cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxfath___prost; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxfath___prost IS 'Prostate cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxfath___diab; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxfath___diab IS 'Diabetes ';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxfath___mela; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxfath___mela IS 'Melanoma';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxfath___hypert; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxfath___hypert IS 'Hypertension';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxfath___dem; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxfath___dem IS 'Dementia before age
+70';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxfath___alc; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxfath___alc IS 'Alcohol problem';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxmsib___na; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxmsib___na IS 'Not applicable';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxmsib___lung; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxmsib___lung IS 'Lung cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxmsib___colrec; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxmsib___colrec IS 'Colon 
+or rectal cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxmsib___prost; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxmsib___prost IS 'Prostate cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxmsib___diab; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxmsib___diab IS 'Diabetes ';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxmsib___mela; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxmsib___mela IS 'Melanoma';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxmsib___hypert; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxmsib___hypert IS 'Hypertension';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxmsib___dem; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxmsib___dem IS 'Dementia before age
+70';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxmsib___alc; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxmsib___alc IS 'Alcohol problem';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib_number; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib_number IS 'How many full male siblings do you have?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib1age; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib1age IS 'Current age:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib1ht_feet; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib1ht_feet IS 'Height (feet):';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib1ht_inch; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib1ht_inch IS 'Height (inches):';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib1sport___none; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib1sport___none IS 'Did not play sports';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib1sport___hsfb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib1sport___hsfb IS 'Played H.S. football';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib1sport___colfb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib1sport___colfb IS 'Played college football';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib1sport___oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib1sport___oth IS 'Other';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib1sport_oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib1sport_oth IS 'Please specify:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib2age; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib2age IS 'Current age:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib2ht_feet; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib2ht_feet IS 'Height (feet):';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib2ht_inch; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib2ht_inch IS 'Height (inches):';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib2sport___none; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib2sport___none IS 'Did not play sports';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib2sport___hsfb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib2sport___hsfb IS 'Played H.S. football';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib2sport___colfb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib2sport___colfb IS 'Played college football';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib2sport___oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib2sport___oth IS 'Other';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib2sport_oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib2sport_oth IS 'Please specify:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib3age; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib3age IS 'Current age:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib3ht_feet; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib3ht_feet IS 'Height (feet):';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib3ht_inch; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib3ht_inch IS 'Height (inches):';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib3sport___none; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib3sport___none IS 'Did not play sports';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib3sport___hsfb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib3sport___hsfb IS 'Played H.S. football';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib3sport___colfb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib3sport___colfb IS 'Played college football';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib3sport___oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib3sport___oth IS 'Other';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib3sport_oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib3sport_oth IS 'Please specify:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib4age; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib4age IS 'Current age:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib4ht_feet; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib4ht_feet IS 'Height (feet):';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib4ht_inch; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib4ht_inch IS 'Height (inches):';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib4sport___none; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib4sport___none IS 'Did not play sports';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib4sport___hsfb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib4sport___hsfb IS 'Played H.S. football';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib4sport___colfb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib4sport___colfb IS 'Played college football';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib4sport___oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib4sport___oth IS 'Other';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib4sportoth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib4sportoth IS 'Please specify:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib5age; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib5age IS 'Current age:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib5ht_feet; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib5ht_feet IS 'Height (feet):';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib5ht_inch; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib5ht_inch IS 'Height (inches):';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib5sport___none; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib5sport___none IS 'Did not play sports';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib5sport___hsfb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib5sport___hsfb IS 'Played H.S. football';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib5sport___colfb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib5sport___colfb IS 'Played college football';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib5sport___oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib5sport___oth IS 'Other';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib5sport_oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib5sport_oth IS 'Please specify:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedcaff___noans; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedcaff___noans IS 'Prefer not
+ to answer';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedcaff___no; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedcaff___no IS 'No';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedcaff___fb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedcaff___fb IS 'Yes, during
+active play';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedcaff___cur; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedcaff___cur IS 'Yes,
+currently';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pededrink___noans; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pededrink___noans IS 'Prefer not
+ to answer';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pededrink___no; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pededrink___no IS 'No';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pededrink___fb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pededrink___fb IS 'Yes, during
+active play';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pededrink___cur; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pededrink___cur IS 'Yes,
+currently';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedcreat___noans; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedcreat___noans IS 'Prefer not
+ to answer';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedcreat___no; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedcreat___no IS 'No';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedcreat___fb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedcreat___fb IS 'Yes, during
+active play';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedcreat___cur; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedcreat___cur IS 'Yes,
+currently';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedsteroid___noans; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedsteroid___noans IS 'Prefer not
+ to answer';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedsteroid___no; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedsteroid___no IS 'No';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedsteroid___fb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedsteroid___fb IS 'Yes, during
+active play';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedsteroid___cur; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedsteroid___cur IS 'Yes,
+currently';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedgh___noans; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedgh___noans IS 'Prefer not
+ to answer';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedgh___no; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedgh___no IS 'No';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedgh___fb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedgh___fb IS 'Yes, during
+active play';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedgh___cur; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedgh___cur IS 'Yes,
+currently';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedephed___noans; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedephed___noans IS 'Prefer not
+ to answer';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedephed___no; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedephed___no IS 'No';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedephed___fb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedephed___fb IS 'Yes, during
+active play';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedephed___cur; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedephed___cur IS 'Yes,
+currently';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedbetahy___noans; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedbetahy___noans IS 'Prefer not
+ to answer';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedbetahy___no; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedbetahy___no IS 'No';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedbetahy___fb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedbetahy___fb IS 'Yes, during
+active play';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedbetahy___cur; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedbetahy___cur IS 'Yes,
+currently';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pednoncaf___noans; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pednoncaf___noans IS 'Prefer not
+ to answer';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pednoncaf___no; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pednoncaf___no IS 'No';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pednoncaf___fb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pednoncaf___fb IS 'Yes, during
+active play';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pednoncaf___cur; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pednoncaf___cur IS 'Yes,
+currently';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedrcell___noans; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedrcell___noans IS 'Prefer not
+ to answer';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedrcell___no; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedrcell___no IS 'No';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedrcell___fb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedrcell___fb IS 'Yes, during
+active play';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedrcell___cur; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedrcell___cur IS 'Yes,
+currently';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedinos___noans; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedinos___noans IS 'Prefer not
+ to answer';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedinos___no; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedinos___no IS 'No';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedinos___fb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedinos___fb IS 'Yes, during
+active play';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedinos___cur; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedinos___cur IS 'Yes,
+currently';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.alcohol_days; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.alcohol_days IS 'In a typical week, how many days do you drink a beverage containing alcohol?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.alcohol_drinks; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.alcohol_drinks IS 'On a typical day that you drink, how many alcoholic beverages do you usually have?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.marijuana; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.marijuana IS 'Do you smoke or ingest marijuana?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.marijuana_start; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.marijuana_start IS 'How old were you when you started smoking marijuana?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.marijuana_stop; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.marijuana_stop IS 'How old were you when you stopped smoking marijuana?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.marijuana_totyrs; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.marijuana_totyrs IS 'How many years, in total, have you smoked marijuana? (if you quit more than once, estimate the total years you considered yourself an active smoker)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.marijtime___pnfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.marijtime___pnfl IS 'Before playing in the NFL';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.marijtime___dnfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.marijtime___dnfl IS 'While playing in the NFL';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.marijtime___anfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.marijtime___anfl IS 'After playing in the NFL';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.marijreas___fun; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.marijreas___fun IS 'Fun';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.marijreas___relx; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.marijreas___relx IS 'Relaxation';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.marijreas___pain; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.marijreas___pain IS 'Pain';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.marijreas___anx; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.marijreas___anx IS 'Anxiety';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.marijreas___dep; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.marijreas___dep IS 'Depression';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.marijreas___oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.marijreas___oth IS 'Other';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.marijreas_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.marijreas_exp IS 'If \"Other\" reason, please explain:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.born_address; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.born_address IS 'Address:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.born_city; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.born_city IS 'City:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.born_state; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.born_state IS 'State:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.born_zip; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.born_zip IS 'Zip code (if known)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.twelveyrs_address; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.twelveyrs_address IS 'Address:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.twelveyrs_city; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.twelveyrs_city IS 'City:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.twelveyrs_state; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.twelveyrs_state IS 'State:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.twelveyrs_zip; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.twelveyrs_zip IS 'Zip code (if known)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.infertility; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.infertility IS 'Have you and a female spouse or partner ever tried to become pregnant for 12 consecutive months without becoming pregnant (even if she ultimately became pregnant)?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.infert_age; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.infert_age IS 'How old were you when this first happened?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.infert_hcp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.infert_hcp IS 'Did you seek help from a healthcare provider?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.infertreas___fem; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.infertreas___fem IS 'Female factor';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.infertreas___mal; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.infertreas___mal IS 'Male factor';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.infertreas___unex; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.infertreas___unex IS 'Unexplained';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.infertreas___oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.infertreas___oth IS 'Other';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.infertreas_oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.infertreas_oth IS 'If "Other", please explain:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.actout_dreams; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.actout_dreams IS 'Has your spouse \[or sleep partner\] told you that you appear to \''act out your dreams\'' while sleeping \[punched or flailed arms in the air, shouted, screamed\], which has occurred at least three times?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.smell_problem; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.smell_problem IS 'Have you had any problems with your sense of smell, such as not being able to smell things or things not smelling the way they are supposed to for at least three months?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.taste_problem; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.taste_problem IS 'Have you had any problems with your sense of taste, such as not being able to taste salt or sugar or with tastes in the mouth that shouldn\''t be there, like bitter, salty, sour, or sweet tastes for at least three months?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bowel_move; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bowel_move IS 'How frequently do you have a bowel movement?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.laxative_use; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.laxative_use IS 'How often do you use a laxative? (Such as softeners, bulking agents, fiber supplements, or suppositories)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.workplace_harass; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.workplace_harass IS 'Was there a period of time when you frequently experienced any of the following from teammates, coaches or trainers: social isolation, threats or other actions aimed at harassing you?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.coach_discrim; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.coach_discrim IS 'How many times were you treated unfairly by COACHES OR TRAINERS because of your race or ethnicity?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.coach_discrimstr; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.coach_discrimstr IS 'How stressful was this for you?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.player_discrim; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.player_discrim IS 'How many times were you treated unfairly by OTHER PLAYERS because of your race or ethnicity?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.player_discrimstr; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.player_discrimstr IS 'How stressful was this for you?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.job_discrim; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.job_discrim IS 'How many times were you treated unfairly in being hired for a job or promoted because of your race or ethnicity?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.job_discrimstr; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.job_discrimstr IS 'How stressful was this for you?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ace1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ace1 IS 'Did a parent or other adult in the household often or very often...  
+  
+*Swear at you, insult you, put you down, or humiliate you?* or *Act in a way that made you afraid that you might be physically hurt*?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ace2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ace2 IS 'Did a parent or other adult in the household often or very often...  
+  
+*Push, grab, slap, or throw something at you?* or  Ever hit you so hard that you had marks or were injured?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ace3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ace3 IS 'Did an adult or person at least 5 years older than you ever...  
+  
+*Touch or fondle you or have you touch their body in a sexual way?* or Attempt or actually have oral, anal, or vaginal intercourse with you?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ace4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ace4 IS 'Did you often or very often feel that...  
+  
+*No one in your family loved you or thought you were important or special?* or *Your family didn\''t look out for each other, feel close to each other, or support each other?*';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ace5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ace5 IS 'Did you often or very often feel that...  
+  
+*You didn\''t have enough to eat, had to wear dirty clothes, and had no one to protect you?* or Your parents were too drunk or high to take care of you or take you to the doctor if you needed it?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ace6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ace6 IS 'Were your parents ever separated or divorced?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ace7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ace7 IS 'Was your mother or stepmother:  
+  
+*Often or very often pushed, grabbed, slapped, or had something thrown at her?* or *Sometimes, often, or very often kicked, bitten, hit with a fist, or hit with something hard?* or *Ever repeatedly hit over at least a few minutes or threatened with a gun or knife?*';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ace8; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ace8 IS 'Did you live with anyone who was a problem drinker or alcoholic, or who used street drugs?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ace9; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ace9 IS 'Was a household member depressed or mentally ill, or did a household member attempt suicide?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.ace10; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.ace10 IS 'Did a household member go to prison?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.foodins_worry; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.foodins_worry IS 'I worried whether our food would run out before we got money to buy more';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.foodins_ranout; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.foodins_ranout IS 'The food my family bought just didn\''t last and we didn\''t have money to get more';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.q2help; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.q2help IS 'Did someone help you fill out the questionnaire?';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.othealth___complete; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.othealth___complete IS 'Check this box and press "Submit" to complete the questionnaire!';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sdfsdaf___0; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sdfsdaf___0 IS 'Very Poor';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sdfsdaf___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sdfsdaf___1 IS 'Average';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sdfsdaf___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sdfsdaf___2 IS 'Excellent';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.rtyrtyrt___0; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.rtyrtyrt___0 IS 'Very Poor';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.rtyrtyrt___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.rtyrtyrt___1 IS 'Average';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.rtyrtyrt___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.rtyrtyrt___2 IS 'Excellent';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.test_field; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.test_field IS 'Hello';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.test_phone; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.test_phone IS 'test phone';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.i57; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.i57 IS 'Integer (0-57)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.f57; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.f57 IS 'Float (0-57)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.dd; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.dd IS 'dd';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.yes_or_no; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.yes_or_no IS 'Yes or now';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.true_or_false; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.true_or_false IS 'True or false';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.file1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.file1 IS 'File upload';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.signature; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.signature IS 'Signature';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.slider; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.slider IS 'Slider';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.base_field; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.base_field IS 'Base Field';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.smoketime_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.smoketime_chosen_array IS 'Please indicate the time-frames during which you smoked cigarettes? (Please select all that apply)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.othleaguenm_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.othleaguenm_chosen_array IS 'Indicate the professional, non-NFL, league(s) for which you have played. Please mark all that apply:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.leftfb_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.leftfb_chosen_array IS 'Please indicate the main reason(s) why you stopped playing professional football? Select all that apply.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi2_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi2_chosen_array IS 'Please indicate the areas where you feel pain. (Select all that apply)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.bpi7_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.bpi7_chosen_array IS 'What treatments or medications are you receiving for your pain? (Please select all that apply)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.wealth_emerg_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.wealth_emerg_chosen_array IS 'Based on your current financial situation, how would you pay for this
+expense? If you would use more than one method to cover this expense,
+please select all that apply.';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxmoth_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxmoth_chosen_array IS 'Mother';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxfsib_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxfsib_chosen_array IS 'Female Sibling';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxfath_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxfath_chosen_array IS 'Father';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.famhxmsib_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.famhxmsib_chosen_array IS 'Male Sibling';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib4sport_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib4sport_chosen_array IS 'Select all that apply:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sib5sport_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sib5sport_chosen_array IS 'Select all that apply:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedcaff_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedcaff_chosen_array IS 'Caffeine (Commonly found in soda, coffee, and tea. Also found in supplements like No Doz, Stay Awake, Vivarin, Cafcit, Enerjets, etc.)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pededrink_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pededrink_chosen_array IS 'Energy drinks (**aka:** Red Bull, Monster, 5-Hour Energy, AMP Energy, Full Throttle, Jolt, Liquid X, mountain dew MDX, Red Rooster, Rockstar, RELOAD, SoBe Adrenaline Rush, Vault, XS energy drink, etc.)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedcreat_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedcreat_chosen_array IS 'Creatine (**aka:** creatine phosphate, creatine monohydrate, CreaPure, legal steroid, muscle candy, etc.)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedsteroid_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedsteroid_chosen_array IS 'Steroids (**aka:** anabolic steroids, testosterone, androstenedione, dihydroepiandrosterone, DHEA, Arnolds, gym candy, pumpers, roids, stackers, weight trainers, gear, and juice)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedgh_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedgh_chosen_array IS 'Growth hormone or insulin-like growth factor (**aka:** human growth hormone, insulin-like growth factor-1, insulin-like growth factor, IGF, IGF-1, Genotropin, Humatrope, Norditropin, Nutropin, Saizen, Serostim)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedephed_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedephed_chosen_array IS 'Ephedra (**aka:** ephedrine, Ma Huang, desert tea, Mormon tea, American ephedra, European ephedra, Pakistani ephedra, ephedrine, ephedrine alkaloids, pseudoephedrine)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedbetahy_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedbetahy_chosen_array IS 'Beta-hydroxy beta-methylbutyrate (**aka:** HMB, beta-hydroxy, beta-methylbutyrate, beta-hydroxy, beta-methylbutyric acid)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pednoncaf_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pednoncaf_chosen_array IS 'Non-caffeine stimulants (**aka:** amphetamine, dextroamphetamine (Adderall), methylphenidate (Ritalin))';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedrcell_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedrcell_chosen_array IS 'Red-cell boosting agents or techniques (**aka:** Erythropoeitin (EPO), auto-transfusion, hypoxic sleep tents)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.pedinos_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.pedinos_chosen_array IS 'Other cardiovascular enhancement agent (**aka:** inosine or inosine-containing products)';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.marijtime_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.marijtime_chosen_array IS 'Please indicate the time-frames during which you smoked marijuana (select all that apply):';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.marijreas_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.marijreas_chosen_array IS 'Please indicate the reasons why you use, or have previously used, marijuana (select all that apply):';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.infertreas_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.infertreas_chosen_array IS 'Did he or she find a reason why you and your female spouse or partner
+had difficulty getting pregnant? Please choose all that apply:';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.sdfsdaf_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.sdfsdaf_chosen_array IS 'sdfsdaf';
+
+
+--
+-- Name: COLUMN q2_demo_rc_history.rtyrtyrt_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rc_history.rtyrtyrt_chosen_array IS 'rtyrtyrt';
+
+
+--
+-- Name: q2_demo_rc_history_id_seq; Type: SEQUENCE; Schema: redcap; Owner: -
+--
+
+CREATE SEQUENCE redcap.q2_demo_rc_history_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -13099,50 +13695,4704 @@ CREATE SEQUENCE ref_data.data_variable_package_history_id_seq
 
 
 --
--- Name: data_variable_package_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ref_data; Owner: -
+-- Name: q2_demo_rc_history_id_seq; Type: SEQUENCE OWNED BY; Schema: redcap; Owner: -
 --
 
-ALTER SEQUENCE ref_data.data_variable_package_history_id_seq OWNED BY ref_data.data_variable_package_history.id;
+ALTER SEQUENCE redcap.q2_demo_rc_history_id_seq OWNED BY redcap.q2_demo_rc_history.id;
 
 
 --
--- Name: data_variable_package_var_history; Type: TABLE; Schema: ref_data; Owner: -
+-- Name: q2_demo_rcs; Type: TABLE; Schema: redcap; Owner: -
 --
 
-CREATE TABLE ref_data.data_variable_package_var_history (
+CREATE TABLE redcap.q2_demo_rcs (
     id bigint NOT NULL,
-    record_id bigint,
-    record_type character varying,
-    disabled boolean DEFAULT false,
-    variable_name character varying,
-    domain character varying,
+    record_id character varying,
+    dob date,
+    current_weight numeric,
+    domestic_status character varying,
+    living_situation character varying,
+    current_employment character varying,
+    student_looking character varying,
+    current_fbjob character varying,
+    current_fbjob_oth character varying,
+    job_industry character varying,
+    job_title character varying,
+    job_title_entry character varying,
+    smoke character varying,
+    smoketime___pnfl boolean,
+    smoketime___dnfl boolean,
+    smoketime___anfl boolean,
+    smoke_start numeric,
+    smoke_stop numeric,
+    smoke_curr character varying,
+    smoke_totyrs numeric,
+    smoke_prenfl character varying,
+    smoke_nfl character varying,
+    smoke_postnfl character varying,
+    edu_player character varying,
+    edu_mother character varying,
+    edu_father character varying,
+    occ_mother character varying,
+    occ_mother_exp character varying,
+    occ_father character varying,
+    occ_father_exp character varying,
+    yrsplayed_prehs numeric,
+    playhsfb___no boolean,
+    hsposition1 character varying,
+    hsposition2 character varying,
+    yrsplayed_hs character varying,
+    collposition1 character varying,
+    collposition2 character varying,
+    yrsplayed_coll character varying,
+    college_div character varying,
+    collpreprac character varying,
+    collpreprac_pads character varying,
+    collregprac character varying,
+    collregprac_pads character varying,
+    collsnap_ol character varying,
+    collsnap_wr character varying,
+    collsnap_dl character varying,
+    collsnap_te character varying,
+    collsnap_lb character varying,
+    collsnap_qb character varying,
+    collsnap_db character varying,
+    collsnap_kick character varying,
+    collsnap_rb character varying,
+    collsnap_special character varying,
+    nflpreprac character varying,
+    nflpreprac_pads character varying,
+    nflregprac character varying,
+    nflregprac_pads character varying,
+    prosnap_ol character varying,
+    prosnap_wr character varying,
+    prosnap_dl character varying,
+    prosnap_te character varying,
+    prosnap_lb character varying,
+    prosnap_qb character varying,
+    prosnap_db character varying,
+    prosnap_kick character varying,
+    prosnap_rb character varying,
+    prosnap_special character varying,
+    gmsplyd_career numeric,
+    gmsplyd_season character varying,
+    prsqd boolean,
+    prsqd_seasons numeric,
+    othleague boolean,
+    othleague_seasons character varying,
+    othleaguenm___afl boolean,
+    othleaguenm___cfl boolean,
+    othleaguenm___efl boolean,
+    othleaguenm___ufl boolean,
+    othleaguenm___wfl boolean,
+    othleaguenm___xfl boolean,
+    othleaguenm___oth boolean,
+    othleague_exp character varying,
+    nonnfl_seasons numeric,
+    prsqd_nonnfl boolean,
+    prsqd_nonnfl_seasons numeric,
+    firstpro_age numeric,
+    finalpro_age numeric,
+    leftfb___age boolean,
+    leftfb___cut boolean,
+    leftfb___fbinj boolean,
+    leftfb___inj boolean,
+    leftfb___retire boolean,
+    postfb_hlthprac character varying,
+    postfb_degree character varying,
+    postfb_charity character varying,
+    postfb_fbjob character varying,
+    postfb_job character varying,
+    postfbjob_occ character varying,
+    postfbjob_occexp character varying,
+    postfbex_walk character varying,
+    postfbex_jog character varying,
+    postfbex_run character varying,
+    postfbex_other character varying,
+    postfbex_lowint character varying,
+    postfbex_wttrain character varying,
+    postfbex_endsprt character varying,
+    postfbex_reclg character varying,
+    pastyrex_walk character varying,
+    pastyrex_jog character varying,
+    pastyrex_run character varying,
+    pastyrex_oth character varying,
+    pastyrex_lowint character varying,
+    pastyrex_wttrain character varying,
+    pastyrex_endsprt character varying,
+    pastyrex_reclg character varying,
+    ex150min boolean,
+    ex150min_exp character varying,
+    ex150min_oth character varying,
+    demog___complete boolean,
+    demog_date timestamp without time zone,
+    postfb_wt2yr character varying,
+    postfb_wt2yrdelta character varying,
+    postfb_wt5yr character varying,
+    postfb_wt5yrdelta character varying,
+    cardiac_rehab boolean,
+    cvtest_ecg character varying,
+    cvtest_ecg_exp character varying,
+    cvtest_echo character varying,
+    cvtest_echo_exp character varying,
+    cvtest_cpxt character varying,
+    cvtest_cpxt_exp character varying,
+    cvtest_cvmri character varying,
+    cvtest_cvmri_exp character varying,
+    cvtest_corct character varying,
+    cvtest_corct_exp character varying,
+    cvtest_cvcath character varying,
+    cvtest_cvcath_exp character varying,
+    cvdx_mi character varying,
+    cvdx_stroke character varying,
+    cvdx_tia character varying,
+    cvmedrec_highbp character varying,
+    cvmedrec_hrtfail character varying,
+    cvmedrec_afib character varying,
+    cvmedrec_otharrhyth character varying,
+    cvmedrec_highchol character varying,
+    cvmedrec_diabetes character varying,
+    cvsurg_bypass character varying,
+    cvsurg_ablation character varying,
+    cvsurg_carotidart character varying,
+    cvmed_chol character varying,
+    cvmed_othchol character varying,
+    cvmed_novchol character varying,
+    cvmed_bldthin character varying,
+    cvmed_anticoag character varying,
+    cvmed_arrhyth character varying,
+    cvmed_digoxin character varying,
+    cvmed_furosemide character varying,
+    cvmed_thiazide character varying,
+    cvmed_calciumblk character varying,
+    cvmed_antihyp character varying,
+    dbmed_metformin character varying,
+    dbmed_glimeperide character varying,
+    dbmed_insulin character varying,
+    dbmed_other character varying,
+    cardiac___complete boolean,
+    cardiac_date timestamp without time zone,
+    ad8_1 character varying,
+    ad8_2 character varying,
+    ad8_3 character varying,
+    ad8_4 character varying,
+    ad8_5 character varying,
+    ad8_6 character varying,
+    ad8_7 character varying,
+    ad8_8 character varying,
+    nqcog64q2 character varying,
+    nqcog65q2 character varying,
+    nqcog66q2 character varying,
+    nqcog68q2 character varying,
+    nqcog72q2 character varying,
+    nqcog75q2 character varying,
+    nqcog77q2 character varying,
+    nqcog80q2 character varying,
+    nqper02 character varying,
+    nqper05 character varying,
+    nqper06 character varying,
+    nqper07 character varying,
+    nqper11 character varying,
+    nqper12 character varying,
+    nqper17 character varying,
+    nqper19 character varying,
+    phq1 character varying,
+    phq2 character varying,
+    phq3 character varying,
+    phq4 character varying,
+    phq5 character varying,
+    phq6 character varying,
+    phq7 character varying,
+    phq8 character varying,
+    phq9 character varying,
+    gad7_1 character varying,
+    gad7_2 character varying,
+    gad7_3 character varying,
+    gad7_4 character varying,
+    gad7_5 character varying,
+    gad7_6 character varying,
+    gad7_7 character varying,
+    lotr1 character varying,
+    lotr3 character varying,
+    lotr4 character varying,
+    lotr7 character varying,
+    lotr9 character varying,
+    lotr10 character varying,
+    stpbng_snore character varying,
+    stpbng_tired character varying,
+    stpbng_obser character varying,
+    stpbng_bp character varying,
+    stpbng_neck character varying,
+    cpapuse boolean,
+    cpapuse_days character varying,
+    ncmedrec_hdache character varying,
+    ncmedrec_anx character varying,
+    ncmedrec_dep character varying,
+    ncmedrec_memloss character varying,
+    ncmedrec_add character varying,
+    ncdx_alz character varying,
+    ncdx_cte character varying,
+    ncdx_vascdem character varying,
+    ncdx_othdem character varying,
+    ncdx_als character varying,
+    ncdx_parkins character varying,
+    ncdx_ms character varying,
+    ncmed_ssri character varying,
+    ncmed_tricydep character varying,
+    ncmed_othdep character varying,
+    ncmed_slpaid character varying,
+    neurocog___complete boolean,
+    neurocog_date timestamp without time zone,
+    bpi1 boolean,
+    bpi2___head boolean,
+    bpi2___neck boolean,
+    bpi2___shoul boolean,
+    bpi2___chest boolean,
+    bpi2___arm boolean,
+    bpi2___hand boolean,
+    bpi2___uback boolean,
+    bpi2___lbak boolean,
+    bpi2___hip boolean,
+    bpi2___leg boolean,
+    bpi2___knee boolean,
+    bpi2___ankle boolean,
+    bpi2___foot boolean,
+    bpi2___oth boolean,
+    bpi2_othexp character varying,
+    bpi2most character varying,
+    bpi2most_othexp character varying,
+    bpi3 character varying,
+    bpi4 character varying,
+    bpi5 character varying,
+    bpi6 character varying,
+    bpi7___none boolean,
+    bpi7___otc boolean,
+    bpi7___prmed boolean,
+    bpi7___mass boolean,
+    bpi7___pt boolean,
+    bpi7___acup boolean,
+    bpi7___marij boolean,
+    bpi7___intpm boolean,
+    bpi7___oth boolean,
+    bpi7_othexp character varying,
+    bpi8 character varying,
+    bpi9a character varying,
+    bpi9b character varying,
+    bpi9c character varying,
+    bpi9d character varying,
+    bpi9e character varying,
+    bpi9f character varying,
+    bpi9g character varying,
+    bpi9h character varying,
+    pnmedfb_acetamin character varying,
+    pnmedfb_aspirin character varying,
+    pnmedfb_ibuprof character varying,
+    pnmedfb_othantiinf character varying,
+    pnmedfb_oralster character varying,
+    pnmedfb_opioid character varying,
+    pnmed5yr_acetamin character varying,
+    pnmed5yr_aspirin character varying,
+    pnmed5yr_ibuprof character varying,
+    pnmed5yr_antiinf character varying,
+    pnmed5yr_oralster character varying,
+    pnmed5yr_opioid character varying,
+    pnmed_acetamin boolean,
+    pnmed_acetamin_days character varying,
+    pnmed_acetamin_tabs character varying,
+    pnmed_acetamin_dose character varying,
+    pnmed_aspirin boolean,
+    pnmed_aspirin_days character varying,
+    pnmed_aspirin_tabs character varying,
+    pnmed_aspirin_dose character varying,
+    pnmed_ibuprof boolean,
+    pnmed_ibuprof_days character varying,
+    pnmed_ibuprof_tabs character varying,
+    pnmed_ibuprof_dose character varying,
+    pnmed_antiinf boolean,
+    pnmed_antiinf_days character varying,
+    pnmed_antiinf_tabs character varying,
+    pnmed_antiinf_dose character varying,
+    pnmed_oralster boolean,
+    pnmed_oralster_days character varying,
+    pnmed_oralster_tabs character varying,
+    pnmed_oralster_dose character varying,
+    pnmed_opioid boolean,
+    pnmed_opioid_days character varying,
+    pnmed_opioid_tab character varying,
+    pnmed_opioid_dose character varying,
+    pnsurg_nckspin character varying,
+    pnsurg_back character varying,
+    pnsurg_hip character varying,
+    pnsurg_knee character varying,
+    pain___complete boolean,
+    pain_date timestamp without time zone,
+    wealth character varying,
+    wealth_emerg___1 boolean,
+    wealth_emerg___2 boolean,
+    wealth_emerg___3 boolean,
+    wealth_emerg___4 boolean,
+    wealth_emerg___5 boolean,
+    wealth_emerg___6 boolean,
+    wealth_emerg___7 boolean,
+    wealth_emerg___8 boolean,
+    wealth_emerg___9 boolean,
+    wealth_emerg_oth character varying,
+    ladder_wealth character varying,
+    ladder_comm character varying,
+    household_number character varying,
+    hcutil_pcp boolean,
+    hcutil_pcp_exp character varying,
+    hcutil_pcp_oth character varying,
+    hcutil_othprov boolean,
+    selfrpt_cte boolean,
+    otdx_arthritis character varying,
+    otdx_slpapnea character varying,
+    otdx_prostcanc character varying,
+    otdx_basalcanc character varying,
+    otdx_squamcanc character varying,
+    otdx_melanom character varying,
+    otdx_lymphom character varying,
+    otdx_othcanc character varying,
+    otdx_renalfail character varying,
+    otdx_alcdep character varying,
+    otdx_livcirrhosis character varying,
+    otdx_livfail character varying,
+    otmedrec_pncond character varying,
+    otmedrec_livprob character varying,
+    otmedrec_lowtest character varying,
+    otmedrec_ed character varying,
+    massage boolean,
+    acupuncture boolean,
+    chiropractic boolean,
+    yoga boolean,
+    taichi boolean,
+    meditation boolean,
+    othaltmed boolean,
+    othaltmed_exp character varying,
+    famhxmoth___na boolean,
+    famhxmoth___lung boolean,
+    famhxmoth___colrec boolean,
+    famhxmoth___diab boolean,
+    famhxmoth___mela boolean,
+    famhxmoth___hypert boolean,
+    famhxmoth___dem boolean,
+    famhxmoth___alc boolean,
+    famhxfsib___na boolean,
+    famhxfsib___lung boolean,
+    famhxfsib___colrec boolean,
+    famhxfsib___diab boolean,
+    famhxfsib___mela boolean,
+    famhxfsib___hypert boolean,
+    famhxfsib___dem boolean,
+    famhxfsib___alc boolean,
+    femsib_number character varying,
+    famhxfath___na boolean,
+    famhxfath___lung boolean,
+    famhxfath___colrec boolean,
+    famhxfath___prost boolean,
+    famhxfath___diab boolean,
+    famhxfath___mela boolean,
+    famhxfath___hypert boolean,
+    famhxfath___dem boolean,
+    famhxfath___alc boolean,
+    famhxmsib___na boolean,
+    famhxmsib___lung boolean,
+    famhxmsib___colrec boolean,
+    famhxmsib___prost boolean,
+    famhxmsib___diab boolean,
+    famhxmsib___mela boolean,
+    famhxmsib___hypert boolean,
+    famhxmsib___dem boolean,
+    famhxmsib___alc boolean,
+    sib_number character varying,
+    sib1age numeric,
+    sib1ht_feet numeric,
+    sib1ht_inch numeric,
+    sib1sport___none boolean,
+    sib1sport___hsfb boolean,
+    sib1sport___colfb boolean,
+    sib1sport___oth boolean,
+    sib1sport_oth character varying,
+    sib2age numeric,
+    sib2ht_feet numeric,
+    sib2ht_inch numeric,
+    sib2sport___none boolean,
+    sib2sport___hsfb boolean,
+    sib2sport___colfb boolean,
+    sib2sport___oth boolean,
+    sib2sport_oth character varying,
+    sib3age numeric,
+    sib3ht_feet numeric,
+    sib3ht_inch numeric,
+    sib3sport___none boolean,
+    sib3sport___hsfb boolean,
+    sib3sport___colfb boolean,
+    sib3sport___oth boolean,
+    sib3sport_oth character varying,
+    sib4age numeric,
+    sib4ht_feet numeric,
+    sib4ht_inch numeric,
+    sib4sport___none boolean,
+    sib4sport___hsfb boolean,
+    sib4sport___colfb boolean,
+    sib4sport___oth boolean,
+    sib4sportoth character varying,
+    sib5age numeric,
+    sib5ht_feet numeric,
+    sib5ht_inch numeric,
+    sib5sport___none boolean,
+    sib5sport___hsfb boolean,
+    sib5sport___colfb boolean,
+    sib5sport___oth boolean,
+    sib5sport_oth character varying,
+    pedcaff___noans boolean,
+    pedcaff___no boolean,
+    pedcaff___fb boolean,
+    pedcaff___cur boolean,
+    pededrink___noans boolean,
+    pededrink___no boolean,
+    pededrink___fb boolean,
+    pededrink___cur boolean,
+    pedcreat___noans boolean,
+    pedcreat___no boolean,
+    pedcreat___fb boolean,
+    pedcreat___cur boolean,
+    pedsteroid___noans boolean,
+    pedsteroid___no boolean,
+    pedsteroid___fb boolean,
+    pedsteroid___cur boolean,
+    pedgh___noans boolean,
+    pedgh___no boolean,
+    pedgh___fb boolean,
+    pedgh___cur boolean,
+    pedephed___noans boolean,
+    pedephed___no boolean,
+    pedephed___fb boolean,
+    pedephed___cur boolean,
+    pedbetahy___noans boolean,
+    pedbetahy___no boolean,
+    pedbetahy___fb boolean,
+    pedbetahy___cur boolean,
+    pednoncaf___noans boolean,
+    pednoncaf___no boolean,
+    pednoncaf___fb boolean,
+    pednoncaf___cur boolean,
+    pedrcell___noans boolean,
+    pedrcell___no boolean,
+    pedrcell___fb boolean,
+    pedrcell___cur boolean,
+    pedinos___noans boolean,
+    pedinos___no boolean,
+    pedinos___fb boolean,
+    pedinos___cur boolean,
+    alcohol_days character varying,
+    alcohol_drinks character varying,
+    marijuana character varying,
+    marijuana_start numeric,
+    marijuana_stop numeric,
+    marijuana_totyrs numeric,
+    marijtime___pnfl boolean,
+    marijtime___dnfl boolean,
+    marijtime___anfl boolean,
+    marijreas___fun boolean,
+    marijreas___relx boolean,
+    marijreas___pain boolean,
+    marijreas___anx boolean,
+    marijreas___dep boolean,
+    marijreas___oth boolean,
+    marijreas_exp character varying,
+    born_address character varying,
+    born_city character varying,
+    born_state character varying,
+    born_zip character varying,
+    twelveyrs_address character varying,
+    twelveyrs_city character varying,
+    twelveyrs_state character varying,
+    twelveyrs_zip character varying,
+    infertility boolean,
+    infert_age numeric,
+    infert_hcp boolean,
+    infertreas___fem boolean,
+    infertreas___mal boolean,
+    infertreas___unex boolean,
+    infertreas___oth boolean,
+    infertreas_oth character varying,
+    actout_dreams character varying,
+    smell_problem character varying,
+    taste_problem character varying,
+    bowel_move character varying,
+    laxative_use character varying,
+    workplace_harass character varying,
+    coach_discrim character varying,
+    coach_discrimstr character varying,
+    player_discrim character varying,
+    player_discrimstr character varying,
+    job_discrim character varying,
+    job_discrimstr character varying,
+    ace1 boolean,
+    ace2 boolean,
+    ace3 boolean,
+    ace4 boolean,
+    ace5 boolean,
+    ace6 boolean,
+    ace7 boolean,
+    ace8 boolean,
+    ace9 boolean,
+    ace10 boolean,
+    foodins_worry character varying,
+    foodins_ranout character varying,
+    q2help character varying,
+    othealth___complete boolean,
+    othealth_date timestamp without time zone,
+    q2_survey_complete integer,
+    q2_survey_timestamp timestamp without time zone,
+    sdfsdaf___0 boolean,
+    sdfsdaf___1 boolean,
+    sdfsdaf___2 boolean,
+    rtyrtyrt___0 boolean,
+    rtyrtyrt___1 boolean,
+    rtyrtyrt___2 boolean,
+    test_field character varying,
+    test_phone character varying,
+    i57 integer,
+    f57 numeric,
+    dd timestamp without time zone,
+    yes_or_no boolean,
+    true_or_false boolean,
+    file1 character varying,
+    signature character varying,
+    slider integer,
+    test_complete integer,
+    test_timestamp timestamp without time zone,
+    base_field character varying,
+    non_survey_complete integer,
+    non_survey_timestamp timestamp without time zone,
+    redcap_survey_identifier character varying,
     user_id bigint,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    data_variable_package_var_id bigint,
-    data_variable_package_id bigint
+    smoketime_chosen_array character varying[],
+    othleaguenm_chosen_array character varying[],
+    leftfb_chosen_array character varying[],
+    bpi2_chosen_array character varying[],
+    bpi7_chosen_array character varying[],
+    wealth_emerg_chosen_array character varying[],
+    famhxmoth_chosen_array character varying[],
+    famhxfsib_chosen_array character varying[],
+    famhxfath_chosen_array character varying[],
+    famhxmsib_chosen_array character varying[],
+    sib1sport_chosen_array character varying[],
+    sib2sport_chosen_array character varying[],
+    sib3sport_chosen_array character varying[],
+    sib4sport_chosen_array character varying[],
+    sib5sport_chosen_array character varying[],
+    pedcaff_chosen_array character varying[],
+    pededrink_chosen_array character varying[],
+    pedcreat_chosen_array character varying[],
+    pedsteroid_chosen_array character varying[],
+    pedgh_chosen_array character varying[],
+    pedephed_chosen_array character varying[],
+    pedbetahy_chosen_array character varying[],
+    pednoncaf_chosen_array character varying[],
+    pedrcell_chosen_array character varying[],
+    pedinos_chosen_array character varying[],
+    marijtime_chosen_array character varying[],
+    marijreas_chosen_array character varying[],
+    infertreas_chosen_array character varying[],
+    sdfsdaf_chosen_array character varying[],
+    rtyrtyrt_chosen_array character varying[]
 );
 
 
 --
--- Name: COLUMN data_variable_package_var_history.record_id; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: TABLE q2_demo_rcs; Type: COMMENT; Schema: redcap; Owner: -
 --
 
-COMMENT ON COLUMN ref_data.data_variable_package_var_history.record_id IS 'Link to Variable';
-
-
---
--- Name: COLUMN data_variable_package_var_history.domain; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.data_variable_package_var_history.domain IS 'Domain';
+COMMENT ON TABLE redcap.q2_demo_rcs IS 'Dynamicmodel: Q2 Demo Rc';
 
 
 --
--- Name: data_variable_package_var_history_id_seq; Type: SEQUENCE; Schema: ref_data; Owner: -
+-- Name: COLUMN q2_demo_rcs.record_id; Type: COMMENT; Schema: redcap; Owner: -
 --
 
-CREATE SEQUENCE ref_data.data_variable_package_var_history_id_seq
+COMMENT ON COLUMN redcap.q2_demo_rcs.record_id IS 'Record ID';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.dob; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.dob IS 'Date of birth:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.current_weight; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.current_weight IS 'What is your current weight?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.domestic_status; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.domestic_status IS 'What is your current marital status?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.living_situation; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.living_situation IS 'How would you describe your current living situation?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.current_employment; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.current_employment IS 'Are you currently employed?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.student_looking; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.student_looking IS 'If you are unemployed, are you currently a student or looking for work?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.current_fbjob; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.current_fbjob IS 'If you work in football, please provide additional information:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.current_fbjob_oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.current_fbjob_oth IS 'If "Other", please specify:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.job_industry; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.job_industry IS 'Specify your employment industry. (If you are retired, specify the last industry in
+which you were employed.)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.job_title; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.job_title IS 'Select the option that best represents your job title. (If you are retired,
+indicate the title of your last job)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.job_title_entry; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.job_title_entry IS 'Enter your job title: (If you are retired, enter the title of your last
+job)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.smoke; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.smoke IS 'Have you ever smoked cigarettes?  (Smoked at least 100 cigarettes in your lifetime. Do not include pipe and cigars)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.smoketime___pnfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.smoketime___pnfl IS 'Before playing in the NFL';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.smoketime___dnfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.smoketime___dnfl IS 'While playing in the NFL';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.smoketime___anfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.smoketime___anfl IS 'After playing in the NFL';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.smoke_start; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.smoke_start IS 'How old were you when you started smoking?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.smoke_stop; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.smoke_stop IS 'How old were you when you stopped smoking?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.smoke_curr; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.smoke_curr IS 'On average, how many cigarettes do you currently smoke per day?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.smoke_totyrs; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.smoke_totyrs IS 'How many years, in total, have you smoked? (if you quit more than once, estimate the total years you considered yourself an active smoker)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.smoke_prenfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.smoke_prenfl IS 'How many cigarettes did you smoke per day, on average, before playing in the NFL?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.smoke_nfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.smoke_nfl IS 'How many cigarettes did you smoke per day, on average, while playing in the NFL?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.smoke_postnfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.smoke_postnfl IS 'How many cigarettes have you smoked per day, on average, since leaving the NFL? (If you have quit smoking, please provide the average number of cigarettes smoked per day while you considered yourself an active smoker)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.edu_player; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.edu_player IS 'You:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.edu_mother; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.edu_mother IS 'Mother:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.edu_father; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.edu_father IS 'Father:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.occ_mother; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.occ_mother IS 'Mother:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.occ_mother_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.occ_mother_exp IS 'Please explain:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.occ_father; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.occ_father IS 'Father:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.occ_father_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.occ_father_exp IS 'Please explain:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.yrsplayed_prehs; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.yrsplayed_prehs IS 'How many years did you play football before starting high school?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.hsposition1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.hsposition1 IS 'Primary position #1:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.hsposition2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.hsposition2 IS 'Primary position #2:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.yrsplayed_hs; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.yrsplayed_hs IS 'How many years did you play football during high school?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.collposition1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.collposition1 IS 'Primary position #1:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.collposition2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.collposition2 IS 'Primary position #2:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.yrsplayed_coll; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.yrsplayed_coll IS 'How many years did you play football during college before going pro?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.college_div; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.college_div IS 'If you played after the college \"division\" system was created, which division did you play in?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.collpreprac; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.collpreprac IS 'During your college football career, on average, how often did you practice per week during pre-season?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.collpreprac_pads; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.collpreprac_pads IS 'During your college football career, on average, how many practices a week did you wear full pads or shoulder pads during pre-season?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.collregprac; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.collregprac IS 'During your college football career, on average, how often did you practice per week during the regular season?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.collregprac_pads; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.collregprac_pads IS 'During your college football career, on average, how many practices a week did you wear full pads or shoulder pads during the regular season?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.collsnap_ol; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.collsnap_ol IS 'Offensive line:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.collsnap_wr; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.collsnap_wr IS 'Wide receiver:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.collsnap_dl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.collsnap_dl IS 'Defensive line:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.collsnap_te; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.collsnap_te IS 'Tight end:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.collsnap_lb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.collsnap_lb IS 'Linebacker:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.collsnap_qb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.collsnap_qb IS 'Quarterback:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.collsnap_db; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.collsnap_db IS 'Defensive back:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.collsnap_kick; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.collsnap_kick IS 'Kicker/punter:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.collsnap_rb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.collsnap_rb IS 'Running back:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.collsnap_special; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.collsnap_special IS 'Special teams:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.nflpreprac; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.nflpreprac IS 'Over your NFL career, on average, how often did you practice per week during pre-season?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.nflpreprac_pads; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.nflpreprac_pads IS 'Over your NFL career, on average, how many practices a week did you wear full pads or shoulder pads during pre-season?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.nflregprac; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.nflregprac IS 'Over your NFL career, on average, how often did you practice per week during the regular season?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.nflregprac_pads; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.nflregprac_pads IS 'Over your NFL career, on average, how many practices a week did you wear full pads or shoulder pads during the regular season?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.prosnap_ol; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.prosnap_ol IS 'Offensive line:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.prosnap_wr; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.prosnap_wr IS 'Wide receiver:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.prosnap_dl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.prosnap_dl IS 'Defensive line:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.prosnap_te; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.prosnap_te IS 'Tight end:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.prosnap_lb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.prosnap_lb IS 'Linebacker:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.prosnap_qb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.prosnap_qb IS 'Quarterback:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.prosnap_db; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.prosnap_db IS 'Defensive back:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.prosnap_kick; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.prosnap_kick IS 'Kicker/punter:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.prosnap_rb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.prosnap_rb IS 'Running back:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.prosnap_special; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.prosnap_special IS 'Special teams:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.gmsplyd_career; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.gmsplyd_career IS 'Over your whole professional football career, approximately how many games were you on an active roster?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.gmsplyd_season; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.gmsplyd_season IS 'Over your whole professional football career, on average, how many games were you on an active roster per season?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.prsqd; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.prsqd IS 'Did you ever spend time on a practice squad for an NFL team?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.prsqd_seasons; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.prsqd_seasons IS 'Number of seasons:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.othleague; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.othleague IS 'Did you play any seasons for a professional team that was not in the NFL? (CFL, EFL, etc.)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.othleague_seasons; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.othleague_seasons IS 'How many seasons did you play for a professional team not in the NFL? (CFL, EFL, etc.)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.othleaguenm___afl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.othleaguenm___afl IS 'Arena Football League (AFL)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.othleaguenm___cfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.othleaguenm___cfl IS 'Canadian Football League (CFL)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.othleaguenm___efl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.othleaguenm___efl IS 'European Football League (EFL)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.othleaguenm___ufl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.othleaguenm___ufl IS 'United Football League (UFL)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.othleaguenm___wfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.othleaguenm___wfl IS 'World Football League (WFL)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.othleaguenm___xfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.othleaguenm___xfl IS 'XFL';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.othleaguenm___oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.othleaguenm___oth IS 'Other';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.othleague_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.othleague_exp IS 'If "Other", please explain:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.nonnfl_seasons; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.nonnfl_seasons IS 'How many seasons did you collectively play that were not in the NFL?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.prsqd_nonnfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.prsqd_nonnfl IS 'Did you ever spend time on a practice squad for another professional non-NFL Team?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.prsqd_nonnfl_seasons; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.prsqd_nonnfl_seasons IS 'Non-NFL Practice Squad:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.firstpro_age; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.firstpro_age IS 'How old were you when you played your first professional football game (NFL, CFL, EFL, etc.)?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.finalpro_age; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.finalpro_age IS 'How old were you when you played your final professional football game (NFL, CFL, EFL, etc.)?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.leftfb___age; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.leftfb___age IS 'Age';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.leftfb___cut; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.leftfb___cut IS 'Cut from roster';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.leftfb___fbinj; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.leftfb___fbinj IS 'Injury or health problem related to football';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.leftfb___inj; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.leftfb___inj IS 'Injury or health problem not related to football';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.leftfb___retire; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.leftfb___retire IS 'Personal decision (retired)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.postfb_hlthprac; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.postfb_hlthprac IS '...First see a healthcare practitioner?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.postfb_degree; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.postfb_degree IS '...Go back to school to complete a degree or obtain an advanced degree?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.postfb_charity; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.postfb_charity IS '...Begin participating in volunteer or charity work?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.postfb_fbjob; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.postfb_fbjob IS '...Become employed in a football related activity?(e.g. coach, scout, administration, media, television, reporting etc.)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.postfb_job; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.postfb_job IS '...Become employed in a non-football related activity?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.postfbjob_occ; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.postfbjob_occ IS 'What was your first job after leaving football? (Please provide the job title)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.postfbjob_occexp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.postfbjob_occexp IS 'Please explain:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.postfbex_walk; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.postfbex_walk IS 'Walking for exercise or walking to work';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.postfbex_jog; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.postfbex_jog IS 'Jogging (slower than 10min/mile)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.postfbex_run; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.postfbex_run IS 'Running (10min/mile or faster)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.postfbex_other; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.postfbex_other IS 'Other aerobic exercise (e.g. bicycling, stationary bike, elliptical machine, stairmaster)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.postfbex_lowint; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.postfbex_lowint IS 'Low intensity exercise (e.g. yoga, pilates, stretching)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.postfbex_wttrain; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.postfbex_wttrain IS 'Weight training (e.g. lifting free weights, using weight machines)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.postfbex_endsprt; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.postfbex_endsprt IS 'Competitive endurance sports (e.g. marathon, triathlon)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.postfbex_reclg; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.postfbex_reclg IS 'Recreational team leagues (e.g. soccer, basketball, flag football, volleyball)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pastyrex_walk; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pastyrex_walk IS 'Walking for exercise or walking to work';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pastyrex_jog; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pastyrex_jog IS 'Jogging (slower than 10min/mile)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pastyrex_run; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pastyrex_run IS 'Running (10min/mile or faster)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pastyrex_oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pastyrex_oth IS 'Other aerobic exercise (e.g. bicycling, stationary bike, elliptical machine, stairmaster)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pastyrex_lowint; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pastyrex_lowint IS 'Low intensity exercise (e.g. yoga, pilates, stretching)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pastyrex_wttrain; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pastyrex_wttrain IS 'Weight training (e.g. lifting free weights, using weight machines)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pastyrex_endsprt; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pastyrex_endsprt IS 'Competitive endurance sports (e.g. marathon, triathlon)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pastyrex_reclg; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pastyrex_reclg IS 'Recreational team leagues (e.g. soccer, basketball, flag football, volleyball)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ex150min; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ex150min IS 'Do you do 2.5 hours or more of moderate intensity aerobic activity per week? (e.g. brisk walking, jogging, cycling, etc.).';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ex150min_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ex150min_exp IS 'Please select the reason that best explains why you do not do at least 2.5 hours of moderate intensity aerobic activity per week:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ex150min_oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ex150min_oth IS 'If other, please explain:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.demog___complete; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.demog___complete IS 'Check this box and press "Next Page" to save your answers and move on to the next section.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.postfb_wt2yr; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.postfb_wt2yr IS '2 years after leaving professional football play?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.postfb_wt5yr; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.postfb_wt5yr IS '5 years after leaving professional football play?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cardiac_rehab; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cardiac_rehab IS 'Have you participated in cardiac rehab therapy based on a health care provider\''s recommendation?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvtest_ecg; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvtest_ecg IS '12 lead ECG (electrocardiogram)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvtest_ecg_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvtest_ecg_exp IS 'Please specify the diagnosis, if known:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvtest_echo; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvtest_echo IS 'Heart ultrasound (echocardiogram)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvtest_echo_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvtest_echo_exp IS 'Please specify the diagnosis, if known:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvtest_cpxt; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvtest_cpxt IS 'Exercise stress test';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvtest_cpxt_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvtest_cpxt_exp IS 'Please specify the diagnosis, if known:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvtest_cvmri; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvtest_cvmri IS 'Cardiac MRI';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvtest_cvmri_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvtest_cvmri_exp IS 'Please specify the diagnosis, if known:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvtest_corct; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvtest_corct IS 'Coronary artery CT scan';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvtest_corct_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvtest_corct_exp IS 'Please specify the diagnosis, if known:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvtest_cvcath; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvtest_cvcath IS 'Cardiac catheterization (coronary angiogram)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvtest_cvcath_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvtest_cvcath_exp IS 'Please specify the diagnosis, if known:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvdx_mi; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvdx_mi IS 'Heart attack';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvdx_stroke; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvdx_stroke IS 'Stroke (CVA)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvdx_tia; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvdx_tia IS 'TIA (Transient ischemic attack/mini-stroke)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvmedrec_highbp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvmedrec_highbp IS 'High blood pressure';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvmedrec_hrtfail; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvmedrec_hrtfail IS 'Heart failure';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvmedrec_afib; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvmedrec_afib IS 'Atrial fibrillation';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvmedrec_otharrhyth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvmedrec_otharrhyth IS 'Other arrhythmias (e.g. SVT)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvmedrec_highchol; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvmedrec_highchol IS 'High cholesterol';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvmedrec_diabetes; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvmedrec_diabetes IS 'Diabetes or high blood sugar';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvsurg_bypass; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvsurg_bypass IS 'Heart bypass, angioplasty, or stent placement';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvsurg_ablation; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvsurg_ablation IS 'Ablation for atrial fibrillation';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvsurg_carotidart; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvsurg_carotidart IS 'Carotid artery surgery';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvmed_chol; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvmed_chol IS '\"Statin\" cholesterol lowering drugs \[e.g. Mervacor (lovastatin), Pravachol (pravastatin), Xocor (simvastatin), Lipitor\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvmed_othchol; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvmed_othchol IS 'Other cholesterol-lowering drugs \[e.g. Niaspan, Slo-Niacin (niacin), Lopid (gemfibrozil), Tricor (fenofibrate), Questran (cholestyramine)\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvmed_novchol; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvmed_novchol IS 'Novel cholesterol lowering drugs (PCSK-9 inhibitors) \[e.g. Repatha (evolocumab), Praluent (alirocumab)\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvmed_bldthin; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvmed_bldthin IS 'Non-aspirin blood thinners \[e.g. Coumadin (warfarin)\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvmed_anticoag; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvmed_anticoag IS 'Novel oral anti-coagulant \[e.g. Eliquis (apixaban), Pradaxa (dabigatran), Xarelto (rivaroxaban)\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvmed_arrhyth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvmed_arrhyth IS 'Anti-arrhythmia drugs for atrial fibrillation \[e.g. beta blockers (Sectral, Tenormin), sotalol (Betapace, Sotylize, Sorine), flecainide (Tambocor), droedarone (Multaq)\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvmed_digoxin; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvmed_digoxin IS 'Digoxin \[e.g. Lenoxin\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvmed_furosemide; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvmed_furosemide IS 'Furosemide-like diuretic drug \[e.g. Lasix, Bumex\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvmed_thiazide; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvmed_thiazide IS 'Thiazide diuretic \[e.g. HCTZ, Microzide\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvmed_calciumblk; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvmed_calciumblk IS 'Calcium blocker \[e.g. Calan (verapamil), Procardia (nifedipine), Cardizem (diltiazem)\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cvmed_antihyp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cvmed_antihyp IS 'Other antihypertensive \[e.g. Vasotec (enalapril), Capoten (captopril)\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.dbmed_metformin; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.dbmed_metformin IS 'Metformin \[e.g. Glumetza, Glucophage, Fortamet\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.dbmed_glimeperide; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.dbmed_glimeperide IS 'Glimeperide';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.dbmed_insulin; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.dbmed_insulin IS 'Insulin';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.dbmed_other; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.dbmed_other IS 'Other diabetes medication';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cardiac___complete; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cardiac___complete IS 'Check this box and press "Next Page" if you are ready to move on to the next section';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ad8_1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ad8_1 IS 'Problems with judgment. (e.g., problems making decisions, bad financial decisions, problems with thinking)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ad8_2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ad8_2 IS 'Less interest in hobbies/activities.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ad8_3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ad8_3 IS 'Repeats the same things over and over (questions, stories, or statements).';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ad8_4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ad8_4 IS 'Trouble learning how to use a tool, appliance, or gadget. (e.g., VCR, computer, microwave, remote control)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ad8_5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ad8_5 IS 'Forgets correct month or year.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ad8_6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ad8_6 IS 'Trouble handling complicated financial affairs. (e.g. balancing checkbook, income taxes, paying bills).';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ad8_7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ad8_7 IS 'Trouble remembering appointments.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ad8_8; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ad8_8 IS 'Daily problems with thinking and/or memory.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.nqcog64q2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.nqcog64q2 IS 'I had to read something several times to understand it.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.nqcog65q2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.nqcog65q2 IS 'I had trouble keeping track of what I was doing if I was interrupted.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.nqcog66q2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.nqcog66q2 IS 'I had difficulty doing more than one thing at a time.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.nqcog68q2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.nqcog68q2 IS 'I had trouble remembering new information, like phone numbers or simple instructions.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.nqcog72q2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.nqcog72q2 IS 'I had trouble thinking clearly.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.nqcog75q2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.nqcog75q2 IS 'My thinking was slow.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.nqcog77q2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.nqcog77q2 IS 'I had to work really hard to pay attention or I would make a mistake.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.nqcog80q2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.nqcog80q2 IS 'I had trouble concentrating.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.nqper02; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.nqper02 IS 'I had trouble controlling my temper.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.nqper05; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.nqper05 IS 'It was hard to control my behavior.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.nqper06; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.nqper06 IS 'I said or did things without thinking.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.nqper07; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.nqper07 IS 'I got impatient with other people.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.nqper11; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.nqper11 IS 'I was irritable around other people.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.nqper12; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.nqper12 IS 'I was bothered by little things.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.nqper17; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.nqper17 IS 'I became easily upset.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.nqper19; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.nqper19 IS 'I was in conflict with others.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.phq1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.phq1 IS 'Little interest or pleasure in doing things.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.phq2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.phq2 IS 'Feeling down, depressed, or hopeless.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.phq3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.phq3 IS 'Trouble falling or staying asleep, or sleeping too much.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.phq4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.phq4 IS 'Feeling tired or having little energy.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.phq5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.phq5 IS 'Poor appetite or overeating.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.phq6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.phq6 IS 'Feeling bad about yourself - or that you are a failure or have let yourself or your family down.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.phq7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.phq7 IS 'Trouble concentrating on things, such as reading the newspaper or watching television.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.phq8; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.phq8 IS 'Moving or speaking so slowly that other people could have noticed. Or the opposite - being so fidgety or restless that you have been moving around a lot more than usual.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.phq9; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.phq9 IS 'Thoughts that you would be better off dead or of hurting yourself.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.gad7_1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.gad7_1 IS 'Feeling nervous, anxious or on edge.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.gad7_2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.gad7_2 IS 'Not being able to stop or control worrying.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.gad7_3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.gad7_3 IS 'Worrying too much about different things.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.gad7_4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.gad7_4 IS 'Trouble relaxing.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.gad7_5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.gad7_5 IS 'Being so restless that it is hard to sit still.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.gad7_6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.gad7_6 IS 'Becoming easily annoyed or irritable.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.gad7_7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.gad7_7 IS 'Feeling afraid as if something awful might happen.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.lotr1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.lotr1 IS 'In uncertain times, I usually expect the best.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.lotr3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.lotr3 IS 'If something can go wrong for me, it will.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.lotr4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.lotr4 IS 'I\''m always optimistic about my future.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.lotr7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.lotr7 IS 'I hardly ever expect things to go my way.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.lotr9; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.lotr9 IS 'I rarely count on good things happening to me.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.lotr10; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.lotr10 IS 'Overall, I expect more good things to happen to me than bad.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.stpbng_snore; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.stpbng_snore IS 'Do you SNORE loudly (loud enough to be heard through closed doors or your bed-partner elbows you for snoring at night)?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.stpbng_tired; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.stpbng_tired IS 'Do you often feel TIRED, fatigued, or sleepy during the daytime? (such as falling asleep during driving or talking to someone)?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.stpbng_obser; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.stpbng_obser IS 'Has anyone observed you stop breathing or choking/gasping during your sleep?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.stpbng_bp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.stpbng_bp IS 'Do you have or are you being treated for high blood pressure?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.stpbng_neck; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.stpbng_neck IS 'What is your neck circumference (your collar size when buying a dress shirt)?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cpapuse; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cpapuse IS 'Do you currently use a CPAP device for sleep apnea?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.cpapuse_days; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.cpapuse_days IS 'About how many days per week do you use your CPAP device?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ncmedrec_hdache; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ncmedrec_hdache IS 'Headaches';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ncmedrec_anx; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ncmedrec_anx IS 'Anxiety';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ncmedrec_dep; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ncmedrec_dep IS 'Depression';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ncmedrec_memloss; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ncmedrec_memloss IS 'Memory loss';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ncmedrec_add; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ncmedrec_add IS 'ADD/ADHD';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ncdx_alz; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ncdx_alz IS 'Alzheimer\''s disease';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ncdx_cte; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ncdx_cte IS 'Chronic traumatic encephalopathy (CTE)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ncdx_vascdem; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ncdx_vascdem IS 'Vascular dementia';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ncdx_othdem; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ncdx_othdem IS 'Other dementia';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ncdx_als; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ncdx_als IS 'Amyotrophic lateral sclerosis (ALS, Lou Gehrig\''s disease)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ncdx_parkins; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ncdx_parkins IS 'Parkinson\''s disease';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ncdx_ms; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ncdx_ms IS 'Multiple sclerosis (MS)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ncmed_ssri; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ncmed_ssri IS 'Prozac, Zoloft, Paxil, Celexa';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ncmed_tricydep; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ncmed_tricydep IS 'Tricyclic antidepressant \[e.g. Elavil, Sinequan\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ncmed_othdep; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ncmed_othdep IS 'Other antidepressant \[e.g. Nardil, Marplan\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ncmed_slpaid; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ncmed_slpaid IS 'Sleep aid';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.neurocog___complete; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.neurocog___complete IS 'Check this box and press "Next Page" if you are ready to move on to the next section';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi1 IS 'Have you had pain other than these \"everyday\" kinds of pain today?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi2___head; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi2___head IS 'Head';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi2___neck; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi2___neck IS 'Neck';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi2___shoul; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi2___shoul IS 'Shoulder';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi2___chest; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi2___chest IS 'Chest';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi2___arm; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi2___arm IS 'Arm';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi2___hand; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi2___hand IS 'Hand';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi2___uback; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi2___uback IS 'Upper back';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi2___lbak; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi2___lbak IS 'Lower back';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi2___hip; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi2___hip IS 'Hip';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi2___leg; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi2___leg IS 'Leg
+';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi2___knee; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi2___knee IS 'Knee';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi2___ankle; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi2___ankle IS 'Ankle';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi2___foot; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi2___foot IS 'Foot';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi2___oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi2___oth IS 'Other';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi2_othexp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi2_othexp IS 'If you selected \"Other\", please explain:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi2most; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi2most IS 'Please indicate the area where you feel the most pain.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi2most_othexp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi2most_othexp IS 'If you selected \"Other\", please explain:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi3 IS 'Please rate your pain by marking the box beside the number that best describes your pain at its *worst* in the last 24 hours.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi4 IS 'Please rate your pain by marking the box beside the number that best describes your pain at its *least* in the last 24 hours.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi5 IS 'Please rate your pain by marking the box beside the number that best describes your pain on the *average*.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi6 IS 'Please rate your pain by marking the box beside the number that tells how much pain you have *right now*.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi7___none; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi7___none IS 'None';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi7___otc; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi7___otc IS 'Over the counter medication';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi7___prmed; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi7___prmed IS 'Prescribed medication';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi7___mass; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi7___mass IS 'Massage/acupressure';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi7___pt; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi7___pt IS 'Physical therapy';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi7___acup; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi7___acup IS 'Acupuncture';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi7___marij; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi7___marij IS 'Marijuana or medical marijuana';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi7___intpm; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi7___intpm IS 'Interventional pain management (nerve
+ blocks, joint injections or radiotherapy)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi7___oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi7___oth IS 'Other';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi7_othexp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi7_othexp IS 'If you selected \"Other\", please explain:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi8; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi8 IS 'In the last 24 hours, how much relief have pain treatments or medications provided? Please mark the box below the percentage that most shows how much relief you have received.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi9a; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi9a IS 'General activity';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi9b; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi9b IS 'Mood';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi9c; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi9c IS 'Walking ability';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi9d; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi9d IS 'Normal work (includes both work outside the home and housework)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi9e; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi9e IS 'Relations with other people';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi9f; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi9f IS 'Sleep';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi9g; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi9g IS 'Enjoyment of life';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi9h; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi9h IS 'Exercise for health and wellness';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmedfb_acetamin; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmedfb_acetamin IS 'Acetaminophen \[e.g. Tylenol\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmedfb_aspirin; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmedfb_aspirin IS 'Aspirin or aspirin containing products \[e.g. Excedrin Migraine, Alka-Seltzer with aspirin\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmedfb_ibuprof; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmedfb_ibuprof IS 'Ibuprofen \[e.g. Motrin, Advil\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmedfb_othantiinf; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmedfb_othantiinf IS 'Other anti-inflammatory analgesics \[e.g. Aleve, Naprosyn, Relafen, Frotek, Anaprox\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmedfb_oralster; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmedfb_oralster IS 'Steroid taken orally \[e.g. Prednisone, Medrol\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmedfb_opioid; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmedfb_opioid IS 'Opioid-based pain medication \[e.g. Percocet, Vicodin\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed5yr_acetamin; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed5yr_acetamin IS 'Acetaminophen \[e.g. Tylenol\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed5yr_aspirin; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed5yr_aspirin IS 'Aspirin or aspirin containing products \[e.g. Excedrin Migraine, Alka-Seltzer with aspirin\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed5yr_ibuprof; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed5yr_ibuprof IS 'Ibuprofen \[e.g. Motrin, Advil\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed5yr_antiinf; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed5yr_antiinf IS 'Other anti-inflammatory analgesics \[e.g. Aleve, Naprosyn, Relafen, Ketoprofen, Anaprox\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed5yr_oralster; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed5yr_oralster IS 'Steroid taken orally \[e.g. Prednisone, Medrol\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed5yr_opioid; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed5yr_opioid IS 'Opioid-based pain medication \[e.g. Percocet, Vicodin\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed_acetamin; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed_acetamin IS 'Acetaminophen \[e.g. Tylenol\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed_acetamin_days; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed_acetamin_days IS 'Days per week';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed_acetamin_tabs; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed_acetamin_tabs IS 'Tablets per day';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed_acetamin_dose; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed_acetamin_dose IS 'Usual dose per tab';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed_aspirin; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed_aspirin IS 'Aspirin or aspirin containing products \[e.g. Excedrin Migraine, Alka-Seltzer with aspirin\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed_aspirin_days; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed_aspirin_days IS 'Days per week';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed_aspirin_tabs; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed_aspirin_tabs IS 'Tablets per day';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed_aspirin_dose; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed_aspirin_dose IS 'Usual dose per tab';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed_ibuprof; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed_ibuprof IS 'Ibuprofen \[e.g. Motrin, Advil\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed_ibuprof_days; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed_ibuprof_days IS 'Days per week';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed_ibuprof_tabs; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed_ibuprof_tabs IS 'Tablets per day';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed_ibuprof_dose; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed_ibuprof_dose IS 'Usual dose per tab';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed_antiinf; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed_antiinf IS 'Other anti-inflammatory analgesics \[e.g. Aleve, Naprosyn, Relafen, Ketoprofen, Anaprox\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed_antiinf_days; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed_antiinf_days IS 'Days per week';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed_antiinf_tabs; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed_antiinf_tabs IS 'Tablets per day';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed_antiinf_dose; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed_antiinf_dose IS 'Usual dose per tab';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed_oralster; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed_oralster IS 'Steroid taken orally \[e.g. Prednisone, Medrol\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed_oralster_days; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed_oralster_days IS 'Days per week';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed_oralster_tabs; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed_oralster_tabs IS 'Tablets per day';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed_oralster_dose; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed_oralster_dose IS 'Usual dose per tab';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed_opioid; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed_opioid IS 'Opioid-based pain medication \[e.g. Percocet, Vicodin\]';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed_opioid_days; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed_opioid_days IS 'Days per week';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed_opioid_tab; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed_opioid_tab IS 'Tablets per days';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnmed_opioid_dose; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnmed_opioid_dose IS 'Usual dose per tab';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnsurg_nckspin; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnsurg_nckspin IS 'Neck/spine surgery';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnsurg_back; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnsurg_back IS 'Back (lumbar) surgery';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnsurg_hip; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnsurg_hip IS 'Hip replacement';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pnsurg_knee; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pnsurg_knee IS 'Knee replacement';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pain___complete; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pain___complete IS 'Check this box and press "Next Page" if you are ready to move on to the next section';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.wealth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.wealth IS 'What is your approximate household net worth? \[the value of all the assets of people in your household (like housing, cars, stock, retirement funds, and business ownership) minus any debt or loans you and household members may have (like mortgages, credit card debt or car, school, or business loans\].';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.wealth_emerg___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.wealth_emerg___1 IS 'Put it on my credit card and pay it off in full at thenext statement';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.wealth_emerg___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.wealth_emerg___2 IS 'Put it on my credit card and pay it off over time';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.wealth_emerg___3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.wealth_emerg___3 IS 'With the money currently in my checking/savings account or with cash';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.wealth_emerg___4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.wealth_emerg___4 IS 'Using money from a bank loan or line of credit';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.wealth_emerg___5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.wealth_emerg___5 IS 'By borrowing from a friend or family member';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.wealth_emerg___6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.wealth_emerg___6 IS 'Using a payday loan, deposit advance, oroverdraft';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.wealth_emerg___7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.wealth_emerg___7 IS 'By selling something';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.wealth_emerg___8; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.wealth_emerg___8 IS 'I wouldn''t be able to pay for the expense right now';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.wealth_emerg___9; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.wealth_emerg___9 IS 'Other';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.wealth_emerg_oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.wealth_emerg_oth IS 'Please explain:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ladder_wealth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ladder_wealth IS 'Where would you place yourself on this ladder? (Select the number that
+best represents where you think you stand, relative to other people in
+the United States)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ladder_comm; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ladder_comm IS 'Where would you place yourself on this ladder? (Select the number that
+best represents where you think you stand, relative to other people in
+the United States)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.household_number; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.household_number IS 'How many people are in your household?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.hcutil_pcp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.hcutil_pcp IS 'Have you seen you seen your primary care physician (PCP) in the past 3 years?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.hcutil_pcp_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.hcutil_pcp_exp IS 'If not, why?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.hcutil_pcp_oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.hcutil_pcp_oth IS 'If "Other", please explain:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.hcutil_othprov; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.hcutil_othprov IS 'Have you seen a physician or healthcare provider other than your PCP in the past 3 years? (e.g. physical therapist, cardiologist, endocrinologist, etc.)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.selfrpt_cte; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.selfrpt_cte IS 'Do *you* believe you have Chronic Traumatic Encephalopathy (CTE)?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.otdx_arthritis; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.otdx_arthritis IS 'Arthritis (e.g. osteoarthritis)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.otdx_slpapnea; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.otdx_slpapnea IS 'Sleep apnea';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.otdx_prostcanc; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.otdx_prostcanc IS 'Prostate cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.otdx_basalcanc; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.otdx_basalcanc IS 'Basal cell skin cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.otdx_squamcanc; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.otdx_squamcanc IS 'Squamous cell skin cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.otdx_melanom; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.otdx_melanom IS 'Melanoma';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.otdx_lymphom; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.otdx_lymphom IS 'Lymphoma';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.otdx_othcanc; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.otdx_othcanc IS 'Other cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.otdx_renalfail; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.otdx_renalfail IS 'Chronic renal failure';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.otdx_alcdep; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.otdx_alcdep IS 'Alcohol dependence problem';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.otdx_livcirrhosis; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.otdx_livcirrhosis IS 'Liver cirrhosis';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.otdx_livfail; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.otdx_livfail IS 'Liver failure';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.otmedrec_pncond; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.otmedrec_pncond IS 'Pain related condition';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.otmedrec_livprob; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.otmedrec_livprob IS 'Liver problem';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.otmedrec_lowtest; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.otmedrec_lowtest IS 'Low testosterone';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.otmedrec_ed; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.otmedrec_ed IS 'Erectile dysfunction (E.D.)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.massage; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.massage IS 'Massage';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.acupuncture; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.acupuncture IS 'Acupuncture';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.chiropractic; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.chiropractic IS 'Chiropractic treatment';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.yoga; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.yoga IS 'Yoga';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.taichi; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.taichi IS 'Tai chi';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.meditation; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.meditation IS 'Meditation';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.othaltmed; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.othaltmed IS 'Other alternative medication';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.othaltmed_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.othaltmed_exp IS 'Please specify:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxmoth___na; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxmoth___na IS 'Not applicable
+';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxmoth___lung; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxmoth___lung IS 'Lung
+ cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxmoth___colrec; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxmoth___colrec IS 'Colon 
+or rectal cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxmoth___diab; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxmoth___diab IS 'Diabetes ';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxmoth___mela; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxmoth___mela IS 'Melanoma';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxmoth___hypert; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxmoth___hypert IS 'Hypertension';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxmoth___dem; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxmoth___dem IS 'Dementia before
+age 70';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxmoth___alc; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxmoth___alc IS 'Alcohol problem';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxfsib___na; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxfsib___na IS 'Not applicable
+';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxfsib___lung; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxfsib___lung IS 'Lung
+ cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxfsib___colrec; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxfsib___colrec IS 'Colon 
+or rectal cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxfsib___diab; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxfsib___diab IS 'Diabetes ';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxfsib___mela; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxfsib___mela IS 'Melanoma';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxfsib___hypert; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxfsib___hypert IS 'Hypertension';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxfsib___dem; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxfsib___dem IS 'Dementia before
+age 70';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxfsib___alc; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxfsib___alc IS 'Alcohol problem';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.femsib_number; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.femsib_number IS 'How many full female siblings do you have?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxfath___na; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxfath___na IS 'Not applicable';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxfath___lung; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxfath___lung IS 'Lung cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxfath___colrec; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxfath___colrec IS 'Colon 
+or rectal cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxfath___prost; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxfath___prost IS 'Prostate cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxfath___diab; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxfath___diab IS 'Diabetes ';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxfath___mela; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxfath___mela IS 'Melanoma';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxfath___hypert; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxfath___hypert IS 'Hypertension';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxfath___dem; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxfath___dem IS 'Dementia before age
+70';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxfath___alc; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxfath___alc IS 'Alcohol problem';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxmsib___na; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxmsib___na IS 'Not applicable';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxmsib___lung; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxmsib___lung IS 'Lung cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxmsib___colrec; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxmsib___colrec IS 'Colon 
+or rectal cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxmsib___prost; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxmsib___prost IS 'Prostate cancer';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxmsib___diab; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxmsib___diab IS 'Diabetes ';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxmsib___mela; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxmsib___mela IS 'Melanoma';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxmsib___hypert; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxmsib___hypert IS 'Hypertension';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxmsib___dem; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxmsib___dem IS 'Dementia before age
+70';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxmsib___alc; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxmsib___alc IS 'Alcohol problem';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib_number; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib_number IS 'How many full male siblings do you have?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib1age; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib1age IS 'Current age:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib1ht_feet; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib1ht_feet IS 'Height (feet):';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib1ht_inch; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib1ht_inch IS 'Height (inches):';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib1sport___none; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib1sport___none IS 'Did not play sports';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib1sport___hsfb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib1sport___hsfb IS 'Played H.S. football';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib1sport___colfb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib1sport___colfb IS 'Played college football';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib1sport___oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib1sport___oth IS 'Other';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib1sport_oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib1sport_oth IS 'Please specify:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib2age; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib2age IS 'Current age:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib2ht_feet; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib2ht_feet IS 'Height (feet):';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib2ht_inch; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib2ht_inch IS 'Height (inches):';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib2sport___none; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib2sport___none IS 'Did not play sports';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib2sport___hsfb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib2sport___hsfb IS 'Played H.S. football';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib2sport___colfb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib2sport___colfb IS 'Played college football';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib2sport___oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib2sport___oth IS 'Other';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib2sport_oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib2sport_oth IS 'Please specify:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib3age; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib3age IS 'Current age:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib3ht_feet; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib3ht_feet IS 'Height (feet):';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib3ht_inch; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib3ht_inch IS 'Height (inches):';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib3sport___none; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib3sport___none IS 'Did not play sports';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib3sport___hsfb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib3sport___hsfb IS 'Played H.S. football';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib3sport___colfb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib3sport___colfb IS 'Played college football';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib3sport___oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib3sport___oth IS 'Other';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib3sport_oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib3sport_oth IS 'Please specify:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib4age; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib4age IS 'Current age:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib4ht_feet; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib4ht_feet IS 'Height (feet):';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib4ht_inch; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib4ht_inch IS 'Height (inches):';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib4sport___none; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib4sport___none IS 'Did not play sports';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib4sport___hsfb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib4sport___hsfb IS 'Played H.S. football';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib4sport___colfb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib4sport___colfb IS 'Played college football';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib4sport___oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib4sport___oth IS 'Other';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib4sportoth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib4sportoth IS 'Please specify:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib5age; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib5age IS 'Current age:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib5ht_feet; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib5ht_feet IS 'Height (feet):';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib5ht_inch; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib5ht_inch IS 'Height (inches):';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib5sport___none; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib5sport___none IS 'Did not play sports';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib5sport___hsfb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib5sport___hsfb IS 'Played H.S. football';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib5sport___colfb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib5sport___colfb IS 'Played college football';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib5sport___oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib5sport___oth IS 'Other';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib5sport_oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib5sport_oth IS 'Please specify:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedcaff___noans; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedcaff___noans IS 'Prefer not
+ to answer';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedcaff___no; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedcaff___no IS 'No';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedcaff___fb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedcaff___fb IS 'Yes, during
+active play';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedcaff___cur; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedcaff___cur IS 'Yes,
+currently';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pededrink___noans; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pededrink___noans IS 'Prefer not
+ to answer';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pededrink___no; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pededrink___no IS 'No';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pededrink___fb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pededrink___fb IS 'Yes, during
+active play';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pededrink___cur; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pededrink___cur IS 'Yes,
+currently';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedcreat___noans; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedcreat___noans IS 'Prefer not
+ to answer';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedcreat___no; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedcreat___no IS 'No';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedcreat___fb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedcreat___fb IS 'Yes, during
+active play';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedcreat___cur; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedcreat___cur IS 'Yes,
+currently';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedsteroid___noans; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedsteroid___noans IS 'Prefer not
+ to answer';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedsteroid___no; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedsteroid___no IS 'No';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedsteroid___fb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedsteroid___fb IS 'Yes, during
+active play';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedsteroid___cur; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedsteroid___cur IS 'Yes,
+currently';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedgh___noans; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedgh___noans IS 'Prefer not
+ to answer';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedgh___no; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedgh___no IS 'No';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedgh___fb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedgh___fb IS 'Yes, during
+active play';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedgh___cur; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedgh___cur IS 'Yes,
+currently';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedephed___noans; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedephed___noans IS 'Prefer not
+ to answer';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedephed___no; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedephed___no IS 'No';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedephed___fb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedephed___fb IS 'Yes, during
+active play';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedephed___cur; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedephed___cur IS 'Yes,
+currently';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedbetahy___noans; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedbetahy___noans IS 'Prefer not
+ to answer';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedbetahy___no; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedbetahy___no IS 'No';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedbetahy___fb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedbetahy___fb IS 'Yes, during
+active play';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedbetahy___cur; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedbetahy___cur IS 'Yes,
+currently';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pednoncaf___noans; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pednoncaf___noans IS 'Prefer not
+ to answer';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pednoncaf___no; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pednoncaf___no IS 'No';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pednoncaf___fb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pednoncaf___fb IS 'Yes, during
+active play';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pednoncaf___cur; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pednoncaf___cur IS 'Yes,
+currently';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedrcell___noans; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedrcell___noans IS 'Prefer not
+ to answer';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedrcell___no; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedrcell___no IS 'No';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedrcell___fb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedrcell___fb IS 'Yes, during
+active play';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedrcell___cur; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedrcell___cur IS 'Yes,
+currently';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedinos___noans; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedinos___noans IS 'Prefer not
+ to answer';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedinos___no; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedinos___no IS 'No';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedinos___fb; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedinos___fb IS 'Yes, during
+active play';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedinos___cur; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedinos___cur IS 'Yes,
+currently';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.alcohol_days; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.alcohol_days IS 'In a typical week, how many days do you drink a beverage containing alcohol?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.alcohol_drinks; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.alcohol_drinks IS 'On a typical day that you drink, how many alcoholic beverages do you usually have?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.marijuana; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.marijuana IS 'Do you smoke or ingest marijuana?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.marijuana_start; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.marijuana_start IS 'How old were you when you started smoking marijuana?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.marijuana_stop; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.marijuana_stop IS 'How old were you when you stopped smoking marijuana?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.marijuana_totyrs; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.marijuana_totyrs IS 'How many years, in total, have you smoked marijuana? (if you quit more than once, estimate the total years you considered yourself an active smoker)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.marijtime___pnfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.marijtime___pnfl IS 'Before playing in the NFL';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.marijtime___dnfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.marijtime___dnfl IS 'While playing in the NFL';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.marijtime___anfl; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.marijtime___anfl IS 'After playing in the NFL';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.marijreas___fun; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.marijreas___fun IS 'Fun';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.marijreas___relx; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.marijreas___relx IS 'Relaxation';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.marijreas___pain; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.marijreas___pain IS 'Pain';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.marijreas___anx; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.marijreas___anx IS 'Anxiety';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.marijreas___dep; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.marijreas___dep IS 'Depression';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.marijreas___oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.marijreas___oth IS 'Other';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.marijreas_exp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.marijreas_exp IS 'If \"Other\" reason, please explain:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.born_address; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.born_address IS 'Address:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.born_city; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.born_city IS 'City:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.born_state; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.born_state IS 'State:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.born_zip; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.born_zip IS 'Zip code (if known)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.twelveyrs_address; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.twelveyrs_address IS 'Address:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.twelveyrs_city; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.twelveyrs_city IS 'City:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.twelveyrs_state; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.twelveyrs_state IS 'State:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.twelveyrs_zip; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.twelveyrs_zip IS 'Zip code (if known)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.infertility; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.infertility IS 'Have you and a female spouse or partner ever tried to become pregnant for 12 consecutive months without becoming pregnant (even if she ultimately became pregnant)?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.infert_age; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.infert_age IS 'How old were you when this first happened?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.infert_hcp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.infert_hcp IS 'Did you seek help from a healthcare provider?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.infertreas___fem; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.infertreas___fem IS 'Female factor';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.infertreas___mal; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.infertreas___mal IS 'Male factor';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.infertreas___unex; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.infertreas___unex IS 'Unexplained';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.infertreas___oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.infertreas___oth IS 'Other';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.infertreas_oth; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.infertreas_oth IS 'If "Other", please explain:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.actout_dreams; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.actout_dreams IS 'Has your spouse \[or sleep partner\] told you that you appear to \''act out your dreams\'' while sleeping \[punched or flailed arms in the air, shouted, screamed\], which has occurred at least three times?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.smell_problem; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.smell_problem IS 'Have you had any problems with your sense of smell, such as not being able to smell things or things not smelling the way they are supposed to for at least three months?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.taste_problem; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.taste_problem IS 'Have you had any problems with your sense of taste, such as not being able to taste salt or sugar or with tastes in the mouth that shouldn\''t be there, like bitter, salty, sour, or sweet tastes for at least three months?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bowel_move; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bowel_move IS 'How frequently do you have a bowel movement?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.laxative_use; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.laxative_use IS 'How often do you use a laxative? (Such as softeners, bulking agents, fiber supplements, or suppositories)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.workplace_harass; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.workplace_harass IS 'Was there a period of time when you frequently experienced any of the following from teammates, coaches or trainers: social isolation, threats or other actions aimed at harassing you?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.coach_discrim; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.coach_discrim IS 'How many times were you treated unfairly by COACHES OR TRAINERS because of your race or ethnicity?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.coach_discrimstr; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.coach_discrimstr IS 'How stressful was this for you?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.player_discrim; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.player_discrim IS 'How many times were you treated unfairly by OTHER PLAYERS because of your race or ethnicity?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.player_discrimstr; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.player_discrimstr IS 'How stressful was this for you?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.job_discrim; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.job_discrim IS 'How many times were you treated unfairly in being hired for a job or promoted because of your race or ethnicity?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.job_discrimstr; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.job_discrimstr IS 'How stressful was this for you?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ace1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ace1 IS 'Did a parent or other adult in the household often or very often...  
+  
+*Swear at you, insult you, put you down, or humiliate you?* or *Act in a way that made you afraid that you might be physically hurt*?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ace2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ace2 IS 'Did a parent or other adult in the household often or very often...  
+  
+*Push, grab, slap, or throw something at you?* or  Ever hit you so hard that you had marks or were injured?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ace3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ace3 IS 'Did an adult or person at least 5 years older than you ever...  
+  
+*Touch or fondle you or have you touch their body in a sexual way?* or Attempt or actually have oral, anal, or vaginal intercourse with you?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ace4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ace4 IS 'Did you often or very often feel that...  
+  
+*No one in your family loved you or thought you were important or special?* or *Your family didn\''t look out for each other, feel close to each other, or support each other?*';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ace5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ace5 IS 'Did you often or very often feel that...  
+  
+*You didn\''t have enough to eat, had to wear dirty clothes, and had no one to protect you?* or Your parents were too drunk or high to take care of you or take you to the doctor if you needed it?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ace6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ace6 IS 'Were your parents ever separated or divorced?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ace7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ace7 IS 'Was your mother or stepmother:  
+  
+*Often or very often pushed, grabbed, slapped, or had something thrown at her?* or *Sometimes, often, or very often kicked, bitten, hit with a fist, or hit with something hard?* or *Ever repeatedly hit over at least a few minutes or threatened with a gun or knife?*';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ace8; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ace8 IS 'Did you live with anyone who was a problem drinker or alcoholic, or who used street drugs?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ace9; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ace9 IS 'Was a household member depressed or mentally ill, or did a household member attempt suicide?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.ace10; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.ace10 IS 'Did a household member go to prison?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.foodins_worry; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.foodins_worry IS 'I worried whether our food would run out before we got money to buy more';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.foodins_ranout; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.foodins_ranout IS 'The food my family bought just didn\''t last and we didn\''t have money to get more';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.q2help; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.q2help IS 'Did someone help you fill out the questionnaire?';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.othealth___complete; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.othealth___complete IS 'Check this box and press "Submit" to complete the questionnaire!';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sdfsdaf___0; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sdfsdaf___0 IS 'Very Poor';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sdfsdaf___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sdfsdaf___1 IS 'Average';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sdfsdaf___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sdfsdaf___2 IS 'Excellent';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.rtyrtyrt___0; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.rtyrtyrt___0 IS 'Very Poor';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.rtyrtyrt___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.rtyrtyrt___1 IS 'Average';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.rtyrtyrt___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.rtyrtyrt___2 IS 'Excellent';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.test_field; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.test_field IS 'Hello';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.test_phone; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.test_phone IS 'test phone';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.i57; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.i57 IS 'Integer (0-57)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.f57; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.f57 IS 'Float (0-57)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.dd; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.dd IS 'dd';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.yes_or_no; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.yes_or_no IS 'Yes or now';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.true_or_false; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.true_or_false IS 'True or false';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.file1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.file1 IS 'File upload';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.signature; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.signature IS 'Signature';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.slider; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.slider IS 'Slider';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.base_field; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.base_field IS 'Base Field';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.smoketime_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.smoketime_chosen_array IS 'Please indicate the time-frames during which you smoked cigarettes? (Please select all that apply)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.othleaguenm_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.othleaguenm_chosen_array IS 'Indicate the professional, non-NFL, league(s) for which you have played. Please mark all that apply:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.leftfb_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.leftfb_chosen_array IS 'Please indicate the main reason(s) why you stopped playing professional football? Select all that apply.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi2_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi2_chosen_array IS 'Please indicate the areas where you feel pain. (Select all that apply)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.bpi7_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.bpi7_chosen_array IS 'What treatments or medications are you receiving for your pain? (Please select all that apply)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.wealth_emerg_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.wealth_emerg_chosen_array IS 'Based on your current financial situation, how would you pay for this
+expense? If you would use more than one method to cover this expense,
+please select all that apply.';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxmoth_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxmoth_chosen_array IS 'Mother';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxfsib_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxfsib_chosen_array IS 'Female Sibling';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxfath_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxfath_chosen_array IS 'Father';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.famhxmsib_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.famhxmsib_chosen_array IS 'Male Sibling';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib4sport_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib4sport_chosen_array IS 'Select all that apply:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sib5sport_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sib5sport_chosen_array IS 'Select all that apply:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedcaff_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedcaff_chosen_array IS 'Caffeine (Commonly found in soda, coffee, and tea. Also found in supplements like No Doz, Stay Awake, Vivarin, Cafcit, Enerjets, etc.)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pededrink_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pededrink_chosen_array IS 'Energy drinks (**aka:** Red Bull, Monster, 5-Hour Energy, AMP Energy, Full Throttle, Jolt, Liquid X, mountain dew MDX, Red Rooster, Rockstar, RELOAD, SoBe Adrenaline Rush, Vault, XS energy drink, etc.)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedcreat_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedcreat_chosen_array IS 'Creatine (**aka:** creatine phosphate, creatine monohydrate, CreaPure, legal steroid, muscle candy, etc.)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedsteroid_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedsteroid_chosen_array IS 'Steroids (**aka:** anabolic steroids, testosterone, androstenedione, dihydroepiandrosterone, DHEA, Arnolds, gym candy, pumpers, roids, stackers, weight trainers, gear, and juice)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedgh_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedgh_chosen_array IS 'Growth hormone or insulin-like growth factor (**aka:** human growth hormone, insulin-like growth factor-1, insulin-like growth factor, IGF, IGF-1, Genotropin, Humatrope, Norditropin, Nutropin, Saizen, Serostim)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedephed_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedephed_chosen_array IS 'Ephedra (**aka:** ephedrine, Ma Huang, desert tea, Mormon tea, American ephedra, European ephedra, Pakistani ephedra, ephedrine, ephedrine alkaloids, pseudoephedrine)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedbetahy_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedbetahy_chosen_array IS 'Beta-hydroxy beta-methylbutyrate (**aka:** HMB, beta-hydroxy, beta-methylbutyrate, beta-hydroxy, beta-methylbutyric acid)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pednoncaf_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pednoncaf_chosen_array IS 'Non-caffeine stimulants (**aka:** amphetamine, dextroamphetamine (Adderall), methylphenidate (Ritalin))';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedrcell_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedrcell_chosen_array IS 'Red-cell boosting agents or techniques (**aka:** Erythropoeitin (EPO), auto-transfusion, hypoxic sleep tents)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.pedinos_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.pedinos_chosen_array IS 'Other cardiovascular enhancement agent (**aka:** inosine or inosine-containing products)';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.marijtime_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.marijtime_chosen_array IS 'Please indicate the time-frames during which you smoked marijuana (select all that apply):';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.marijreas_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.marijreas_chosen_array IS 'Please indicate the reasons why you use, or have previously used, marijuana (select all that apply):';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.infertreas_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.infertreas_chosen_array IS 'Did he or she find a reason why you and your female spouse or partner
+had difficulty getting pregnant? Please choose all that apply:';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.sdfsdaf_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.sdfsdaf_chosen_array IS 'sdfsdaf';
+
+
+--
+-- Name: COLUMN q2_demo_rcs.rtyrtyrt_chosen_array; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.q2_demo_rcs.rtyrtyrt_chosen_array IS 'rtyrtyrt';
+
+
+--
+-- Name: q2_demo_rcs_id_seq; Type: SEQUENCE; Schema: redcap; Owner: -
+--
+
+CREATE SEQUENCE redcap.q2_demo_rcs_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -13151,56 +18401,1493 @@ CREATE SEQUENCE ref_data.data_variable_package_var_history_id_seq
 
 
 --
--- Name: data_variable_package_var_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ref_data; Owner: -
+-- Name: q2_demo_rcs_id_seq; Type: SEQUENCE OWNED BY; Schema: redcap; Owner: -
 --
 
-ALTER SEQUENCE ref_data.data_variable_package_var_history_id_seq OWNED BY ref_data.data_variable_package_var_history.id;
+ALTER SEQUENCE redcap.q2_demo_rcs_id_seq OWNED BY redcap.q2_demo_rcs.id;
 
 
 --
--- Name: data_variable_package_vars; Type: TABLE; Schema: ref_data; Owner: -
+-- Name: viva_meta_variable_history; Type: TABLE; Schema: redcap; Owner: -
 --
 
-CREATE TABLE ref_data.data_variable_package_vars (
+CREATE TABLE redcap.viva_meta_variable_history (
     id bigint NOT NULL,
-    record_id bigint,
-    record_type character varying,
-    disabled boolean DEFAULT false,
-    variable_name character varying,
-    domain character varying,
+    varname character varying,
+    var_label character varying,
+    var_type character varying,
+    restrict_var___0 boolean,
+    restrict_var___1 boolean,
+    restrict_var___2 boolean,
+    restrict_var___3 boolean,
+    restrict_var___4 boolean,
+    oth_restrict character varying,
+    domain_viva character varying,
+    subdomain___1 boolean,
+    subdomain___2 boolean,
+    target_of_q character varying,
+    data_source character varying,
+    val_instr character varying,
+    ext_instrument character varying,
+    internal_instrument character varying,
+    doc_yn character varying,
+    doc_link character varying,
+    long_yn character varying,
+    long_timepts___1 boolean,
+    long_timepts___2 boolean,
+    long_timepts___3 boolean,
+    long_timepts___4 boolean,
+    long_timepts___5 boolean,
+    long_timepts___6 boolean,
+    long_timepts___7 boolean,
+    long_timepts___8 boolean,
+    long_timepts___9 boolean,
+    long_timepts___10 boolean,
+    long_timepts___11 boolean,
+    long_timepts___12 boolean,
+    long_timepts___13 boolean,
+    long_timepts___14 boolean,
+    long_timepts___15 boolean,
+    long_timepts___16 boolean,
+    long_timepts___17 boolean,
+    long_timepts___18 boolean,
+    long_timepts___19 boolean,
+    long_timepts___20 boolean,
+    long_timepts___21 boolean,
+    long_timepts___22 boolean,
+    long_timepts___23 boolean,
+    static_variable_information_complete integer,
+    static_variable_information_timestamp timestamp without time zone,
+    event_type character varying,
+    visit_name character varying,
+    visit_time character varying,
+    assay_specimen character varying,
+    assay_type character varying,
+    lab_assay_dataset character varying,
+    form_label_ep character varying,
+    form_version_ep___1 boolean,
+    form_version_ep___2 boolean,
+    form_version_ep___3 boolean,
+    form_version_ep___4 boolean,
+    form_version_ep___5 boolean,
+    form_version_ep___6 boolean,
+    form_version_ep___7 boolean,
+    form_version_ep___8 boolean,
+    form_label_mp character varying,
+    form_version_mp___1 boolean,
+    form_version_mp___2 boolean,
+    form_version_mp___3 boolean,
+    form_version_mp___4 boolean,
+    form_label_del character varying,
+    form_version_del___1 boolean,
+    form_version_del___2 boolean,
+    form_version_del___3 boolean,
+    form_version_del___4 boolean,
+    form_version_del___5 boolean,
+    form_version_del___6 boolean,
+    form_version_del___7 boolean,
+    form_label_6m character varying,
+    form_version_6m___1 boolean,
+    form_version_6m___2 boolean,
+    form_version_6m___3 boolean,
+    form_version_6m___4 boolean,
+    form_version_6m___5 boolean,
+    form_version_6m___6 boolean,
+    form_version_6m___7 boolean,
+    form_version_6m___8 boolean,
+    form_version_6m___9 boolean,
+    form_version_6m___10 boolean,
+    form_label_1y character varying,
+    form_version_1y___1 boolean,
+    form_label_2y character varying,
+    form_version_2y___1 boolean,
+    form_label_3y character varying,
+    form_version_3y___1 boolean,
+    form_version_3y___2 boolean,
+    form_version_3y___3 boolean,
+    form_version_3y___4 boolean,
+    form_version_3y___5 boolean,
+    form_version_3y___6 boolean,
+    form_version_3y___7 boolean,
+    form_version_3y___8 boolean,
+    form_version_3y___9 boolean,
+    form_version_3y___10 boolean,
+    form_version_3y___11 boolean,
+    form_version_3y___12 boolean,
+    form_version_3y___13 boolean,
+    form_version_3y___14 boolean,
+    form_label_4y character varying,
+    form_version_4y___1 boolean,
+    form_label_5y character varying,
+    form_version_5y___1 boolean,
+    form_label_6y character varying,
+    form_version_6y___1 boolean,
+    form_label_7y character varying,
+    form_version_7y___1 boolean,
+    form_version_7y___2 boolean,
+    form_version_7y___3 boolean,
+    form_version_7y___4 boolean,
+    form_version_7y___5 boolean,
+    form_version_7y___6 boolean,
+    form_version_7y___7 boolean,
+    form_version_7y___8 boolean,
+    form_version_7y___9 boolean,
+    form_version_7y___10 boolean,
+    form_version_7y___11 boolean,
+    form_version_7y___12 boolean,
+    form_version_7y___13 boolean,
+    form_version_7y___14 boolean,
+    form_version_7y___15 boolean,
+    form_version_7y___16 boolean,
+    form_version_7y___17 boolean,
+    form_label_8y character varying,
+    form_version_8y___1 boolean,
+    form_label_9y character varying,
+    form_version_9y___1 boolean,
+    form_version_9y___2 boolean,
+    form_label_10y character varying,
+    form_version_10y___1 boolean,
+    form_version_10y___2 boolean,
+    form_label_11y character varying,
+    form_version_11y___1 boolean,
+    form_version_11y___2 boolean,
+    form_label_12y character varying,
+    form_version_12y___1 boolean,
+    form_version_12y___2 boolean,
+    form_version_12y___3 boolean,
+    form_version_12y___4 boolean,
+    form_version_12y___5 boolean,
+    form_version_12y___6 boolean,
+    form_version_12y___7 boolean,
+    form_version_12y___8 boolean,
+    form_version_12y___9 boolean,
+    form_version_12y___10 boolean,
+    form_version_12y___11 boolean,
+    form_version_12y___12 boolean,
+    form_version_12y___13 boolean,
+    form_version_12y___14 boolean,
+    form_version_12y___15 boolean,
+    form_version_12y___16 boolean,
+    form_label_14y character varying,
+    form_version_14y___1 boolean,
+    form_version_14y___2 boolean,
+    form_label_15y character varying,
+    form_version_15y___1 boolean,
+    form_version_15y___2 boolean,
+    form_label_16y character varying,
+    form_version_16y___1 boolean,
+    form_version_16y___2 boolean,
+    form_label_mt character varying,
+    form_version_mt character varying,
+    form_label_19y character varying,
+    form_version_19y___1 boolean,
+    form_version_19y___2 boolean,
+    not_time_specific character varying,
+    var_level character varying,
+    units character varying,
+    model_type character varying,
+    response_options character varying,
+    elig_sample character varying,
+    elig_n character varying,
+    actual_n character varying,
+    an_var character varying,
+    orig_deriv character varying,
+    corr_derived_yn___0 boolean,
+    corr_derived_yn___1 boolean,
+    der_varname character varying,
+    dervar_explain character varying,
+    orig_varnames character varying,
+    visitspecific_information_complete integer,
+    visitspecific_information_timestamp timestamp without time zone,
+    redcap_survey_identifier character varying,
     user_id bigint,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    data_variable_package_id bigint
+    viva_meta_variable_id bigint,
+    redcap_repeat_instrument character varying,
+    redcap_repeat_instance character varying
 );
 
 
 --
--- Name: TABLE data_variable_package_vars; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: COLUMN viva_meta_variable_history.varname; Type: COMMENT; Schema: redcap; Owner: -
 --
 
-COMMENT ON TABLE ref_data.data_variable_package_vars IS 'Dynamicmodel: Data Variable Packages';
-
-
---
--- Name: COLUMN data_variable_package_vars.record_id; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.data_variable_package_vars.record_id IS 'Link to Variable';
+COMMENT ON COLUMN redcap.viva_meta_variable_history.varname IS 'Variable name';
 
 
 --
--- Name: COLUMN data_variable_package_vars.domain; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: COLUMN viva_meta_variable_history.var_label; Type: COMMENT; Schema: redcap; Owner: -
 --
 
-COMMENT ON COLUMN ref_data.data_variable_package_vars.domain IS 'Domain';
+COMMENT ON COLUMN redcap.viva_meta_variable_history.var_label IS 'Variable label';
 
 
 --
--- Name: data_variable_package_vars_id_seq; Type: SEQUENCE; Schema: ref_data; Owner: -
+-- Name: COLUMN viva_meta_variable_history.var_type; Type: COMMENT; Schema: redcap; Owner: -
 --
 
-CREATE SEQUENCE ref_data.data_variable_package_vars_id_seq
+COMMENT ON COLUMN redcap.viva_meta_variable_history.var_type IS 'Type of variable';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.restrict_var___0; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.restrict_var___0 IS 'None';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.restrict_var___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.restrict_var___1 IS 'PHI, OK for limited dataset';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.restrict_var___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.restrict_var___2 IS 'PHI, restricted use';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.restrict_var___3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.restrict_var___3 IS 'Sensitive information';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.restrict_var___4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.restrict_var___4 IS 'Other restriction';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.oth_restrict; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.oth_restrict IS 'Specify other restriction';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.domain_viva; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.domain_viva IS 'Domain or topic area';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.subdomain___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.subdomain___1 IS 'Placeholder';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.subdomain___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.subdomain___2 IS 'Placeholder';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.target_of_q; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.target_of_q IS 'Target';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.data_source; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.data_source IS 'Source of data';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.val_instr; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.val_instr IS 'Please indicate whether the question comes from an external, internal, or no instrument.';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.ext_instrument; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.ext_instrument IS 'External instrument';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.internal_instrument; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.internal_instrument IS 'Internal instrument';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.doc_yn; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.doc_yn IS 'Documentation available?';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.doc_link; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.doc_link IS 'Documentation link';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.long_yn; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.long_yn IS 'Longitudinal measurement?';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.long_timepts___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.long_timepts___1 IS 'Screening';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.long_timepts___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.long_timepts___2 IS 'Early pregnancy';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.long_timepts___3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.long_timepts___3 IS 'Mid-pregnancy';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.long_timepts___4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.long_timepts___4 IS 'Delivery';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.long_timepts___5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.long_timepts___5 IS 'Infancy (6 months)';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.long_timepts___6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.long_timepts___6 IS '1 year';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.long_timepts___7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.long_timepts___7 IS '2 year';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.long_timepts___8; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.long_timepts___8 IS 'Early childhood (3 year)';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.long_timepts___9; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.long_timepts___9 IS '4 year';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.long_timepts___10; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.long_timepts___10 IS '5 year';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.long_timepts___11; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.long_timepts___11 IS '6 year';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.long_timepts___12; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.long_timepts___12 IS 'Mid childhood (7-8 years)';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.long_timepts___13; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.long_timepts___13 IS '8 year';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.long_timepts___14; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.long_timepts___14 IS '9 year';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.long_timepts___15; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.long_timepts___15 IS '10 year';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.long_timepts___16; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.long_timepts___16 IS '11 year';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.long_timepts___17; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.long_timepts___17 IS 'Early adolescence (12-13 years)';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.long_timepts___18; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.long_timepts___18 IS '14 years';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.long_timepts___19; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.long_timepts___19 IS '15 year';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.long_timepts___20; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.long_timepts___20 IS '16 year';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.long_timepts___21; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.long_timepts___21 IS 'Mid/late adolescence (17-18 years)';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.long_timepts___22; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.long_timepts___22 IS '19 year';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.long_timepts___23; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.long_timepts___23 IS 'Not time specific';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.event_type; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.event_type IS 'Type of data collection event';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.visit_name; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.visit_name IS 'Visit name';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.visit_time; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.visit_time IS 'Visit target time point';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.assay_specimen; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.assay_specimen IS 'Lab Assay Specimen Source';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.assay_type; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.assay_type IS 'Laboratory assay type';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.lab_assay_dataset; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.lab_assay_dataset IS 'Laboratory Assay \''Form\'' (Dataset)';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_label_ep; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_label_ep IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_ep___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_ep___1 IS 'EPQ';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_ep___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_ep___2 IS 'EPQ1';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_ep___3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_ep___3 IS 'EPQA';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_ep___4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_ep___4 IS 'EPS1';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_ep___5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_ep___5 IS 'EPI1';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_ep___6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_ep___6 IS 'EPIA';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_ep___7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_ep___7 IS 'SCR1';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_ep___8; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_ep___8 IS 'BLD1';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_label_mp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_label_mp IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_mp___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_mp___1 IS 'MPQ2';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_mp___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_mp___2 IS 'BLD2';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_mp___3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_mp___3 IS 'PSQ2';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_mp___4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_mp___4 IS 'MPI2';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_label_del; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_label_del IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_del___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_del___1 IS 'DES3';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_del___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_del___2 IS 'NAN3';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_del___3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_del___3 IS 'NBP3';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_del___4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_del___4 IS 'NLG3';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_del___5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_del___5 IS 'PSQ3';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_del___6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_del___6 IS 'PSS3';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_del___7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_del___7 IS 'DEI3';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_label_6m; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_label_6m IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_6m___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_6m___1 IS 'PSQ4';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_6m___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_6m___2 IS 'MSC4';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_6m___3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_6m___3 IS 'VIS4';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_6m___4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_6m___4 IS 'SMIR';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_6m___5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_6m___5 IS 'SMSB4';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_6m___6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_6m___6 IS 'SMSF4';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_6m___7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_6m___7 IS 'SMSW4';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_6m___8; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_6m___8 IS 'SMSM4';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_6m___9; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_6m___9 IS 'SMQ4';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_6m___10; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_6m___10 IS 'MSM4';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_label_1y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_label_1y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_1y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_1y___1 IS 'OYQ';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_label_2y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_label_2y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_2y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_2y___1 IS 'SYQ/SYQ6';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_label_3y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_label_3y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_3y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_3y___1 IS 'MAT7';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_3y___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_3y___2 IS 'CAT7';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_3y___3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_3y___3 IS 'MBP7';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_3y___4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_3y___4 IS 'CBP7';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_3y___5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_3y___5 IS 'MBL7';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_3y___6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_3y___6 IS 'CBL7';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_3y___7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_3y___7 IS 'MCT7';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_3y___8; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_3y___8 IS 'CCT7';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_3y___9; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_3y___9 IS 'TYI';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_3y___10; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_3y___10 IS 'TYQ';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_3y___11; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_3y___11 IS 'TYS7';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_3y___12; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_3y___12 IS 'IBL7';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_3y___13; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_3y___13 IS 'IAC7';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_3y___14; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_3y___14 IS 'IDC7';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_label_4y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_label_4y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_4y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_4y___1 IS '4YQ';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_label_5y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_label_5y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_5y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_5y___1 IS 'QU5Y';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_label_6y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_label_6y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_6y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_6y___1 IS 'QU6Y';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_label_7y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_label_7y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_7y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_7y___1 IS 'MA7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_7y___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_7y___2 IS 'CA7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_7y___3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_7y___3 IS 'BL7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_7y___4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_7y___4 IS 'PE7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_7y___5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_7y___5 IS 'HR7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_7y___6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_7y___6 IS 'DX7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_7y___7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_7y___7 IS 'BP7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_7y___8; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_7y___8 IS 'MC7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_7y___9; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_7y___9 IS 'CC7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_7y___10; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_7y___10 IS 'SP7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_7y___11; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_7y___11 IS 'BQ7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_7y___12; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_7y___12 IS 'TE7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_7y___13; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_7y___13 IS 'MI7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_7y___14; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_7y___14 IS 'IN7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_7y___15; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_7y___15 IS 'HP7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_7y___16; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_7y___16 IS 'ST7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_7y___17; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_7y___17 IS 'QU7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_label_8y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_label_8y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_8y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_8y___1 IS 'QU8Y';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_label_9y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_label_9y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_9y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_9y___1 IS 'QU9Y';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_9y___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_9y___2 IS 'CQ9Y';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_label_10y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_label_10y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_10y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_10y___1 IS 'QU10';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_10y___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_10y___2 IS 'CQ10';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_label_11y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_label_11y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_11y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_11y___1 IS 'QU11';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_11y___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_11y___2 IS 'CQ11';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_label_12y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_label_12y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_12y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_12y___1 IS 'MA12';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_12y___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_12y___2 IS 'CA12';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_12y___3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_12y___3 IS 'SJ12';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_12y___4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_12y___4 IS 'BL12';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_12y___5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_12y___5 IS 'PE12';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_12y___6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_12y___6 IS 'HR12';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_12y___7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_12y___7 IS 'NS12';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_12y___8; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_12y___8 IS 'BP12';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_12y___9; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_12y___9 IS 'DX12';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_12y___10; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_12y___10 IS 'NO12';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_12y___11; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_12y___11 IS 'SP12';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_12y___12; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_12y___12 IS 'MI12';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_12y___13; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_12y___13 IS 'IN12';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_12y___14; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_12y___14 IS 'ST12';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_12y___15; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_12y___15 IS 'QU12';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_12y___16; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_12y___16 IS 'CQ12';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_label_14y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_label_14y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_14y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_14y___1 IS 'QU14';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_14y___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_14y___2 IS 'CQ14';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_label_15y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_label_15y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_15y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_15y___1 IS 'QU15';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_15y___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_15y___2 IS 'CQ15';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_label_16y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_label_16y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_16y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_16y___1 IS 'QU16';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_16y___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_16y___2 IS 'CQ16';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_label_mt; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_label_mt IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_mt; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_mt IS 'Form Version';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_label_19y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_label_19y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_19y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_19y___1 IS 'QU19';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.form_version_19y___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.form_version_19y___2 IS 'TQ19';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.not_time_specific; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.not_time_specific IS 'Not time specific';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.var_level; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.var_level IS 'Variable Level';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.units; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.units IS 'Units';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.model_type; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.model_type IS 'Model';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.response_options; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.response_options IS 'Response Options';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.elig_sample; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.elig_sample IS 'Eligible sample description';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.elig_n; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.elig_n IS 'Eligible sample N';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.actual_n; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.actual_n IS 'Actual sample N';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.an_var; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.an_var IS 'Analytic variable name';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.orig_deriv; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.orig_deriv IS 'Original or derived variable';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.corr_derived_yn___0; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.corr_derived_yn___0 IS 'No';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.corr_derived_yn___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.corr_derived_yn___1 IS 'Yes';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.der_varname; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.der_varname IS 'Name of corresponding derived variable';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.dervar_explain; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.dervar_explain IS 'Derived Variable';
+
+
+--
+-- Name: COLUMN viva_meta_variable_history.orig_varnames; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variable_history.orig_varnames IS 'Name of corresponding original variable(s)';
+
+
+--
+-- Name: viva_meta_variable_history_id_seq; Type: SEQUENCE; Schema: redcap; Owner: -
+--
+
+CREATE SEQUENCE redcap.viva_meta_variable_history_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -13209,157 +19896,1500 @@ CREATE SEQUENCE ref_data.data_variable_package_vars_id_seq
 
 
 --
--- Name: data_variable_package_vars_id_seq; Type: SEQUENCE OWNED BY; Schema: ref_data; Owner: -
+-- Name: viva_meta_variable_history_id_seq; Type: SEQUENCE OWNED BY; Schema: redcap; Owner: -
 --
 
-ALTER SEQUENCE ref_data.data_variable_package_vars_id_seq OWNED BY ref_data.data_variable_package_vars.id;
+ALTER SEQUENCE redcap.viva_meta_variable_history_id_seq OWNED BY redcap.viva_meta_variable_history.id;
 
 
 --
--- Name: data_variable_packages; Type: TABLE; Schema: ref_data; Owner: -
+-- Name: viva_meta_variables; Type: TABLE; Schema: redcap; Owner: -
 --
 
-CREATE TABLE ref_data.data_variable_packages (
+CREATE TABLE redcap.viva_meta_variables (
     id bigint NOT NULL,
-    name character varying,
-    description character varying,
-    disabled boolean DEFAULT false,
+    varname character varying,
+    var_label character varying,
+    var_type character varying,
+    restrict_var___0 boolean,
+    restrict_var___1 boolean,
+    restrict_var___2 boolean,
+    restrict_var___3 boolean,
+    restrict_var___4 boolean,
+    oth_restrict character varying,
+    domain_viva character varying,
+    subdomain___1 boolean,
+    subdomain___2 boolean,
+    target_of_q character varying,
+    data_source character varying,
+    val_instr character varying,
+    ext_instrument character varying,
+    internal_instrument character varying,
+    doc_yn character varying,
+    doc_link character varying,
+    long_yn character varying,
+    long_timepts___1 boolean,
+    long_timepts___2 boolean,
+    long_timepts___3 boolean,
+    long_timepts___4 boolean,
+    long_timepts___5 boolean,
+    long_timepts___6 boolean,
+    long_timepts___7 boolean,
+    long_timepts___8 boolean,
+    long_timepts___9 boolean,
+    long_timepts___10 boolean,
+    long_timepts___11 boolean,
+    long_timepts___12 boolean,
+    long_timepts___13 boolean,
+    long_timepts___14 boolean,
+    long_timepts___15 boolean,
+    long_timepts___16 boolean,
+    long_timepts___17 boolean,
+    long_timepts___18 boolean,
+    long_timepts___19 boolean,
+    long_timepts___20 boolean,
+    long_timepts___21 boolean,
+    long_timepts___22 boolean,
+    long_timepts___23 boolean,
+    static_variable_information_complete integer,
+    static_variable_information_timestamp timestamp without time zone,
+    event_type character varying,
+    visit_name character varying,
+    visit_time character varying,
+    assay_specimen character varying,
+    assay_type character varying,
+    lab_assay_dataset character varying,
+    form_label_ep character varying,
+    form_version_ep___1 boolean,
+    form_version_ep___2 boolean,
+    form_version_ep___3 boolean,
+    form_version_ep___4 boolean,
+    form_version_ep___5 boolean,
+    form_version_ep___6 boolean,
+    form_version_ep___7 boolean,
+    form_version_ep___8 boolean,
+    form_label_mp character varying,
+    form_version_mp___1 boolean,
+    form_version_mp___2 boolean,
+    form_version_mp___3 boolean,
+    form_version_mp___4 boolean,
+    form_label_del character varying,
+    form_version_del___1 boolean,
+    form_version_del___2 boolean,
+    form_version_del___3 boolean,
+    form_version_del___4 boolean,
+    form_version_del___5 boolean,
+    form_version_del___6 boolean,
+    form_version_del___7 boolean,
+    form_label_6m character varying,
+    form_version_6m___1 boolean,
+    form_version_6m___2 boolean,
+    form_version_6m___3 boolean,
+    form_version_6m___4 boolean,
+    form_version_6m___5 boolean,
+    form_version_6m___6 boolean,
+    form_version_6m___7 boolean,
+    form_version_6m___8 boolean,
+    form_version_6m___9 boolean,
+    form_version_6m___10 boolean,
+    form_label_1y character varying,
+    form_version_1y___1 boolean,
+    form_label_2y character varying,
+    form_version_2y___1 boolean,
+    form_label_3y character varying,
+    form_version_3y___1 boolean,
+    form_version_3y___2 boolean,
+    form_version_3y___3 boolean,
+    form_version_3y___4 boolean,
+    form_version_3y___5 boolean,
+    form_version_3y___6 boolean,
+    form_version_3y___7 boolean,
+    form_version_3y___8 boolean,
+    form_version_3y___9 boolean,
+    form_version_3y___10 boolean,
+    form_version_3y___11 boolean,
+    form_version_3y___12 boolean,
+    form_version_3y___13 boolean,
+    form_version_3y___14 boolean,
+    form_label_4y character varying,
+    form_version_4y___1 boolean,
+    form_label_5y character varying,
+    form_version_5y___1 boolean,
+    form_label_6y character varying,
+    form_version_6y___1 boolean,
+    form_label_7y character varying,
+    form_version_7y___1 boolean,
+    form_version_7y___2 boolean,
+    form_version_7y___3 boolean,
+    form_version_7y___4 boolean,
+    form_version_7y___5 boolean,
+    form_version_7y___6 boolean,
+    form_version_7y___7 boolean,
+    form_version_7y___8 boolean,
+    form_version_7y___9 boolean,
+    form_version_7y___10 boolean,
+    form_version_7y___11 boolean,
+    form_version_7y___12 boolean,
+    form_version_7y___13 boolean,
+    form_version_7y___14 boolean,
+    form_version_7y___15 boolean,
+    form_version_7y___16 boolean,
+    form_version_7y___17 boolean,
+    form_label_8y character varying,
+    form_version_8y___1 boolean,
+    form_label_9y character varying,
+    form_version_9y___1 boolean,
+    form_version_9y___2 boolean,
+    form_label_10y character varying,
+    form_version_10y___1 boolean,
+    form_version_10y___2 boolean,
+    form_label_11y character varying,
+    form_version_11y___1 boolean,
+    form_version_11y___2 boolean,
+    form_label_12y character varying,
+    form_version_12y___1 boolean,
+    form_version_12y___2 boolean,
+    form_version_12y___3 boolean,
+    form_version_12y___4 boolean,
+    form_version_12y___5 boolean,
+    form_version_12y___6 boolean,
+    form_version_12y___7 boolean,
+    form_version_12y___8 boolean,
+    form_version_12y___9 boolean,
+    form_version_12y___10 boolean,
+    form_version_12y___11 boolean,
+    form_version_12y___12 boolean,
+    form_version_12y___13 boolean,
+    form_version_12y___14 boolean,
+    form_version_12y___15 boolean,
+    form_version_12y___16 boolean,
+    form_label_14y character varying,
+    form_version_14y___1 boolean,
+    form_version_14y___2 boolean,
+    form_label_15y character varying,
+    form_version_15y___1 boolean,
+    form_version_15y___2 boolean,
+    form_label_16y character varying,
+    form_version_16y___1 boolean,
+    form_version_16y___2 boolean,
+    form_label_mt character varying,
+    form_version_mt character varying,
+    form_label_19y character varying,
+    form_version_19y___1 boolean,
+    form_version_19y___2 boolean,
+    not_time_specific character varying,
+    var_level character varying,
+    units character varying,
+    model_type character varying,
+    response_options character varying,
+    elig_sample character varying,
+    elig_n character varying,
+    actual_n character varying,
+    an_var character varying,
+    orig_deriv character varying,
+    corr_derived_yn___0 boolean,
+    corr_derived_yn___1 boolean,
+    der_varname character varying,
+    dervar_explain character varying,
+    orig_varnames character varying,
+    visitspecific_information_complete integer,
+    visitspecific_information_timestamp timestamp without time zone,
+    redcap_survey_identifier character varying,
     user_id bigint,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    package_type character varying,
-    storage_type character varying,
-    db_or_fs character varying,
-    schema_or_path character varying,
-    table_or_file character varying,
-    is_static boolean,
-    sourced_from_packages character varying,
-    n_for_timepoints jsonb,
-    tag_select_health_categories character varying[],
-    contact_email character varying,
-    key_fields character varying[],
-    info_url character varying
+    redcap_repeat_instrument character varying,
+    redcap_repeat_instance character varying,
+    long_timepts_chosen_array character varying(128)
 );
 
 
 --
--- Name: TABLE data_variable_packages; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: TABLE viva_meta_variables; Type: COMMENT; Schema: redcap; Owner: -
 --
 
-COMMENT ON TABLE ref_data.data_variable_packages IS 'Dynamicmodel: Data Variable Packages';
-
-
---
--- Name: COLUMN data_variable_packages.name; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.data_variable_packages.name IS 'Name';
+COMMENT ON TABLE redcap.viva_meta_variables IS 'Dynamicmodel: Viva Meta Variable';
 
 
 --
--- Name: COLUMN data_variable_packages.description; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: COLUMN viva_meta_variables.varname; Type: COMMENT; Schema: redcap; Owner: -
 --
 
-COMMENT ON COLUMN ref_data.data_variable_packages.description IS 'Description';
-
-
---
--- Name: COLUMN data_variable_packages.disabled; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.data_variable_packages.disabled IS 'Disabled';
+COMMENT ON COLUMN redcap.viva_meta_variables.varname IS 'Variable name';
 
 
 --
--- Name: COLUMN data_variable_packages.package_type; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: COLUMN viva_meta_variables.var_label; Type: COMMENT; Schema: redcap; Owner: -
 --
 
-COMMENT ON COLUMN ref_data.data_variable_packages.package_type IS 'Package type';
-
-
---
--- Name: COLUMN data_variable_packages.storage_type; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.data_variable_packages.storage_type IS 'Type of storage for dataset';
+COMMENT ON COLUMN redcap.viva_meta_variables.var_label IS 'Variable label';
 
 
 --
--- Name: COLUMN data_variable_packages.db_or_fs; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: COLUMN viva_meta_variables.var_type; Type: COMMENT; Schema: redcap; Owner: -
 --
 
-COMMENT ON COLUMN ref_data.data_variable_packages.db_or_fs IS 'Database or Filesystem name';
-
-
---
--- Name: COLUMN data_variable_packages.schema_or_path; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.data_variable_packages.schema_or_path IS 'Database schema or Filesystem directory path';
+COMMENT ON COLUMN redcap.viva_meta_variables.var_type IS 'Type of variable';
 
 
 --
--- Name: COLUMN data_variable_packages.table_or_file; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: COLUMN viva_meta_variables.restrict_var___0; Type: COMMENT; Schema: redcap; Owner: -
 --
 
-COMMENT ON COLUMN ref_data.data_variable_packages.table_or_file IS 'Database table / view name, or filename in directory';
-
-
---
--- Name: COLUMN data_variable_packages.is_static; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.data_variable_packages.is_static IS 'Static, unchanging dataset';
+COMMENT ON COLUMN redcap.viva_meta_variables.restrict_var___0 IS 'None';
 
 
 --
--- Name: COLUMN data_variable_packages.sourced_from_packages; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: COLUMN viva_meta_variables.restrict_var___1; Type: COMMENT; Schema: redcap; Owner: -
 --
 
-COMMENT ON COLUMN ref_data.data_variable_packages.sourced_from_packages IS 'List of packages dataset is sourced from (empty if it is the primary source)';
-
-
---
--- Name: COLUMN data_variable_packages.n_for_timepoints; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.data_variable_packages.n_for_timepoints IS 'For each named timepoint (name:), the population or count of
-responses (n:), with notes (notes:)';
+COMMENT ON COLUMN redcap.viva_meta_variables.restrict_var___1 IS 'PHI, OK for limited dataset';
 
 
 --
--- Name: COLUMN data_variable_packages.tag_select_health_categories; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: COLUMN viva_meta_variables.restrict_var___2; Type: COMMENT; Schema: redcap; Owner: -
 --
 
-COMMENT ON COLUMN ref_data.data_variable_packages.tag_select_health_categories IS 'Health Categories';
-
-
---
--- Name: COLUMN data_variable_packages.contact_email; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.data_variable_packages.contact_email IS 'Contact or custodian for this package';
+COMMENT ON COLUMN redcap.viva_meta_variables.restrict_var___2 IS 'PHI, restricted use';
 
 
 --
--- Name: COLUMN data_variable_packages.key_fields; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: COLUMN viva_meta_variables.restrict_var___3; Type: COMMENT; Schema: redcap; Owner: -
 --
 
-COMMENT ON COLUMN ref_data.data_variable_packages.key_fields IS 'Participant identifier/key types';
-
-
---
--- Name: COLUMN data_variable_packages.info_url; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.data_variable_packages.info_url IS 'Documentation';
+COMMENT ON COLUMN redcap.viva_meta_variables.restrict_var___3 IS 'Sensitive information';
 
 
 --
--- Name: data_variable_packages_id_seq; Type: SEQUENCE; Schema: ref_data; Owner: -
+-- Name: COLUMN viva_meta_variables.restrict_var___4; Type: COMMENT; Schema: redcap; Owner: -
 --
 
-CREATE SEQUENCE ref_data.data_variable_packages_id_seq
+COMMENT ON COLUMN redcap.viva_meta_variables.restrict_var___4 IS 'Other restriction';
+
+
+--
+-- Name: COLUMN viva_meta_variables.oth_restrict; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.oth_restrict IS 'Specify other restriction';
+
+
+--
+-- Name: COLUMN viva_meta_variables.domain_viva; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.domain_viva IS 'Domain or topic area';
+
+
+--
+-- Name: COLUMN viva_meta_variables.subdomain___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.subdomain___1 IS 'Placeholder';
+
+
+--
+-- Name: COLUMN viva_meta_variables.subdomain___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.subdomain___2 IS 'Placeholder';
+
+
+--
+-- Name: COLUMN viva_meta_variables.target_of_q; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.target_of_q IS 'Target';
+
+
+--
+-- Name: COLUMN viva_meta_variables.data_source; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.data_source IS 'Source of data';
+
+
+--
+-- Name: COLUMN viva_meta_variables.val_instr; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.val_instr IS 'Please indicate whether the question comes from an external, internal, or no instrument.';
+
+
+--
+-- Name: COLUMN viva_meta_variables.ext_instrument; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.ext_instrument IS 'External instrument';
+
+
+--
+-- Name: COLUMN viva_meta_variables.internal_instrument; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.internal_instrument IS 'Internal instrument';
+
+
+--
+-- Name: COLUMN viva_meta_variables.doc_yn; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.doc_yn IS 'Documentation available?';
+
+
+--
+-- Name: COLUMN viva_meta_variables.doc_link; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.doc_link IS 'Documentation link';
+
+
+--
+-- Name: COLUMN viva_meta_variables.long_yn; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.long_yn IS 'Longitudinal measurement?';
+
+
+--
+-- Name: COLUMN viva_meta_variables.long_timepts___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.long_timepts___1 IS 'Screening';
+
+
+--
+-- Name: COLUMN viva_meta_variables.long_timepts___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.long_timepts___2 IS 'Early pregnancy';
+
+
+--
+-- Name: COLUMN viva_meta_variables.long_timepts___3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.long_timepts___3 IS 'Mid-pregnancy';
+
+
+--
+-- Name: COLUMN viva_meta_variables.long_timepts___4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.long_timepts___4 IS 'Delivery';
+
+
+--
+-- Name: COLUMN viva_meta_variables.long_timepts___5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.long_timepts___5 IS 'Infancy (6 months)';
+
+
+--
+-- Name: COLUMN viva_meta_variables.long_timepts___6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.long_timepts___6 IS '1 year';
+
+
+--
+-- Name: COLUMN viva_meta_variables.long_timepts___7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.long_timepts___7 IS '2 year';
+
+
+--
+-- Name: COLUMN viva_meta_variables.long_timepts___8; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.long_timepts___8 IS 'Early childhood (3 year)';
+
+
+--
+-- Name: COLUMN viva_meta_variables.long_timepts___9; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.long_timepts___9 IS '4 year';
+
+
+--
+-- Name: COLUMN viva_meta_variables.long_timepts___10; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.long_timepts___10 IS '5 year';
+
+
+--
+-- Name: COLUMN viva_meta_variables.long_timepts___11; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.long_timepts___11 IS '6 year';
+
+
+--
+-- Name: COLUMN viva_meta_variables.long_timepts___12; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.long_timepts___12 IS 'Mid childhood (7-8 years)';
+
+
+--
+-- Name: COLUMN viva_meta_variables.long_timepts___13; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.long_timepts___13 IS '8 year';
+
+
+--
+-- Name: COLUMN viva_meta_variables.long_timepts___14; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.long_timepts___14 IS '9 year';
+
+
+--
+-- Name: COLUMN viva_meta_variables.long_timepts___15; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.long_timepts___15 IS '10 year';
+
+
+--
+-- Name: COLUMN viva_meta_variables.long_timepts___16; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.long_timepts___16 IS '11 year';
+
+
+--
+-- Name: COLUMN viva_meta_variables.long_timepts___17; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.long_timepts___17 IS 'Early adolescence (12-13 years)';
+
+
+--
+-- Name: COLUMN viva_meta_variables.long_timepts___18; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.long_timepts___18 IS '14 years';
+
+
+--
+-- Name: COLUMN viva_meta_variables.long_timepts___19; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.long_timepts___19 IS '15 year';
+
+
+--
+-- Name: COLUMN viva_meta_variables.long_timepts___20; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.long_timepts___20 IS '16 year';
+
+
+--
+-- Name: COLUMN viva_meta_variables.long_timepts___21; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.long_timepts___21 IS 'Mid/late adolescence (17-18 years)';
+
+
+--
+-- Name: COLUMN viva_meta_variables.long_timepts___22; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.long_timepts___22 IS '19 year';
+
+
+--
+-- Name: COLUMN viva_meta_variables.long_timepts___23; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.long_timepts___23 IS 'Not time specific';
+
+
+--
+-- Name: COLUMN viva_meta_variables.event_type; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.event_type IS 'Type of data collection event';
+
+
+--
+-- Name: COLUMN viva_meta_variables.visit_name; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.visit_name IS 'Visit name';
+
+
+--
+-- Name: COLUMN viva_meta_variables.visit_time; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.visit_time IS 'Visit target time point';
+
+
+--
+-- Name: COLUMN viva_meta_variables.assay_specimen; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.assay_specimen IS 'Lab Assay Specimen Source';
+
+
+--
+-- Name: COLUMN viva_meta_variables.assay_type; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.assay_type IS 'Laboratory assay type';
+
+
+--
+-- Name: COLUMN viva_meta_variables.lab_assay_dataset; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.lab_assay_dataset IS 'Laboratory Assay \''Form\'' (Dataset)';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_label_ep; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_label_ep IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_ep___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_ep___1 IS 'EPQ';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_ep___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_ep___2 IS 'EPQ1';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_ep___3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_ep___3 IS 'EPQA';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_ep___4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_ep___4 IS 'EPS1';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_ep___5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_ep___5 IS 'EPI1';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_ep___6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_ep___6 IS 'EPIA';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_ep___7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_ep___7 IS 'SCR1';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_ep___8; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_ep___8 IS 'BLD1';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_label_mp; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_label_mp IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_mp___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_mp___1 IS 'MPQ2';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_mp___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_mp___2 IS 'BLD2';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_mp___3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_mp___3 IS 'PSQ2';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_mp___4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_mp___4 IS 'MPI2';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_label_del; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_label_del IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_del___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_del___1 IS 'DES3';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_del___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_del___2 IS 'NAN3';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_del___3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_del___3 IS 'NBP3';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_del___4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_del___4 IS 'NLG3';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_del___5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_del___5 IS 'PSQ3';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_del___6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_del___6 IS 'PSS3';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_del___7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_del___7 IS 'DEI3';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_label_6m; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_label_6m IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_6m___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_6m___1 IS 'PSQ4';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_6m___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_6m___2 IS 'MSC4';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_6m___3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_6m___3 IS 'VIS4';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_6m___4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_6m___4 IS 'SMIR';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_6m___5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_6m___5 IS 'SMSB4';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_6m___6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_6m___6 IS 'SMSF4';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_6m___7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_6m___7 IS 'SMSW4';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_6m___8; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_6m___8 IS 'SMSM4';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_6m___9; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_6m___9 IS 'SMQ4';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_6m___10; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_6m___10 IS 'MSM4';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_label_1y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_label_1y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_1y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_1y___1 IS 'OYQ';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_label_2y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_label_2y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_2y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_2y___1 IS 'SYQ/SYQ6';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_label_3y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_label_3y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_3y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_3y___1 IS 'MAT7';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_3y___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_3y___2 IS 'CAT7';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_3y___3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_3y___3 IS 'MBP7';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_3y___4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_3y___4 IS 'CBP7';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_3y___5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_3y___5 IS 'MBL7';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_3y___6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_3y___6 IS 'CBL7';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_3y___7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_3y___7 IS 'MCT7';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_3y___8; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_3y___8 IS 'CCT7';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_3y___9; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_3y___9 IS 'TYI';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_3y___10; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_3y___10 IS 'TYQ';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_3y___11; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_3y___11 IS 'TYS7';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_3y___12; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_3y___12 IS 'IBL7';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_3y___13; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_3y___13 IS 'IAC7';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_3y___14; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_3y___14 IS 'IDC7';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_label_4y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_label_4y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_4y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_4y___1 IS '4YQ';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_label_5y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_label_5y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_5y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_5y___1 IS 'QU5Y';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_label_6y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_label_6y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_6y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_6y___1 IS 'QU6Y';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_label_7y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_label_7y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_7y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_7y___1 IS 'MA7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_7y___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_7y___2 IS 'CA7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_7y___3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_7y___3 IS 'BL7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_7y___4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_7y___4 IS 'PE7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_7y___5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_7y___5 IS 'HR7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_7y___6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_7y___6 IS 'DX7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_7y___7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_7y___7 IS 'BP7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_7y___8; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_7y___8 IS 'MC7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_7y___9; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_7y___9 IS 'CC7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_7y___10; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_7y___10 IS 'SP7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_7y___11; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_7y___11 IS 'BQ7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_7y___12; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_7y___12 IS 'TE7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_7y___13; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_7y___13 IS 'MI7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_7y___14; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_7y___14 IS 'IN7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_7y___15; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_7y___15 IS 'HP7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_7y___16; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_7y___16 IS 'ST7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_7y___17; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_7y___17 IS 'QU7Y';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_label_8y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_label_8y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_8y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_8y___1 IS 'QU8Y';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_label_9y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_label_9y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_9y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_9y___1 IS 'QU9Y';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_9y___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_9y___2 IS 'CQ9Y';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_label_10y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_label_10y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_10y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_10y___1 IS 'QU10';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_10y___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_10y___2 IS 'CQ10';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_label_11y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_label_11y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_11y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_11y___1 IS 'QU11';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_11y___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_11y___2 IS 'CQ11';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_label_12y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_label_12y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_12y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_12y___1 IS 'MA12';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_12y___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_12y___2 IS 'CA12';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_12y___3; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_12y___3 IS 'SJ12';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_12y___4; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_12y___4 IS 'BL12';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_12y___5; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_12y___5 IS 'PE12';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_12y___6; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_12y___6 IS 'HR12';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_12y___7; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_12y___7 IS 'NS12';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_12y___8; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_12y___8 IS 'BP12';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_12y___9; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_12y___9 IS 'DX12';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_12y___10; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_12y___10 IS 'NO12';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_12y___11; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_12y___11 IS 'SP12';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_12y___12; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_12y___12 IS 'MI12';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_12y___13; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_12y___13 IS 'IN12';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_12y___14; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_12y___14 IS 'ST12';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_12y___15; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_12y___15 IS 'QU12';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_12y___16; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_12y___16 IS 'CQ12';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_label_14y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_label_14y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_14y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_14y___1 IS 'QU14';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_14y___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_14y___2 IS 'CQ14';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_label_15y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_label_15y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_15y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_15y___1 IS 'QU15';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_15y___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_15y___2 IS 'CQ15';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_label_16y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_label_16y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_16y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_16y___1 IS 'QU16';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_16y___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_16y___2 IS 'CQ16';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_label_mt; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_label_mt IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_mt; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_mt IS 'Form Version';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_label_19y; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_label_19y IS 'Form Label';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_19y___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_19y___1 IS 'QU19';
+
+
+--
+-- Name: COLUMN viva_meta_variables.form_version_19y___2; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.form_version_19y___2 IS 'TQ19';
+
+
+--
+-- Name: COLUMN viva_meta_variables.not_time_specific; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.not_time_specific IS 'Not time specific';
+
+
+--
+-- Name: COLUMN viva_meta_variables.var_level; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.var_level IS 'Variable Level';
+
+
+--
+-- Name: COLUMN viva_meta_variables.units; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.units IS 'Units';
+
+
+--
+-- Name: COLUMN viva_meta_variables.model_type; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.model_type IS 'Model';
+
+
+--
+-- Name: COLUMN viva_meta_variables.response_options; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.response_options IS 'Response Options';
+
+
+--
+-- Name: COLUMN viva_meta_variables.elig_sample; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.elig_sample IS 'Eligible sample description';
+
+
+--
+-- Name: COLUMN viva_meta_variables.elig_n; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.elig_n IS 'Eligible sample N';
+
+
+--
+-- Name: COLUMN viva_meta_variables.actual_n; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.actual_n IS 'Actual sample N';
+
+
+--
+-- Name: COLUMN viva_meta_variables.an_var; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.an_var IS 'Analytic variable name';
+
+
+--
+-- Name: COLUMN viva_meta_variables.orig_deriv; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.orig_deriv IS 'Original or derived variable';
+
+
+--
+-- Name: COLUMN viva_meta_variables.corr_derived_yn___0; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.corr_derived_yn___0 IS 'No';
+
+
+--
+-- Name: COLUMN viva_meta_variables.corr_derived_yn___1; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.corr_derived_yn___1 IS 'Yes';
+
+
+--
+-- Name: COLUMN viva_meta_variables.der_varname; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.der_varname IS 'Name of corresponding derived variable';
+
+
+--
+-- Name: COLUMN viva_meta_variables.dervar_explain; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.dervar_explain IS 'Derived Variable';
+
+
+--
+-- Name: COLUMN viva_meta_variables.orig_varnames; Type: COMMENT; Schema: redcap; Owner: -
+--
+
+COMMENT ON COLUMN redcap.viva_meta_variables.orig_varnames IS 'Name of corresponding original variable(s)';
+
+
+--
+-- Name: viva_meta_variables_id_seq; Type: SEQUENCE; Schema: redcap; Owner: -
+--
+
+CREATE SEQUENCE redcap.viva_meta_variables_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -13368,10 +21398,10 @@ CREATE SEQUENCE ref_data.data_variable_packages_id_seq
 
 
 --
--- Name: data_variable_packages_id_seq; Type: SEQUENCE OWNED BY; Schema: ref_data; Owner: -
+-- Name: viva_meta_variables_id_seq; Type: SEQUENCE OWNED BY; Schema: redcap; Owner: -
 --
 
-ALTER SEQUENCE ref_data.data_variable_packages_id_seq OWNED BY ref_data.data_variable_packages.id;
+ALTER SEQUENCE redcap.viva_meta_variables_id_seq OWNED BY redcap.viva_meta_variables.id;
 
 
 --
@@ -13833,10 +21863,7 @@ CREATE MATERIALIZED VIEW ref_data.datadic_stats AS
             var.sub_section_id,
             var.title,
             var.storage_varname,
-            var.user_id,
-            var.contributor_type,
-            var.n_for_timepoints,
-            var.notes
+            var.user_id
            FROM ref_data.datadic_variables var
           WHERE ((NOT COALESCE(var.disabled, false)) AND ((var.variable_name)::text <> 'participant_id'::text) AND (NULLIF((var.storage_varname)::text, ''::text) IS NOT NULL))
         )
@@ -13943,8 +21970,8 @@ CREATE TABLE ref_data.datadic_variable_history (
     sub_section_id integer,
     title character varying,
     storage_varname character varying,
-    contributor_type character varying,
     user_id bigint,
+    contributor_type character varying,
     n_for_timepoints jsonb,
     notes character varying
 );
@@ -13989,7 +22016,7 @@ COMMENT ON COLUMN ref_data.datadic_variable_history.form_name IS 'Form name (if 
 -- Name: COLUMN datadic_variable_history.variable_name; Type: COMMENT; Schema: ref_data; Owner: -
 --
 
-COMMENT ON COLUMN ref_data.datadic_variable_history.variable_name IS 'Variable name (as stored)';
+COMMENT ON COLUMN ref_data.datadic_variable_history.variable_name IS 'Variable name';
 
 
 --
@@ -14262,155 +22289,110 @@ ALTER SEQUENCE ref_data.datadic_variables_id_seq OWNED BY ref_data.datadic_varia
 
 
 --
--- Name: domain_mapping_history; Type: TABLE; Schema: ref_data; Owner: -
+-- Name: mv_datadic_stats; Type: MATERIALIZED VIEW; Schema: ref_data; Owner: -
 --
 
-CREATE TABLE ref_data.domain_mapping_history (
-    id bigint NOT NULL,
-    domain character varying,
-    domain_title character varying,
-    tag_select_health_categories character varying[],
-    notes character varying,
-    hide_from_datadic boolean,
-    disabled boolean DEFAULT false,
-    user_id bigint,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    domain_mapping_id bigint
-);
-
-
---
--- Name: COLUMN domain_mapping_history.domain; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.domain_mapping_history.domain IS 'Domain';
-
-
---
--- Name: COLUMN domain_mapping_history.domain_title; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.domain_mapping_history.domain_title IS 'Title';
-
-
---
--- Name: COLUMN domain_mapping_history.tag_select_health_categories; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.domain_mapping_history.tag_select_health_categories IS 'Health Categories';
-
-
---
--- Name: COLUMN domain_mapping_history.notes; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.domain_mapping_history.notes IS 'Notes';
-
-
---
--- Name: COLUMN domain_mapping_history.hide_from_datadic; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.domain_mapping_history.hide_from_datadic IS 'Hide from Data Dictionary';
-
-
---
--- Name: domain_mapping_history_id_seq; Type: SEQUENCE; Schema: ref_data; Owner: -
---
-
-CREATE SEQUENCE ref_data.domain_mapping_history_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: domain_mapping_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ref_data; Owner: -
---
-
-ALTER SEQUENCE ref_data.domain_mapping_history_id_seq OWNED BY ref_data.domain_mapping_history.id;
-
-
---
--- Name: domain_mappings; Type: TABLE; Schema: ref_data; Owner: -
---
-
-CREATE TABLE ref_data.domain_mappings (
-    id bigint NOT NULL,
-    domain character varying,
-    domain_title character varying,
-    tag_select_health_categories character varying[],
-    notes character varying,
-    hide_from_datadic boolean,
-    disabled boolean DEFAULT false,
-    user_id bigint,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: TABLE domain_mappings; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON TABLE ref_data.domain_mappings IS 'Dynamicmodel: Domain Mapping';
-
-
---
--- Name: COLUMN domain_mappings.domain; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.domain_mappings.domain IS 'Domain';
-
-
---
--- Name: COLUMN domain_mappings.domain_title; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.domain_mappings.domain_title IS 'Title';
-
-
---
--- Name: COLUMN domain_mappings.tag_select_health_categories; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.domain_mappings.tag_select_health_categories IS 'Health Categories';
-
-
---
--- Name: COLUMN domain_mappings.notes; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.domain_mappings.notes IS 'Notes';
-
-
---
--- Name: COLUMN domain_mappings.hide_from_datadic; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.domain_mappings.hide_from_datadic IS 'Hide from Data Dictionary';
-
-
---
--- Name: domain_mappings_id_seq; Type: SEQUENCE; Schema: ref_data; Owner: -
---
-
-CREATE SEQUENCE ref_data.domain_mappings_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: domain_mappings_id_seq; Type: SEQUENCE OWNED BY; Schema: ref_data; Owner: -
---
-
-ALTER SEQUENCE ref_data.domain_mappings_id_seq OWNED BY ref_data.domain_mappings.id;
+CREATE MATERIALIZED VIEW ref_data.mv_datadic_stats AS
+ WITH vars AS (
+         SELECT var.id,
+            var.study,
+            var.source_name,
+            var.source_type,
+            var.domain,
+            var.form_name,
+            var.variable_name,
+            var.variable_type,
+            var.presentation_type,
+            var.label,
+            var.label_note,
+            var.annotation,
+            var.is_required,
+            var.valid_type,
+            var.valid_min,
+            var.valid_max,
+            var.multi_valid_choices,
+            var.is_identifier,
+            var.is_derived_var,
+            var.multi_derived_from_id,
+            var.doc_url,
+            var.target_type,
+            var.owner_email,
+            var.classification,
+            var.other_classification,
+            var.multi_timepoints,
+            var.equivalent_to_id,
+            var.storage_type,
+            var.db_or_fs,
+            var.schema_or_path,
+            var.table_or_file,
+            var.disabled,
+            var.admin_id,
+            var.redcap_data_dictionary_id,
+            var.created_at,
+            var.updated_at,
+            var."position",
+            var.section_id,
+            var.sub_section_id,
+            var.title,
+            var.storage_varname,
+            var.user_id
+           FROM ref_data.datadic_variables var
+          WHERE ((NOT COALESCE(var.disabled, false)) AND ((var.variable_name)::text <> 'participant_id'::text) AND (NULLIF((var.storage_varname)::text, ''::text) IS NOT NULL))
+        )
+ SELECT var.id AS variable_id,
+    stats.variable AS variable_name,
+    var.label AS variable_label,
+    stats.results,
+    stats.labels,
+    stats.mean,
+    stats.stddev,
+    stats.min,
+    stats.med,
+    stats.max,
+    NULL::character varying AS choices,
+    stats.distincts,
+    stats.completed,
+    stats.total_recs
+   FROM (vars var
+     JOIN LATERAL ref_data.calc_var_stats_for_numeric(var.id) stats(variable_id, variable, results, labels, min, med, max, mean, stddev, distincts, completed, total_recs, "chart:") ON ((stats.variable IS NOT NULL)))
+  WHERE ((var.table_or_file IS NOT NULL) AND ((var.variable_type)::text = ANY ((ARRAY['numeric'::character varying, 'calculated'::character varying])::text[])))
+UNION
+ SELECT var.id AS variable_id,
+    stats.variable AS variable_name,
+    var.label AS variable_label,
+    stats.results,
+    stats.labels,
+    NULL::numeric AS mean,
+    NULL::numeric AS stddev,
+    NULL::numeric AS min,
+    NULL::numeric AS med,
+    NULL::numeric AS max,
+    (to_json(var.multi_valid_choices))::character varying AS choices,
+    stats.distincts,
+    stats.completed,
+    stats.total_recs
+   FROM (vars var
+     JOIN LATERAL ref_data.calc_var_stats_for_categorical(var.id) stats(variable_id, variable, results, labels, cat_counts, distincts, completed, total_recs, "chart:") ON ((stats.variable IS NOT NULL)))
+  WHERE ((var.table_or_file IS NOT NULL) AND ((var.variable_type)::text = 'categorical'::text))
+UNION
+ SELECT var.id AS variable_id,
+    stats.variable AS variable_name,
+    var.label AS variable_label,
+    stats.results,
+    stats.labels,
+    NULL::numeric AS mean,
+    NULL::numeric AS stddev,
+    NULL::numeric AS min,
+    NULL::numeric AS med,
+    NULL::numeric AS max,
+    NULL::character varying AS choices,
+    stats.distincts,
+    stats.completed,
+    stats.total_recs
+   FROM (vars var
+     JOIN LATERAL ref_data.calc_var_stats_for_boolean(var.id) stats(variable_id, variable, results, labels, cat_counts, distincts, completed, total_recs, "chart:") ON ((stats.variable IS NOT NULL)))
+  WHERE ((var.table_or_file IS NOT NULL) AND ((var.variable_type)::text = 'dichotomous'::text))
+  WITH NO DATA;
 
 
 --
@@ -14788,348 +22770,227 @@ ALTER SEQUENCE ref_data.redcap_project_users_id_seq OWNED BY ref_data.redcap_pro
 
 
 --
--- Name: redcap_user_status_rec_history; Type: TABLE; Schema: ref_data; Owner: -
+-- Name: activity_log_project_assignment_simple_test_history id; Type: DEFAULT; Schema: dynamic; Owner: -
 --
 
-CREATE TABLE ref_data.redcap_user_status_rec_history (
-    id bigint NOT NULL,
-    username character varying,
-    first_name character varying,
-    last_name character varying,
-    email_address character varying,
-    administrator character varying,
-    users_sponsor character varying,
-    institution_id character varying,
-    comments character varying,
-    first_activity timestamp without time zone,
-    last_activity timestamp without time zone,
-    last_login timestamp without time zone,
-    time_of_suspension timestamp without time zone,
-    expiration_date timestamp without time zone,
-    user_id bigint,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    redcap_user_status_rec_id bigint
-);
+ALTER TABLE ONLY dynamic.activity_log_project_assignment_simple_test_history ALTER COLUMN id SET DEFAULT nextval('dynamic.activity_log_project_assignment_simple_test_history_id_seq'::regclass);
 
 
 --
--- Name: redcap_user_status_rec_history_id_seq; Type: SEQUENCE; Schema: ref_data; Owner: -
+-- Name: activity_log_project_assignment_simple_tests id; Type: DEFAULT; Schema: dynamic; Owner: -
 --
 
-CREATE SEQUENCE ref_data.redcap_user_status_rec_history_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
+ALTER TABLE ONLY dynamic.activity_log_project_assignment_simple_tests ALTER COLUMN id SET DEFAULT nextval('dynamic.activity_log_project_assignment_simple_tests_id_seq'::regclass);
 
 
 --
--- Name: redcap_user_status_rec_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ref_data; Owner: -
+-- Name: project_import_history id; Type: DEFAULT; Schema: dynamic; Owner: -
 --
 
-ALTER SEQUENCE ref_data.redcap_user_status_rec_history_id_seq OWNED BY ref_data.redcap_user_status_rec_history.id;
-
-
---
--- Name: redcap_user_status_recs; Type: TABLE; Schema: ref_data; Owner: -
---
-
-CREATE TABLE ref_data.redcap_user_status_recs (
-    id bigint NOT NULL,
-    username character varying,
-    first_name character varying,
-    last_name character varying,
-    email_address character varying,
-    administrator character varying,
-    users_sponsor character varying,
-    institution_id character varying,
-    comments character varying,
-    first_activity timestamp without time zone,
-    last_activity timestamp without time zone,
-    last_login timestamp without time zone,
-    time_of_suspension timestamp without time zone,
-    expiration_date timestamp without time zone,
-    user_id bigint,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
+ALTER TABLE ONLY dynamic.project_import_history ALTER COLUMN id SET DEFAULT nextval('dynamic.project_import_history_id_seq'::regclass);
 
 
 --
--- Name: TABLE redcap_user_status_recs; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: project_imports id; Type: DEFAULT; Schema: dynamic; Owner: -
 --
 
-COMMENT ON TABLE ref_data.redcap_user_status_recs IS 'Dynamicmodel: Redcap User Status Rec';
-
-
---
--- Name: redcap_user_status_recs_id_seq; Type: SEQUENCE; Schema: ref_data; Owner: -
---
-
-CREATE SEQUENCE ref_data.redcap_user_status_recs_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
+ALTER TABLE ONLY dynamic.project_imports ALTER COLUMN id SET DEFAULT nextval('dynamic.project_imports_id_seq'::regclass);
 
 
 --
--- Name: redcap_user_status_recs_id_seq; Type: SEQUENCE OWNED BY; Schema: ref_data; Owner: -
+-- Name: test_field_history id; Type: DEFAULT; Schema: dynamic; Owner: -
 --
 
-ALTER SEQUENCE ref_data.redcap_user_status_recs_id_seq OWNED BY ref_data.redcap_user_status_recs.id;
-
-
---
--- Name: test_views; Type: VIEW; Schema: ref_data; Owner: -
---
-
-CREATE VIEW ref_data.test_views AS
- SELECT player_infos.id,
-    player_infos.master_id,
-    player_infos.first_name,
-    player_infos.last_name,
-    player_infos.middle_name,
-    player_infos.nick_name,
-    player_infos.birth_date,
-    player_infos.death_date,
-    player_infos.user_id,
-    player_infos.created_at,
-    player_infos.updated_at,
-    player_infos.contact_pref,
-    player_infos.start_year,
-    player_infos.rank,
-    player_infos.notes,
-    player_infos.contact_id,
-    player_infos.college,
-    player_infos.end_year,
-    player_infos.source
-   FROM ml_app.player_infos;
+ALTER TABLE ONLY dynamic.test_field_history ALTER COLUMN id SET DEFAULT nextval('dynamic.test_field_history_id_seq'::regclass);
 
 
 --
--- Name: VIEW test_views; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: test_fields id; Type: DEFAULT; Schema: dynamic; Owner: -
 --
 
-COMMENT ON VIEW ref_data.test_views IS 'Dynamicmodel: Test View';
-
-
---
--- Name: COLUMN test_views.first_name; Type: COMMENT; Schema: ref_data; Owner: -
---
-
-COMMENT ON COLUMN ref_data.test_views.first_name IS 'First Name';
+ALTER TABLE ONLY dynamic.test_fields ALTER COLUMN id SET DEFAULT nextval('dynamic.test_fields_id_seq'::regclass);
 
 
 --
--- Name: view_data_variable_domains; Type: VIEW; Schema: ref_data; Owner: -
+-- Name: test_history id; Type: DEFAULT; Schema: dynamic; Owner: -
 --
 
-CREATE VIEW ref_data.view_data_variable_domains AS
- SELECT DISTINCT dv.domain
-   FROM ref_data.datadic_variables dv
-  WHERE (NOT COALESCE(dv.disabled, false))
-  ORDER BY dv.domain;
+ALTER TABLE ONLY dynamic.test_history ALTER COLUMN id SET DEFAULT nextval('dynamic.test_history_id_seq'::regclass);
 
 
 --
--- Name: VIEW view_data_variable_domains; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: test_model_b_embed_history id; Type: DEFAULT; Schema: dynamic; Owner: -
 --
 
-COMMENT ON VIEW ref_data.view_data_variable_domains IS 'Dynamicmodel: Data Variable Domains';
-
-
---
--- Name: view_datadic_studies; Type: VIEW; Schema: ref_data; Owner: -
---
-
-CREATE VIEW ref_data.view_datadic_studies AS
- SELECT DISTINCT datadic_variables.study
-   FROM ref_data.datadic_variables
-  WHERE (NOT COALESCE(datadic_variables.disabled, false))
-  ORDER BY datadic_variables.study;
+ALTER TABLE ONLY dynamic.test_model_b_embed_history ALTER COLUMN id SET DEFAULT nextval('dynamic.test_model_b_embed_history_id_seq'::regclass);
 
 
 --
--- Name: VIEW view_datadic_studies; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: test_model_b_embed_rec_history id; Type: DEFAULT; Schema: dynamic; Owner: -
 --
 
-COMMENT ON VIEW ref_data.view_datadic_studies IS 'Dynamicmodel: View Data Dictionary Studies';
-
-
---
--- Name: view_domain_health_categories; Type: VIEW; Schema: ref_data; Owner: -
---
-
-CREATE VIEW ref_data.view_domain_health_categories AS
- SELECT t.category
-   FROM ( SELECT DISTINCT unnest(dm.tag_select_health_categories) AS category
-           FROM ref_data.domain_mappings dm) t
-  WHERE ((COALESCE(t.category, ''::character varying))::text <> ''::text)
-  ORDER BY t.category;
+ALTER TABLE ONLY dynamic.test_model_b_embed_rec_history ALTER COLUMN id SET DEFAULT nextval('dynamic.test_model_b_embed_rec_history_id_seq'::regclass);
 
 
 --
--- Name: VIEW view_domain_health_categories; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: test_model_b_embed_recs id; Type: DEFAULT; Schema: dynamic; Owner: -
 --
 
-COMMENT ON VIEW ref_data.view_domain_health_categories IS 'Dynamicmodel: Domain Health Categories';
-
-
---
--- Name: view_redcap_project_details; Type: MATERIALIZED VIEW; Schema: ref_data; Owner: -
---
-
-CREATE MATERIALIZED VIEW ref_data.view_redcap_project_details AS
- SELECT DISTINCT rpa.study,
-    rpa.name,
-    (string_to_array((rpa.dynamic_model_table)::text, '.'::text))[1] AS schemaname,
-    (string_to_array((rpa.dynamic_model_table)::text, '.'::text))[2] AS tablename,
-    (jsonb_array_elements(rdd.captured_metadata) ->> 'form_name'::text) AS formname
-   FROM (ref_data.redcap_data_dictionaries rdd
-     JOIN ref_data.redcap_project_admins rpa ON (((rpa.id = rdd.redcap_project_admin_id) AND (NOT COALESCE(rpa.disabled, false)))))
-  ORDER BY rpa.study, rpa.name
-  WITH NO DATA;
+ALTER TABLE ONLY dynamic.test_model_b_embed_recs ALTER COLUMN id SET DEFAULT nextval('dynamic.test_model_b_embed_recs_id_seq'::regclass);
 
 
 --
--- Name: view_redcap_projects; Type: MATERIALIZED VIEW; Schema: ref_data; Owner: -
+-- Name: test_model_b_embeds id; Type: DEFAULT; Schema: dynamic; Owner: -
 --
 
-CREATE MATERIALIZED VIEW ref_data.view_redcap_projects AS
- SELECT DISTINCT view_redcap_project_details.schemaname,
-    view_redcap_project_details.tablename,
-    view_redcap_project_details.name
-   FROM ref_data.view_redcap_project_details
-  WITH NO DATA;
+ALTER TABLE ONLY dynamic.test_model_b_embeds ALTER COLUMN id SET DEFAULT nextval('dynamic.test_model_b_embeds_id_seq'::regclass);
 
 
 --
--- Name: view_redcap_ipa_completer_ids; Type: VIEW; Schema: ref_data; Owner: -
+-- Name: test_model_c_embed_history id; Type: DEFAULT; Schema: dynamic; Owner: -
 --
 
-CREATE VIEW ref_data.view_redcap_ipa_completer_ids AS
- SELECT sc.participant_id,
-    sc.colname,
-    sc.tablename,
-    replace((sc.colname)::text, '_complete'::text, ''::text) AS formname,
-    rd.name
-   FROM (ref_data.statsummary_completers('participant_id'::character varying) sc(participant_id, colname, tablename, colval)
-     JOIN ref_data.view_redcap_projects rd ON ((rd.tablename = (sc.tablename)::text)))
-  WHERE ((sc.colval = 2) AND ((rd.name)::text ~ '^ipa_'::text))
-  ORDER BY sc.tablename, sc.colname;
+ALTER TABLE ONLY dynamic.test_model_c_embed_history ALTER COLUMN id SET DEFAULT nextval('dynamic.test_model_c_embed_history_id_seq'::regclass);
 
 
 --
--- Name: view_redcap_ipa_completers; Type: VIEW; Schema: ref_data; Owner: -
+-- Name: test_model_c_embed_rec_history id; Type: DEFAULT; Schema: dynamic; Owner: -
 --
 
-CREATE VIEW ref_data.view_redcap_ipa_completers AS
- SELECT count(*) AS count,
-    sc.colname,
-    sc.tablename,
-    replace((sc.colname)::text, '_complete'::text, ''::text) AS formname,
-    rd.name
-   FROM (ref_data.statsummary_completers('participant_id'::character varying) sc(participant_id, colname, tablename, colval)
-     JOIN ref_data.view_redcap_projects rd ON ((rd.tablename = (sc.tablename)::text)))
-  WHERE ((sc.colval = 2) AND ((rd.name)::text ~ '^ipa_'::text))
-  GROUP BY sc.colname, sc.tablename, rd.name
-  ORDER BY sc.tablename, sc.colname;
+ALTER TABLE ONLY dynamic.test_model_c_embed_rec_history ALTER COLUMN id SET DEFAULT nextval('dynamic.test_model_c_embed_rec_history_id_seq'::regclass);
 
 
 --
--- Name: view_searchable_domains; Type: VIEW; Schema: ref_data; Owner: -
+-- Name: test_model_c_embed_recs id; Type: DEFAULT; Schema: dynamic; Owner: -
 --
 
-CREATE VIEW ref_data.view_searchable_domains AS
- SELECT DISTINCT dm.domain_title,
-    dv.domain
-   FROM (ref_data.datadic_variables dv
-     LEFT JOIN ref_data.domain_mappings dm ON ((((dv.domain)::text = (dm.domain)::text) AND (NOT COALESCE(dm.disabled, false)))))
-  WHERE ((NOT COALESCE(dv.disabled, false)) AND (NOT COALESCE(dm.hide_from_datadic, false)))
-  ORDER BY dm.domain_title;
+ALTER TABLE ONLY dynamic.test_model_c_embed_recs ALTER COLUMN id SET DEFAULT nextval('dynamic.test_model_c_embed_recs_id_seq'::regclass);
 
 
 --
--- Name: VIEW view_searchable_domains; Type: COMMENT; Schema: ref_data; Owner: -
+-- Name: test_model_c_embeds id; Type: DEFAULT; Schema: dynamic; Owner: -
 --
 
-COMMENT ON VIEW ref_data.view_searchable_domains IS 'Dynamicmodel: View Searchable Domains';
+ALTER TABLE ONLY dynamic.test_model_c_embeds ALTER COLUMN id SET DEFAULT nextval('dynamic.test_model_c_embeds_id_seq'::regclass);
 
 
 --
--- Name: view_study_datadic; Type: VIEW; Schema: ref_data; Owner: -
+-- Name: test_model_embed_history id; Type: DEFAULT; Schema: dynamic; Owner: -
 --
 
-CREATE VIEW ref_data.view_study_datadic AS
- SELECT DISTINCT a.id,
-    a.domain,
-        CASE
-            WHEN ((a.source_type)::text = 'redcap'::text) THEN (((((a.source_type)::text || '
-'::text) || (COALESCE(rpa.name, ''::character varying))::text) || '
-'::text) || (a.form_name)::text)
-            ELSE (((((a.source_type)::text || '
-'::text) || (a.source_name)::text) || '
-'::text) || (a.form_name)::text)
-        END AS "Source",
-        CASE
-            WHEN ((COALESCE(a.title, ''::character varying))::text <> ''::text) THEN a.title
-            WHEN ((COALESCE(sec.title, ''::character varying))::text <> ''::text) THEN sec.title
-            ELSE sec.label
-        END AS title,
-    a.variable_name,
-    a.label,
-    a.label_note,
-    a.variable_type,
-    a.valid_min,
-    a.valid_max,
-    a.multi_valid_choices,
-    a.target_type,
-    a.is_derived_var,
-    a.multi_derived_from_id,
-    a.source_name,
-    a.source_type,
-    a.form_name,
-    a.presentation_type,
-    a.is_required,
-    a.valid_type,
-    a.annotation,
-        CASE
-            WHEN (a.doc_url IS NOT NULL) THEN (('[documentation]('::text || (a.doc_url)::text) || ')'::text)
-            ELSE NULL::text
-        END AS doc_url,
-    a.is_identifier,
-    a.owner_email,
-    a.classification,
-    a.other_classification,
-    a.multi_timepoints,
-    ((((((((eq.variable_name)::text || ' in '::text) || (eq.study)::text) || ' '::text) || (eq.source_type)::text) || ' ('::text) || (eq.source_name)::text) || ')'::text) AS equivalent_to_id,
-    a.storage_type,
-    a.db_or_fs,
-    a.schema_or_path,
-        CASE
-            WHEN ((a.storage_type)::text = 'database'::text) THEN ((((((((('['::text || (a.table_or_file)::text) || '](/reports/reference_data__table_data'::text) || chr(63)) || 'search_attrs[_blank]=true&schema_name='::text) || (a.schema_or_path)::text) || '&table_name='::text) || (a.table_or_file)::text) || ')'::text))::character varying
-            ELSE a.table_or_file
-        END AS table_or_file,
-    a.storage_varname,
-    a.redcap_data_dictionary_id,
-    a.study,
-    a."position",
-    a.section_id,
-    a.created_at,
-    a.updated_at,
-    a.disabled,
-    a.admin_id
-   FROM ((((ref_data.datadic_variables a
-     LEFT JOIN ref_data.datadic_variables eq ON ((a.equivalent_to_id = eq.id)))
-     LEFT JOIN ref_data.datadic_variables sec ON ((a.section_id = sec.id)))
-     LEFT JOIN ref_data.redcap_data_dictionaries rdd ON ((a.redcap_data_dictionary_id = rdd.id)))
-     LEFT JOIN ref_data.redcap_project_admins rpa ON ((rdd.redcap_project_admin_id = rpa.id)))
-  WHERE ((NOT COALESCE(a.disabled, false)) AND (NOT (((a.variable_name)::text ~* '___'::text) AND ((a.variable_type)::text = ANY (ARRAY[('categorical'::character varying)::text, ('dichotomous item'::character varying)::text])) AND ((a.source_type)::text = 'redcap'::text))))
-  ORDER BY a."position", a.id;
+ALTER TABLE ONLY dynamic.test_model_embed_history ALTER COLUMN id SET DEFAULT nextval('dynamic.test_model_embed_history_id_seq'::regclass);
+
+
+--
+-- Name: test_model_embed_rec_history id; Type: DEFAULT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_embed_rec_history ALTER COLUMN id SET DEFAULT nextval('dynamic.test_model_embed_rec_history_id_seq'::regclass);
+
+
+--
+-- Name: test_model_embed_recs id; Type: DEFAULT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_embed_recs ALTER COLUMN id SET DEFAULT nextval('dynamic.test_model_embed_recs_id_seq'::regclass);
+
+
+--
+-- Name: test_model_embeds id; Type: DEFAULT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_embeds ALTER COLUMN id SET DEFAULT nextval('dynamic.test_model_embeds_id_seq'::regclass);
+
+
+--
+-- Name: test_ref_history id; Type: DEFAULT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_ref_history ALTER COLUMN id SET DEFAULT nextval('dynamic.test_ref_history_id_seq'::regclass);
+
+
+--
+-- Name: test_reference_history id; Type: DEFAULT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_reference_history ALTER COLUMN id SET DEFAULT nextval('dynamic.test_reference_history_id_seq'::regclass);
+
+
+--
+-- Name: test_references id; Type: DEFAULT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_references ALTER COLUMN id SET DEFAULT nextval('dynamic.test_references_id_seq'::regclass);
+
+
+--
+-- Name: test_refs id; Type: DEFAULT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_refs ALTER COLUMN id SET DEFAULT nextval('dynamic.test_refs_id_seq'::regclass);
+
+
+--
+-- Name: test_time_history id; Type: DEFAULT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_time_history ALTER COLUMN id SET DEFAULT nextval('dynamic.test_time_history_id_seq'::regclass);
+
+
+--
+-- Name: test_times id; Type: DEFAULT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_times ALTER COLUMN id SET DEFAULT nextval('dynamic.test_times_id_seq'::regclass);
+
+
+--
+-- Name: tests id; Type: DEFAULT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.tests ALTER COLUMN id SET DEFAULT nextval('dynamic.tests_id_seq'::regclass);
+
+
+--
+-- Name: grit_assignment_history id; Type: DEFAULT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.grit_assignment_history ALTER COLUMN id SET DEFAULT nextval('extra_app.grit_assignment_history_id_seq'::regclass);
+
+
+--
+-- Name: grit_assignments id; Type: DEFAULT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.grit_assignments ALTER COLUMN id SET DEFAULT nextval('extra_app.grit_assignments_id_seq'::regclass);
+
+
+--
+-- Name: pitt_bhi_assignment_history id; Type: DEFAULT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.pitt_bhi_assignment_history ALTER COLUMN id SET DEFAULT nextval('extra_app.pitt_bhi_assignment_history_id_seq'::regclass);
+
+
+--
+-- Name: pitt_bhi_assignments id; Type: DEFAULT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.pitt_bhi_assignments ALTER COLUMN id SET DEFAULT nextval('extra_app.pitt_bhi_assignments_id_seq'::regclass);
+
+
+--
+-- Name: sleep_assignment_history id; Type: DEFAULT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.sleep_assignment_history ALTER COLUMN id SET DEFAULT nextval('extra_app.sleep_assignment_history_id_seq'::regclass);
+
+
+--
+-- Name: sleep_assignments id; Type: DEFAULT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.sleep_assignments ALTER COLUMN id SET DEFAULT nextval('extra_app.sleep_assignments_id_seq'::regclass);
 
 
 --
@@ -15147,52 +23008,10 @@ ALTER TABLE ONLY ml_app.accuracy_scores ALTER COLUMN id SET DEFAULT nextval('ml_
 
 
 --
--- Name: activity_log_bhs_assignment_history id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_bhs_assignment_history ALTER COLUMN id SET DEFAULT nextval('ml_app.activity_log_bhs_assignment_history_id_seq'::regclass);
-
-
---
--- Name: activity_log_bhs_assignments id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_bhs_assignments ALTER COLUMN id SET DEFAULT nextval('ml_app.activity_log_bhs_assignments_id_seq'::regclass);
-
-
---
--- Name: activity_log_ext_assignment_history id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_ext_assignment_history ALTER COLUMN id SET DEFAULT nextval('ml_app.activity_log_ext_assignment_history_id_seq'::regclass);
-
-
---
--- Name: activity_log_ext_assignments id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_ext_assignments ALTER COLUMN id SET DEFAULT nextval('ml_app.activity_log_ext_assignments_id_seq'::regclass);
-
-
---
 -- Name: activity_log_history id; Type: DEFAULT; Schema: ml_app; Owner: -
 --
 
 ALTER TABLE ONLY ml_app.activity_log_history ALTER COLUMN id SET DEFAULT nextval('ml_app.activity_log_history_id_seq'::regclass);
-
-
---
--- Name: activity_log_new_test_history id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_new_test_history ALTER COLUMN id SET DEFAULT nextval('ml_app.activity_log_new_test_history_id_seq'::regclass);
-
-
---
--- Name: activity_log_new_tests id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_new_tests ALTER COLUMN id SET DEFAULT nextval('ml_app.activity_log_new_tests_id_seq'::regclass);
 
 
 --
@@ -15207,20 +23026,6 @@ ALTER TABLE ONLY ml_app.activity_log_player_contact_phone_history ALTER COLUMN i
 --
 
 ALTER TABLE ONLY ml_app.activity_log_player_contact_phones ALTER COLUMN id SET DEFAULT nextval('ml_app.activity_log_player_contact_phones_id_seq'::regclass);
-
-
---
--- Name: activity_log_player_info_history id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_player_info_history ALTER COLUMN id SET DEFAULT nextval('ml_app.activity_log_player_info_history_id_seq'::regclass);
-
-
---
--- Name: activity_log_player_infos id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_player_infos ALTER COLUMN id SET DEFAULT nextval('ml_app.activity_log_player_infos_id_seq'::regclass);
 
 
 --
@@ -15294,20 +23099,6 @@ ALTER TABLE ONLY ml_app.app_types ALTER COLUMN id SET DEFAULT nextval('ml_app.ap
 
 
 --
--- Name: bhs_assignment_history id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.bhs_assignment_history ALTER COLUMN id SET DEFAULT nextval('ml_app.bhs_assignment_history_id_seq'::regclass);
-
-
---
--- Name: bhs_assignments id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.bhs_assignments ALTER COLUMN id SET DEFAULT nextval('ml_app.bhs_assignments_id_seq'::regclass);
-
-
---
 -- Name: college_history id; Type: DEFAULT; Schema: ml_app; Owner: -
 --
 
@@ -15364,34 +23155,6 @@ ALTER TABLE ONLY ml_app.exception_logs ALTER COLUMN id SET DEFAULT nextval('ml_a
 
 
 --
--- Name: ext_assignment_history id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.ext_assignment_history ALTER COLUMN id SET DEFAULT nextval('ml_app.ext_assignment_history_id_seq'::regclass);
-
-
---
--- Name: ext_assignments id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.ext_assignments ALTER COLUMN id SET DEFAULT nextval('ml_app.ext_assignments_id_seq'::regclass);
-
-
---
--- Name: ext_gen_assignment_history id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.ext_gen_assignment_history ALTER COLUMN id SET DEFAULT nextval('ml_app.ext_gen_assignment_history_id_seq'::regclass);
-
-
---
--- Name: ext_gen_assignments id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.ext_gen_assignments ALTER COLUMN id SET DEFAULT nextval('ml_app.ext_gen_assignments_id_seq'::regclass);
-
-
---
 -- Name: external_identifier_history id; Type: DEFAULT; Schema: ml_app; Owner: -
 --
 
@@ -15431,20 +23194,6 @@ ALTER TABLE ONLY ml_app.general_selection_history ALTER COLUMN id SET DEFAULT ne
 --
 
 ALTER TABLE ONLY ml_app.general_selections ALTER COLUMN id SET DEFAULT nextval('ml_app.general_selections_id_seq'::regclass);
-
-
---
--- Name: grit_assignment_history id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.grit_assignment_history ALTER COLUMN id SET DEFAULT nextval('ml_app.grit_assignment_history_id_seq'::regclass);
-
-
---
--- Name: grit_assignments id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.grit_assignments ALTER COLUMN id SET DEFAULT nextval('ml_app.grit_assignments_id_seq'::regclass);
 
 
 --
@@ -15497,13 +23246,6 @@ ALTER TABLE ONLY ml_app.manage_users ALTER COLUMN id SET DEFAULT nextval('ml_app
 
 
 --
--- Name: marketo_ids id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.marketo_ids ALTER COLUMN id SET DEFAULT nextval('ml_app.marketo_ids_id_seq'::regclass);
-
-
---
 -- Name: masters id; Type: DEFAULT; Schema: ml_app; Owner: -
 --
 
@@ -15536,20 +23278,6 @@ ALTER TABLE ONLY ml_app.message_templates ALTER COLUMN id SET DEFAULT nextval('m
 --
 
 ALTER TABLE ONLY ml_app.model_references ALTER COLUMN id SET DEFAULT nextval('ml_app.model_references_id_seq'::regclass);
-
-
---
--- Name: new_test_history id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.new_test_history ALTER COLUMN id SET DEFAULT nextval('ml_app.new_test_history_id_seq'::regclass);
-
-
---
--- Name: new_tests id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.new_tests ALTER COLUMN id SET DEFAULT nextval('ml_app.new_tests_id_seq'::regclass);
 
 
 --
@@ -15777,52 +23505,10 @@ ALTER TABLE ONLY ml_app.sage_assignments ALTER COLUMN id SET DEFAULT nextval('ml
 
 
 --
--- Name: sage_two_history id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.sage_two_history ALTER COLUMN id SET DEFAULT nextval('ml_app.sage_two_history_id_seq'::regclass);
-
-
---
--- Name: sage_twos id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.sage_twos ALTER COLUMN id SET DEFAULT nextval('ml_app.sage_twos_id_seq'::regclass);
-
-
---
 -- Name: scantron_history id; Type: DEFAULT; Schema: ml_app; Owner: -
 --
 
 ALTER TABLE ONLY ml_app.scantron_history ALTER COLUMN id SET DEFAULT nextval('ml_app.scantron_history_id_seq'::regclass);
-
-
---
--- Name: scantron_q2_history id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.scantron_q2_history ALTER COLUMN id SET DEFAULT nextval('ml_app.scantron_q2_history_id_seq'::regclass);
-
-
---
--- Name: scantron_q2s id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.scantron_q2s ALTER COLUMN id SET DEFAULT nextval('ml_app.scantron_q2s_id_seq'::regclass);
-
-
---
--- Name: scantron_series_two_history id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.scantron_series_two_history ALTER COLUMN id SET DEFAULT nextval('ml_app.scantron_series_two_history_id_seq'::regclass);
-
-
---
--- Name: scantron_series_twos id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.scantron_series_twos ALTER COLUMN id SET DEFAULT nextval('ml_app.scantron_series_twos_id_seq'::regclass);
 
 
 --
@@ -15840,20 +23526,6 @@ ALTER TABLE ONLY ml_app.sessions ALTER COLUMN id SET DEFAULT nextval('ml_app.ses
 
 
 --
--- Name: sleep_assignment_history id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.sleep_assignment_history ALTER COLUMN id SET DEFAULT nextval('ml_app.sleep_assignment_history_id_seq'::regclass);
-
-
---
--- Name: sleep_assignments id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.sleep_assignments ALTER COLUMN id SET DEFAULT nextval('ml_app.sleep_assignments_id_seq'::regclass);
-
-
---
 -- Name: sub_process_history id; Type: DEFAULT; Schema: ml_app; Owner: -
 --
 
@@ -15865,97 +23537,6 @@ ALTER TABLE ONLY ml_app.sub_process_history ALTER COLUMN id SET DEFAULT nextval(
 --
 
 ALTER TABLE ONLY ml_app.sub_processes ALTER COLUMN id SET DEFAULT nextval('ml_app.sub_processes_id_seq'::regclass);
-
-
---
--- Name: sync_statuses id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.sync_statuses ALTER COLUMN id SET DEFAULT nextval('ml_app.sync_statuses_id_seq'::regclass);
-
-
---
--- Name: test1_history id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test1_history ALTER COLUMN id SET DEFAULT nextval('ml_app.test1_history_id_seq'::regclass);
-
-
---
--- Name: test1s id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test1s ALTER COLUMN id SET DEFAULT nextval('ml_app.test1s_id_seq'::regclass);
-
-
---
--- Name: test2_history id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test2_history ALTER COLUMN id SET DEFAULT nextval('ml_app.test2_history_id_seq'::regclass);
-
-
---
--- Name: test2s id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test2s ALTER COLUMN id SET DEFAULT nextval('ml_app.test2s_id_seq'::regclass);
-
-
---
--- Name: test_2_history id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_2_history ALTER COLUMN id SET DEFAULT nextval('ml_app.test_2_history_id_seq'::regclass);
-
-
---
--- Name: test_2s id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_2s ALTER COLUMN id SET DEFAULT nextval('ml_app.test_2s_id_seq'::regclass);
-
-
---
--- Name: test_ext2_history id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_ext2_history ALTER COLUMN id SET DEFAULT nextval('ml_app.test_ext2_history_id_seq'::regclass);
-
-
---
--- Name: test_ext2s id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_ext2s ALTER COLUMN id SET DEFAULT nextval('ml_app.test_ext2s_id_seq'::regclass);
-
-
---
--- Name: test_ext_history id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_ext_history ALTER COLUMN id SET DEFAULT nextval('ml_app.test_ext_history_id_seq'::regclass);
-
-
---
--- Name: test_exts id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_exts ALTER COLUMN id SET DEFAULT nextval('ml_app.test_exts_id_seq'::regclass);
-
-
---
--- Name: test_item_history id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_item_history ALTER COLUMN id SET DEFAULT nextval('ml_app.test_item_history_id_seq'::regclass);
-
-
---
--- Name: test_items id; Type: DEFAULT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_items ALTER COLUMN id SET DEFAULT nextval('ml_app.test_items_id_seq'::regclass);
 
 
 --
@@ -16008,6 +23589,20 @@ ALTER TABLE ONLY ml_app.user_authorizations ALTER COLUMN id SET DEFAULT nextval(
 
 
 --
+-- Name: user_description_history id; Type: DEFAULT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.user_description_history ALTER COLUMN id SET DEFAULT nextval('ml_app.user_description_history_id_seq'::regclass);
+
+
+--
+-- Name: user_descriptions id; Type: DEFAULT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.user_descriptions ALTER COLUMN id SET DEFAULT nextval('ml_app.user_descriptions_id_seq'::regclass);
+
+
+--
 -- Name: user_history id; Type: DEFAULT; Schema: ml_app; Owner: -
 --
 
@@ -16050,31 +23645,31 @@ ALTER TABLE ONLY ml_app.users_contact_infos ALTER COLUMN id SET DEFAULT nextval(
 
 
 --
--- Name: data_variable_package_history id; Type: DEFAULT; Schema: ref_data; Owner: -
+-- Name: q2_demo_rc_history id; Type: DEFAULT; Schema: redcap; Owner: -
 --
 
-ALTER TABLE ONLY ref_data.data_variable_package_history ALTER COLUMN id SET DEFAULT nextval('ref_data.data_variable_package_history_id_seq'::regclass);
-
-
---
--- Name: data_variable_package_var_history id; Type: DEFAULT; Schema: ref_data; Owner: -
---
-
-ALTER TABLE ONLY ref_data.data_variable_package_var_history ALTER COLUMN id SET DEFAULT nextval('ref_data.data_variable_package_var_history_id_seq'::regclass);
+ALTER TABLE ONLY redcap.q2_demo_rc_history ALTER COLUMN id SET DEFAULT nextval('redcap.q2_demo_rc_history_id_seq'::regclass);
 
 
 --
--- Name: data_variable_package_vars id; Type: DEFAULT; Schema: ref_data; Owner: -
+-- Name: q2_demo_rcs id; Type: DEFAULT; Schema: redcap; Owner: -
 --
 
-ALTER TABLE ONLY ref_data.data_variable_package_vars ALTER COLUMN id SET DEFAULT nextval('ref_data.data_variable_package_vars_id_seq'::regclass);
+ALTER TABLE ONLY redcap.q2_demo_rcs ALTER COLUMN id SET DEFAULT nextval('redcap.q2_demo_rcs_id_seq'::regclass);
 
 
 --
--- Name: data_variable_packages id; Type: DEFAULT; Schema: ref_data; Owner: -
+-- Name: viva_meta_variable_history id; Type: DEFAULT; Schema: redcap; Owner: -
 --
 
-ALTER TABLE ONLY ref_data.data_variable_packages ALTER COLUMN id SET DEFAULT nextval('ref_data.data_variable_packages_id_seq'::regclass);
+ALTER TABLE ONLY redcap.viva_meta_variable_history ALTER COLUMN id SET DEFAULT nextval('redcap.viva_meta_variable_history_id_seq'::regclass);
+
+
+--
+-- Name: viva_meta_variables id; Type: DEFAULT; Schema: redcap; Owner: -
+--
+
+ALTER TABLE ONLY redcap.viva_meta_variables ALTER COLUMN id SET DEFAULT nextval('redcap.viva_meta_variables_id_seq'::regclass);
 
 
 --
@@ -16103,20 +23698,6 @@ ALTER TABLE ONLY ref_data.datadic_variable_history ALTER COLUMN id SET DEFAULT n
 --
 
 ALTER TABLE ONLY ref_data.datadic_variables ALTER COLUMN id SET DEFAULT nextval('ref_data.datadic_variables_id_seq'::regclass);
-
-
---
--- Name: domain_mapping_history id; Type: DEFAULT; Schema: ref_data; Owner: -
---
-
-ALTER TABLE ONLY ref_data.domain_mapping_history ALTER COLUMN id SET DEFAULT nextval('ref_data.domain_mapping_history_id_seq'::regclass);
-
-
---
--- Name: domain_mappings id; Type: DEFAULT; Schema: ref_data; Owner: -
---
-
-ALTER TABLE ONLY ref_data.domain_mappings ALTER COLUMN id SET DEFAULT nextval('ref_data.domain_mappings_id_seq'::regclass);
 
 
 --
@@ -16183,17 +23764,259 @@ ALTER TABLE ONLY ref_data.redcap_project_users ALTER COLUMN id SET DEFAULT nextv
 
 
 --
--- Name: redcap_user_status_rec_history id; Type: DEFAULT; Schema: ref_data; Owner: -
+-- Name: activity_log_project_assignment_simple_test_history activity_log_project_assignment_simple_test_history_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
 --
 
-ALTER TABLE ONLY ref_data.redcap_user_status_rec_history ALTER COLUMN id SET DEFAULT nextval('ref_data.redcap_user_status_rec_history_id_seq'::regclass);
+ALTER TABLE ONLY dynamic.activity_log_project_assignment_simple_test_history
+    ADD CONSTRAINT activity_log_project_assignment_simple_test_history_pkey PRIMARY KEY (id);
 
 
 --
--- Name: redcap_user_status_recs id; Type: DEFAULT; Schema: ref_data; Owner: -
+-- Name: activity_log_project_assignment_simple_tests activity_log_project_assignment_simple_tests_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
 --
 
-ALTER TABLE ONLY ref_data.redcap_user_status_recs ALTER COLUMN id SET DEFAULT nextval('ref_data.redcap_user_status_recs_id_seq'::regclass);
+ALTER TABLE ONLY dynamic.activity_log_project_assignment_simple_tests
+    ADD CONSTRAINT activity_log_project_assignment_simple_tests_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: project_import_history project_import_history_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.project_import_history
+    ADD CONSTRAINT project_import_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: project_imports project_imports_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.project_imports
+    ADD CONSTRAINT project_imports_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: test_field_history test_field_history_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_field_history
+    ADD CONSTRAINT test_field_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: test_fields test_fields_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_fields
+    ADD CONSTRAINT test_fields_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: test_history test_history_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_history
+    ADD CONSTRAINT test_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: test_model_b_embed_history test_model_b_embed_history_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_b_embed_history
+    ADD CONSTRAINT test_model_b_embed_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: test_model_b_embed_rec_history test_model_b_embed_rec_history_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_b_embed_rec_history
+    ADD CONSTRAINT test_model_b_embed_rec_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: test_model_b_embed_recs test_model_b_embed_recs_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_b_embed_recs
+    ADD CONSTRAINT test_model_b_embed_recs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: test_model_b_embeds test_model_b_embeds_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_b_embeds
+    ADD CONSTRAINT test_model_b_embeds_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: test_model_c_embed_history test_model_c_embed_history_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_c_embed_history
+    ADD CONSTRAINT test_model_c_embed_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: test_model_c_embed_rec_history test_model_c_embed_rec_history_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_c_embed_rec_history
+    ADD CONSTRAINT test_model_c_embed_rec_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: test_model_c_embed_recs test_model_c_embed_recs_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_c_embed_recs
+    ADD CONSTRAINT test_model_c_embed_recs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: test_model_c_embeds test_model_c_embeds_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_c_embeds
+    ADD CONSTRAINT test_model_c_embeds_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: test_model_embed_history test_model_embed_history_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_embed_history
+    ADD CONSTRAINT test_model_embed_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: test_model_embed_rec_history test_model_embed_rec_history_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_embed_rec_history
+    ADD CONSTRAINT test_model_embed_rec_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: test_model_embed_recs test_model_embed_recs_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_embed_recs
+    ADD CONSTRAINT test_model_embed_recs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: test_model_embeds test_model_embeds_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_embeds
+    ADD CONSTRAINT test_model_embeds_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: test_ref_history test_ref_history_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_ref_history
+    ADD CONSTRAINT test_ref_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: test_reference_history test_reference_history_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_reference_history
+    ADD CONSTRAINT test_reference_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: test_references test_references_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_references
+    ADD CONSTRAINT test_references_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: test_refs test_refs_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_refs
+    ADD CONSTRAINT test_refs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: test_time_history test_time_history_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_time_history
+    ADD CONSTRAINT test_time_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: test_times test_times_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_times
+    ADD CONSTRAINT test_times_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tests tests_pkey; Type: CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.tests
+    ADD CONSTRAINT tests_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: grit_assignment_history grit_assignment_history_pkey; Type: CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.grit_assignment_history
+    ADD CONSTRAINT grit_assignment_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: grit_assignments grit_assignments_pkey; Type: CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.grit_assignments
+    ADD CONSTRAINT grit_assignments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: pitt_bhi_assignment_history pitt_bhi_assignment_history_pkey; Type: CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.pitt_bhi_assignment_history
+    ADD CONSTRAINT pitt_bhi_assignment_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: pitt_bhi_assignments pitt_bhi_assignments_pkey; Type: CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.pitt_bhi_assignments
+    ADD CONSTRAINT pitt_bhi_assignments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: sleep_assignment_history sleep_assignment_history_pkey; Type: CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.sleep_assignment_history
+    ADD CONSTRAINT sleep_assignment_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: sleep_assignments sleep_assignments_pkey; Type: CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.sleep_assignments
+    ADD CONSTRAINT sleep_assignments_pkey PRIMARY KEY (id);
 
 
 --
@@ -16213,59 +24036,11 @@ ALTER TABLE ONLY ml_app.accuracy_scores
 
 
 --
--- Name: activity_log_bhs_assignment_history activity_log_bhs_assignment_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_bhs_assignment_history
-    ADD CONSTRAINT activity_log_bhs_assignment_history_pkey PRIMARY KEY (id);
-
-
---
--- Name: activity_log_bhs_assignments activity_log_bhs_assignments_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_bhs_assignments
-    ADD CONSTRAINT activity_log_bhs_assignments_pkey PRIMARY KEY (id);
-
-
---
--- Name: activity_log_ext_assignment_history activity_log_ext_assignment_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_ext_assignment_history
-    ADD CONSTRAINT activity_log_ext_assignment_history_pkey PRIMARY KEY (id);
-
-
---
--- Name: activity_log_ext_assignments activity_log_ext_assignments_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_ext_assignments
-    ADD CONSTRAINT activity_log_ext_assignments_pkey PRIMARY KEY (id);
-
-
---
 -- Name: activity_log_history activity_log_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
 --
 
 ALTER TABLE ONLY ml_app.activity_log_history
     ADD CONSTRAINT activity_log_history_pkey PRIMARY KEY (id);
-
-
---
--- Name: activity_log_new_test_history activity_log_new_test_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_new_test_history
-    ADD CONSTRAINT activity_log_new_test_history_pkey PRIMARY KEY (id);
-
-
---
--- Name: activity_log_new_tests activity_log_new_tests_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_new_tests
-    ADD CONSTRAINT activity_log_new_tests_pkey PRIMARY KEY (id);
 
 
 --
@@ -16282,22 +24057,6 @@ ALTER TABLE ONLY ml_app.activity_log_player_contact_phone_history
 
 ALTER TABLE ONLY ml_app.activity_log_player_contact_phones
     ADD CONSTRAINT activity_log_player_contact_phones_pkey PRIMARY KEY (id);
-
-
---
--- Name: activity_log_player_info_history activity_log_player_info_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_player_info_history
-    ADD CONSTRAINT activity_log_player_info_history_pkey PRIMARY KEY (id);
-
-
---
--- Name: activity_log_player_infos activity_log_player_infos_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_player_infos
-    ADD CONSTRAINT activity_log_player_infos_pkey PRIMARY KEY (id);
 
 
 --
@@ -16389,22 +24148,6 @@ ALTER TABLE ONLY ml_app.ar_internal_metadata
 
 
 --
--- Name: bhs_assignment_history bhs_assignment_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.bhs_assignment_history
-    ADD CONSTRAINT bhs_assignment_history_pkey PRIMARY KEY (id);
-
-
---
--- Name: bhs_assignments bhs_assignments_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.bhs_assignments
-    ADD CONSTRAINT bhs_assignments_pkey PRIMARY KEY (id);
-
-
---
 -- Name: college_history college_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
 --
 
@@ -16469,38 +24212,6 @@ ALTER TABLE ONLY ml_app.exception_logs
 
 
 --
--- Name: ext_assignment_history ext_assignment_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.ext_assignment_history
-    ADD CONSTRAINT ext_assignment_history_pkey PRIMARY KEY (id);
-
-
---
--- Name: ext_assignments ext_assignments_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.ext_assignments
-    ADD CONSTRAINT ext_assignments_pkey PRIMARY KEY (id);
-
-
---
--- Name: ext_gen_assignment_history ext_gen_assignment_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.ext_gen_assignment_history
-    ADD CONSTRAINT ext_gen_assignment_history_pkey PRIMARY KEY (id);
-
-
---
--- Name: ext_gen_assignments ext_gen_assignments_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.ext_gen_assignments
-    ADD CONSTRAINT ext_gen_assignments_pkey PRIMARY KEY (id);
-
-
---
 -- Name: external_identifier_history external_identifier_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
 --
 
@@ -16546,22 +24257,6 @@ ALTER TABLE ONLY ml_app.general_selection_history
 
 ALTER TABLE ONLY ml_app.general_selections
     ADD CONSTRAINT general_selections_pkey PRIMARY KEY (id);
-
-
---
--- Name: grit_assignment_history grit_assignment_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.grit_assignment_history
-    ADD CONSTRAINT grit_assignment_history_pkey PRIMARY KEY (id);
-
-
---
--- Name: grit_assignments grit_assignments_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.grit_assignments
-    ADD CONSTRAINT grit_assignments_pkey PRIMARY KEY (id);
 
 
 --
@@ -16621,14 +24316,6 @@ ALTER TABLE ONLY ml_app.manage_users
 
 
 --
--- Name: masters masters_msid; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.masters
-    ADD CONSTRAINT masters_msid UNIQUE (msid);
-
-
---
 -- Name: masters masters_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
 --
 
@@ -16666,22 +24353,6 @@ ALTER TABLE ONLY ml_app.message_templates
 
 ALTER TABLE ONLY ml_app.model_references
     ADD CONSTRAINT model_references_pkey PRIMARY KEY (id);
-
-
---
--- Name: new_test_history new_test_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.new_test_history
-    ADD CONSTRAINT new_test_history_pkey PRIMARY KEY (id);
-
-
---
--- Name: new_tests new_tests_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.new_tests
-    ADD CONSTRAINT new_tests_pkey PRIMARY KEY (id);
 
 
 --
@@ -16941,59 +24612,11 @@ ALTER TABLE ONLY ml_app.sage_assignments
 
 
 --
--- Name: sage_two_history sage_two_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.sage_two_history
-    ADD CONSTRAINT sage_two_history_pkey PRIMARY KEY (id);
-
-
---
--- Name: sage_twos sage_twos_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.sage_twos
-    ADD CONSTRAINT sage_twos_pkey PRIMARY KEY (id);
-
-
---
 -- Name: scantron_history scantron_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
 --
 
 ALTER TABLE ONLY ml_app.scantron_history
     ADD CONSTRAINT scantron_history_pkey PRIMARY KEY (id);
-
-
---
--- Name: scantron_q2_history scantron_q2_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.scantron_q2_history
-    ADD CONSTRAINT scantron_q2_history_pkey PRIMARY KEY (id);
-
-
---
--- Name: scantron_q2s scantron_q2s_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.scantron_q2s
-    ADD CONSTRAINT scantron_q2s_pkey PRIMARY KEY (id);
-
-
---
--- Name: scantron_series_two_history scantron_series_two_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.scantron_series_two_history
-    ADD CONSTRAINT scantron_series_two_history_pkey PRIMARY KEY (id);
-
-
---
--- Name: scantron_series_twos scantron_series_twos_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.scantron_series_twos
-    ADD CONSTRAINT scantron_series_twos_pkey PRIMARY KEY (id);
 
 
 --
@@ -17013,22 +24636,6 @@ ALTER TABLE ONLY ml_app.sessions
 
 
 --
--- Name: sleep_assignment_history sleep_assignment_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.sleep_assignment_history
-    ADD CONSTRAINT sleep_assignment_history_pkey PRIMARY KEY (id);
-
-
---
--- Name: sleep_assignments sleep_assignments_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.sleep_assignments
-    ADD CONSTRAINT sleep_assignments_pkey PRIMARY KEY (id);
-
-
---
 -- Name: sub_process_history sub_process_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
 --
 
@@ -17045,102 +24652,6 @@ ALTER TABLE ONLY ml_app.sub_processes
 
 
 --
--- Name: test1_history test1_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test1_history
-    ADD CONSTRAINT test1_history_pkey PRIMARY KEY (id);
-
-
---
--- Name: test1s test1s_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test1s
-    ADD CONSTRAINT test1s_pkey PRIMARY KEY (id);
-
-
---
--- Name: test2_history test2_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test2_history
-    ADD CONSTRAINT test2_history_pkey PRIMARY KEY (id);
-
-
---
--- Name: test2s test2s_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test2s
-    ADD CONSTRAINT test2s_pkey PRIMARY KEY (id);
-
-
---
--- Name: test_2_history test_2_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_2_history
-    ADD CONSTRAINT test_2_history_pkey PRIMARY KEY (id);
-
-
---
--- Name: test_2s test_2s_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_2s
-    ADD CONSTRAINT test_2s_pkey PRIMARY KEY (id);
-
-
---
--- Name: test_ext2_history test_ext2_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_ext2_history
-    ADD CONSTRAINT test_ext2_history_pkey PRIMARY KEY (id);
-
-
---
--- Name: test_ext2s test_ext2s_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_ext2s
-    ADD CONSTRAINT test_ext2s_pkey PRIMARY KEY (id);
-
-
---
--- Name: test_ext_history test_ext_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_ext_history
-    ADD CONSTRAINT test_ext_history_pkey PRIMARY KEY (id);
-
-
---
--- Name: test_exts test_exts_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_exts
-    ADD CONSTRAINT test_exts_pkey PRIMARY KEY (id);
-
-
---
--- Name: test_item_history test_item_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_item_history
-    ADD CONSTRAINT test_item_history_pkey PRIMARY KEY (id);
-
-
---
--- Name: test_items test_items_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_items
-    ADD CONSTRAINT test_items_pkey PRIMARY KEY (id);
-
-
---
 -- Name: tracker_history tracker_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
 --
 
@@ -17154,6 +24665,38 @@ ALTER TABLE ONLY ml_app.tracker_history
 
 ALTER TABLE ONLY ml_app.trackers
     ADD CONSTRAINT trackers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: trackers unique_master_protocol; Type: CONSTRAINT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.trackers
+    ADD CONSTRAINT unique_master_protocol UNIQUE (master_id, protocol_id);
+
+
+--
+-- Name: trackers unique_master_protocol_id; Type: CONSTRAINT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.trackers
+    ADD CONSTRAINT unique_master_protocol_id UNIQUE (master_id, protocol_id, id);
+
+
+--
+-- Name: sub_processes unique_protocol_and_id; Type: CONSTRAINT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.sub_processes
+    ADD CONSTRAINT unique_protocol_and_id UNIQUE (protocol_id, id);
+
+
+--
+-- Name: protocol_events unique_sub_process_and_id; Type: CONSTRAINT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.protocol_events
+    ADD CONSTRAINT unique_sub_process_and_id UNIQUE (sub_process_id, id);
 
 
 --
@@ -17194,6 +24737,22 @@ ALTER TABLE ONLY ml_app.user_authorization_history
 
 ALTER TABLE ONLY ml_app.user_authorizations
     ADD CONSTRAINT user_authorizations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_description_history user_description_history_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.user_description_history
+    ADD CONSTRAINT user_description_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: user_descriptions user_descriptions_pkey; Type: CONSTRAINT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.user_descriptions
+    ADD CONSTRAINT user_descriptions_pkey PRIMARY KEY (id);
 
 
 --
@@ -17245,35 +24804,35 @@ ALTER TABLE ONLY ml_app.users
 
 
 --
--- Name: data_variable_package_history data_variable_package_history_pkey; Type: CONSTRAINT; Schema: ref_data; Owner: -
+-- Name: q2_demo_rc_history q2_demo_rc_history_pkey; Type: CONSTRAINT; Schema: redcap; Owner: -
 --
 
-ALTER TABLE ONLY ref_data.data_variable_package_history
-    ADD CONSTRAINT data_variable_package_history_pkey PRIMARY KEY (id);
-
-
---
--- Name: data_variable_package_var_history data_variable_package_var_history_pkey; Type: CONSTRAINT; Schema: ref_data; Owner: -
---
-
-ALTER TABLE ONLY ref_data.data_variable_package_var_history
-    ADD CONSTRAINT data_variable_package_var_history_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY redcap.q2_demo_rc_history
+    ADD CONSTRAINT q2_demo_rc_history_pkey PRIMARY KEY (id);
 
 
 --
--- Name: data_variable_package_vars data_variable_package_vars_pkey; Type: CONSTRAINT; Schema: ref_data; Owner: -
+-- Name: q2_demo_rcs q2_demo_rcs_pkey; Type: CONSTRAINT; Schema: redcap; Owner: -
 --
 
-ALTER TABLE ONLY ref_data.data_variable_package_vars
-    ADD CONSTRAINT data_variable_package_vars_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY redcap.q2_demo_rcs
+    ADD CONSTRAINT q2_demo_rcs_pkey PRIMARY KEY (id);
 
 
 --
--- Name: data_variable_packages data_variable_packages_pkey; Type: CONSTRAINT; Schema: ref_data; Owner: -
+-- Name: viva_meta_variable_history viva_meta_variable_history_pkey; Type: CONSTRAINT; Schema: redcap; Owner: -
 --
 
-ALTER TABLE ONLY ref_data.data_variable_packages
-    ADD CONSTRAINT data_variable_packages_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY redcap.viva_meta_variable_history
+    ADD CONSTRAINT viva_meta_variable_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: viva_meta_variables viva_meta_variables_pkey; Type: CONSTRAINT; Schema: redcap; Owner: -
+--
+
+ALTER TABLE ONLY redcap.viva_meta_variables
+    ADD CONSTRAINT viva_meta_variables_pkey PRIMARY KEY (id);
 
 
 --
@@ -17306,22 +24865,6 @@ ALTER TABLE ONLY ref_data.datadic_variable_history
 
 ALTER TABLE ONLY ref_data.datadic_variables
     ADD CONSTRAINT datadic_variables_pkey PRIMARY KEY (id);
-
-
---
--- Name: domain_mapping_history domain_mapping_history_pkey; Type: CONSTRAINT; Schema: ref_data; Owner: -
---
-
-ALTER TABLE ONLY ref_data.domain_mapping_history
-    ADD CONSTRAINT domain_mapping_history_pkey PRIMARY KEY (id);
-
-
---
--- Name: domain_mappings domain_mappings_pkey; Type: CONSTRAINT; Schema: ref_data; Owner: -
---
-
-ALTER TABLE ONLY ref_data.domain_mappings
-    ADD CONSTRAINT domain_mappings_pkey PRIMARY KEY (id);
 
 
 --
@@ -17397,19 +24940,591 @@ ALTER TABLE ONLY ref_data.redcap_project_users
 
 
 --
--- Name: redcap_user_status_rec_history redcap_user_status_rec_history_pkey; Type: CONSTRAINT; Schema: ref_data; Owner: -
+-- Name: 0fff5988_id_idx; Type: INDEX; Schema: dynamic; Owner: -
 --
 
-ALTER TABLE ONLY ref_data.redcap_user_status_rec_history
-    ADD CONSTRAINT redcap_user_status_rec_history_pkey PRIMARY KEY (id);
+CREATE INDEX "0fff5988_id_idx" ON dynamic.test_time_history USING btree (test_time_id);
 
 
 --
--- Name: redcap_user_status_recs redcap_user_status_recs_pkey; Type: CONSTRAINT; Schema: ref_data; Owner: -
+-- Name: 0fff5988_user_idx; Type: INDEX; Schema: dynamic; Owner: -
 --
 
-ALTER TABLE ONLY ref_data.redcap_user_status_recs
-    ADD CONSTRAINT redcap_user_status_recs_pkey PRIMARY KEY (id);
+CREATE INDEX "0fff5988_user_idx" ON dynamic.test_time_history USING btree (user_id);
+
+
+--
+-- Name: 141f0d5d_history_master_id; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "141f0d5d_history_master_id" ON dynamic.test_model_embed_rec_history USING btree (master_id);
+
+
+--
+-- Name: 141f0d5d_id_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "141f0d5d_id_idx" ON dynamic.test_model_embed_rec_history USING btree (test_model_embed_rec_id);
+
+
+--
+-- Name: 141f0d5d_user_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "141f0d5d_user_idx" ON dynamic.test_model_embed_rec_history USING btree (user_id);
+
+
+--
+-- Name: 2bfd2db3_history_master_id; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "2bfd2db3_history_master_id" ON dynamic.test_reference_history USING btree (master_id);
+
+
+--
+-- Name: 2bfd2db3_id_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "2bfd2db3_id_idx" ON dynamic.test_reference_history USING btree (test_reference_id);
+
+
+--
+-- Name: 2bfd2db3_user_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "2bfd2db3_user_idx" ON dynamic.test_reference_history USING btree (user_id);
+
+
+--
+-- Name: 37242a79_hist_user_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "37242a79_hist_user_idx" ON dynamic.project_import_history USING btree (user_id);
+
+
+--
+-- Name: 37242a79_history_master_id; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "37242a79_history_master_id" ON dynamic.project_import_history USING btree (master_id);
+
+
+--
+-- Name: 37242a79_id_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "37242a79_id_idx" ON dynamic.project_import_history USING btree (project_import_id);
+
+
+--
+-- Name: 37242a79_user_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "37242a79_user_idx" ON dynamic.project_imports USING btree (user_id);
+
+
+--
+-- Name: 5decc062_history_master_id; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "5decc062_history_master_id" ON dynamic.test_model_embed_history USING btree (master_id);
+
+
+--
+-- Name: 5decc062_id_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "5decc062_id_idx" ON dynamic.test_model_embed_history USING btree (test_model_embed_id);
+
+
+--
+-- Name: 5decc062_user_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "5decc062_user_idx" ON dynamic.test_model_embed_history USING btree (user_id);
+
+
+--
+-- Name: 760dfeb3_id_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "760dfeb3_id_idx" ON dynamic.test_history USING btree (test_id);
+
+
+--
+-- Name: 760dfeb3_user_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "760dfeb3_user_idx" ON dynamic.test_history USING btree (user_id);
+
+
+--
+-- Name: 887f23f4_history_master_id; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "887f23f4_history_master_id" ON dynamic.test_model_c_embed_rec_history USING btree (master_id);
+
+
+--
+-- Name: 887f23f4_id_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "887f23f4_id_idx" ON dynamic.test_model_c_embed_rec_history USING btree (test_model_c_embed_rec_id);
+
+
+--
+-- Name: 887f23f4_user_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "887f23f4_user_idx" ON dynamic.test_model_c_embed_rec_history USING btree (user_id);
+
+
+--
+-- Name: 952909c1_history_master_id; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "952909c1_history_master_id" ON dynamic.test_field_history USING btree (master_id);
+
+
+--
+-- Name: 952909c1_id_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "952909c1_id_idx" ON dynamic.test_field_history USING btree (test_field_id);
+
+
+--
+-- Name: 952909c1_user_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "952909c1_user_idx" ON dynamic.test_field_history USING btree (user_id);
+
+
+--
+-- Name: b82b3567_id_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX b82b3567_id_idx ON dynamic.test_ref_history USING btree (test_ref_id);
+
+
+--
+-- Name: b82b3567_user_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX b82b3567_user_idx ON dynamic.test_ref_history USING btree (user_id);
+
+
+--
+-- Name: bac47159_b_id_h_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX bac47159_b_id_h_idx ON dynamic.activity_log_project_assignment_simple_test_history USING btree (activity_log_project_assignment_simple_test_id);
+
+
+--
+-- Name: bac47159_id_h_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX bac47159_id_h_idx ON dynamic.activity_log_project_assignment_simple_test_history USING btree (project_assignment_id);
+
+
+--
+-- Name: bac47159_id_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX bac47159_id_idx ON dynamic.activity_log_project_assignment_simple_tests USING btree (project_assignment_id);
+
+
+--
+-- Name: bac47159_master_id_h_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX bac47159_master_id_h_idx ON dynamic.activity_log_project_assignment_simple_test_history USING btree (master_id);
+
+
+--
+-- Name: bac47159_master_id_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX bac47159_master_id_idx ON dynamic.activity_log_project_assignment_simple_tests USING btree (master_id);
+
+
+--
+-- Name: bac47159_ref_cb_user_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX bac47159_ref_cb_user_idx ON dynamic.activity_log_project_assignment_simple_tests USING btree (created_by_user_id);
+
+
+--
+-- Name: bac47159_ref_cb_user_idx_hist; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX bac47159_ref_cb_user_idx_hist ON dynamic.activity_log_project_assignment_simple_test_history USING btree (created_by_user_id);
+
+
+--
+-- Name: bac47159_user_id_h_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX bac47159_user_id_h_idx ON dynamic.activity_log_project_assignment_simple_test_history USING btree (user_id);
+
+
+--
+-- Name: bac47159_user_id_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX bac47159_user_id_idx ON dynamic.activity_log_project_assignment_simple_tests USING btree (user_id);
+
+
+--
+-- Name: c09350cb_history_master_id; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX c09350cb_history_master_id ON dynamic.test_model_c_embed_history USING btree (master_id);
+
+
+--
+-- Name: c09350cb_id_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX c09350cb_id_idx ON dynamic.test_model_c_embed_history USING btree (test_model_c_embed_id);
+
+
+--
+-- Name: c09350cb_user_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX c09350cb_user_idx ON dynamic.test_model_c_embed_history USING btree (user_id);
+
+
+--
+-- Name: ce2747ad_history_master_id; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX ce2747ad_history_master_id ON dynamic.test_model_b_embed_rec_history USING btree (master_id);
+
+
+--
+-- Name: ce2747ad_id_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX ce2747ad_id_idx ON dynamic.test_model_b_embed_rec_history USING btree (test_model_b_embed_rec_id);
+
+
+--
+-- Name: ce2747ad_user_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX ce2747ad_user_idx ON dynamic.test_model_b_embed_rec_history USING btree (user_id);
+
+
+--
+-- Name: dmbt_141f0d5d_id_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX dmbt_141f0d5d_id_idx ON dynamic.test_model_embed_recs USING btree (master_id);
+
+
+--
+-- Name: dmbt_2bfd2db3_id_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX dmbt_2bfd2db3_id_idx ON dynamic.test_references USING btree (master_id);
+
+
+--
+-- Name: dmbt_37242a79_id_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX dmbt_37242a79_id_idx ON dynamic.project_imports USING btree (master_id);
+
+
+--
+-- Name: dmbt_5decc062_id_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX dmbt_5decc062_id_idx ON dynamic.test_model_embeds USING btree (master_id);
+
+
+--
+-- Name: dmbt_887f23f4_id_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX dmbt_887f23f4_id_idx ON dynamic.test_model_c_embed_recs USING btree (master_id);
+
+
+--
+-- Name: dmbt_952909c1_id_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX dmbt_952909c1_id_idx ON dynamic.test_fields USING btree (master_id);
+
+
+--
+-- Name: dmbt_c09350cb_id_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX dmbt_c09350cb_id_idx ON dynamic.test_model_c_embeds USING btree (master_id);
+
+
+--
+-- Name: dmbt_ce2747ad_id_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX dmbt_ce2747ad_id_idx ON dynamic.test_model_b_embed_recs USING btree (master_id);
+
+
+--
+-- Name: dmbt_fb044a0f_id_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX dmbt_fb044a0f_id_idx ON dynamic.test_model_b_embeds USING btree (master_id);
+
+
+--
+-- Name: fb044a0f_history_master_id; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX fb044a0f_history_master_id ON dynamic.test_model_b_embed_history USING btree (master_id);
+
+
+--
+-- Name: fb044a0f_id_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX fb044a0f_id_idx ON dynamic.test_model_b_embed_history USING btree (test_model_b_embed_id);
+
+
+--
+-- Name: fb044a0f_user_idx; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX fb044a0f_user_idx ON dynamic.test_model_b_embed_history USING btree (user_id);
+
+
+--
+-- Name: index_dynamic.test_fields_on_user_id; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "index_dynamic.test_fields_on_user_id" ON dynamic.test_fields USING btree (user_id);
+
+
+--
+-- Name: index_dynamic.test_model_b_embed_recs_on_user_id; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "index_dynamic.test_model_b_embed_recs_on_user_id" ON dynamic.test_model_b_embed_recs USING btree (user_id);
+
+
+--
+-- Name: index_dynamic.test_model_b_embeds_on_user_id; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "index_dynamic.test_model_b_embeds_on_user_id" ON dynamic.test_model_b_embeds USING btree (user_id);
+
+
+--
+-- Name: index_dynamic.test_model_c_embed_recs_on_user_id; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "index_dynamic.test_model_c_embed_recs_on_user_id" ON dynamic.test_model_c_embed_recs USING btree (user_id);
+
+
+--
+-- Name: index_dynamic.test_model_c_embeds_on_user_id; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "index_dynamic.test_model_c_embeds_on_user_id" ON dynamic.test_model_c_embeds USING btree (user_id);
+
+
+--
+-- Name: index_dynamic.test_model_embed_recs_on_user_id; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "index_dynamic.test_model_embed_recs_on_user_id" ON dynamic.test_model_embed_recs USING btree (user_id);
+
+
+--
+-- Name: index_dynamic.test_model_embeds_on_user_id; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "index_dynamic.test_model_embeds_on_user_id" ON dynamic.test_model_embeds USING btree (user_id);
+
+
+--
+-- Name: index_dynamic.test_references_on_user_id; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "index_dynamic.test_references_on_user_id" ON dynamic.test_references USING btree (user_id);
+
+
+--
+-- Name: index_dynamic.test_refs_on_user_id; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "index_dynamic.test_refs_on_user_id" ON dynamic.test_refs USING btree (user_id);
+
+
+--
+-- Name: index_dynamic.test_times_on_user_id; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "index_dynamic.test_times_on_user_id" ON dynamic.test_times USING btree (user_id);
+
+
+--
+-- Name: index_dynamic.tests_on_user_id; Type: INDEX; Schema: dynamic; Owner: -
+--
+
+CREATE INDEX "index_dynamic.tests_on_user_id" ON dynamic.tests USING btree (user_id);
+
+
+--
+-- Name: grit_assignment_id_idx; Type: INDEX; Schema: extra_app; Owner: -
+--
+
+CREATE INDEX grit_assignment_id_idx ON extra_app.grit_assignment_history USING btree (grit_assignment_table_id);
+
+
+--
+-- Name: index_extra_app.grit_assignment_history_on_admin_id; Type: INDEX; Schema: extra_app; Owner: -
+--
+
+CREATE INDEX "index_extra_app.grit_assignment_history_on_admin_id" ON extra_app.grit_assignment_history USING btree (admin_id);
+
+
+--
+-- Name: index_extra_app.grit_assignment_history_on_master_id; Type: INDEX; Schema: extra_app; Owner: -
+--
+
+CREATE INDEX "index_extra_app.grit_assignment_history_on_master_id" ON extra_app.grit_assignment_history USING btree (master_id);
+
+
+--
+-- Name: index_extra_app.grit_assignment_history_on_user_id; Type: INDEX; Schema: extra_app; Owner: -
+--
+
+CREATE INDEX "index_extra_app.grit_assignment_history_on_user_id" ON extra_app.grit_assignment_history USING btree (user_id);
+
+
+--
+-- Name: index_extra_app.grit_assignments_on_admin_id; Type: INDEX; Schema: extra_app; Owner: -
+--
+
+CREATE INDEX "index_extra_app.grit_assignments_on_admin_id" ON extra_app.grit_assignments USING btree (admin_id);
+
+
+--
+-- Name: index_extra_app.grit_assignments_on_master_id; Type: INDEX; Schema: extra_app; Owner: -
+--
+
+CREATE INDEX "index_extra_app.grit_assignments_on_master_id" ON extra_app.grit_assignments USING btree (master_id);
+
+
+--
+-- Name: index_extra_app.grit_assignments_on_user_id; Type: INDEX; Schema: extra_app; Owner: -
+--
+
+CREATE INDEX "index_extra_app.grit_assignments_on_user_id" ON extra_app.grit_assignments USING btree (user_id);
+
+
+--
+-- Name: index_extra_app.pitt_bhi_assignment_history_on_admin_id; Type: INDEX; Schema: extra_app; Owner: -
+--
+
+CREATE INDEX "index_extra_app.pitt_bhi_assignment_history_on_admin_id" ON extra_app.pitt_bhi_assignment_history USING btree (admin_id);
+
+
+--
+-- Name: index_extra_app.pitt_bhi_assignment_history_on_master_id; Type: INDEX; Schema: extra_app; Owner: -
+--
+
+CREATE INDEX "index_extra_app.pitt_bhi_assignment_history_on_master_id" ON extra_app.pitt_bhi_assignment_history USING btree (master_id);
+
+
+--
+-- Name: index_extra_app.pitt_bhi_assignment_history_on_user_id; Type: INDEX; Schema: extra_app; Owner: -
+--
+
+CREATE INDEX "index_extra_app.pitt_bhi_assignment_history_on_user_id" ON extra_app.pitt_bhi_assignment_history USING btree (user_id);
+
+
+--
+-- Name: index_extra_app.pitt_bhi_assignments_on_admin_id; Type: INDEX; Schema: extra_app; Owner: -
+--
+
+CREATE INDEX "index_extra_app.pitt_bhi_assignments_on_admin_id" ON extra_app.pitt_bhi_assignments USING btree (admin_id);
+
+
+--
+-- Name: index_extra_app.pitt_bhi_assignments_on_master_id; Type: INDEX; Schema: extra_app; Owner: -
+--
+
+CREATE INDEX "index_extra_app.pitt_bhi_assignments_on_master_id" ON extra_app.pitt_bhi_assignments USING btree (master_id);
+
+
+--
+-- Name: index_extra_app.pitt_bhi_assignments_on_user_id; Type: INDEX; Schema: extra_app; Owner: -
+--
+
+CREATE INDEX "index_extra_app.pitt_bhi_assignments_on_user_id" ON extra_app.pitt_bhi_assignments USING btree (user_id);
+
+
+--
+-- Name: index_extra_app.sleep_assignment_history_on_admin_id; Type: INDEX; Schema: extra_app; Owner: -
+--
+
+CREATE INDEX "index_extra_app.sleep_assignment_history_on_admin_id" ON extra_app.sleep_assignment_history USING btree (admin_id);
+
+
+--
+-- Name: index_extra_app.sleep_assignment_history_on_master_id; Type: INDEX; Schema: extra_app; Owner: -
+--
+
+CREATE INDEX "index_extra_app.sleep_assignment_history_on_master_id" ON extra_app.sleep_assignment_history USING btree (master_id);
+
+
+--
+-- Name: index_extra_app.sleep_assignment_history_on_user_id; Type: INDEX; Schema: extra_app; Owner: -
+--
+
+CREATE INDEX "index_extra_app.sleep_assignment_history_on_user_id" ON extra_app.sleep_assignment_history USING btree (user_id);
+
+
+--
+-- Name: index_extra_app.sleep_assignments_on_admin_id; Type: INDEX; Schema: extra_app; Owner: -
+--
+
+CREATE INDEX "index_extra_app.sleep_assignments_on_admin_id" ON extra_app.sleep_assignments USING btree (admin_id);
+
+
+--
+-- Name: index_extra_app.sleep_assignments_on_master_id; Type: INDEX; Schema: extra_app; Owner: -
+--
+
+CREATE INDEX "index_extra_app.sleep_assignments_on_master_id" ON extra_app.sleep_assignments USING btree (master_id);
+
+
+--
+-- Name: index_extra_app.sleep_assignments_on_user_id; Type: INDEX; Schema: extra_app; Owner: -
+--
+
+CREATE INDEX "index_extra_app.sleep_assignments_on_user_id" ON extra_app.sleep_assignments USING btree (user_id);
+
+
+--
+-- Name: pitt_bhi_assignment_id_idx; Type: INDEX; Schema: extra_app; Owner: -
+--
+
+CREATE INDEX pitt_bhi_assignment_id_idx ON extra_app.pitt_bhi_assignment_history USING btree (pitt_bhi_assignment_table_id);
+
+
+--
+-- Name: sleep_assignment_id_idx; Type: INDEX; Schema: extra_app; Owner: -
+--
+
+CREATE INDEX sleep_assignment_id_idx ON extra_app.sleep_assignment_history USING btree (sleep_assignment_table_id);
 
 
 --
@@ -17427,6 +25542,13 @@ CREATE INDEX idx_h_on_role_descriptions_id ON ml_app.role_description_history US
 
 
 --
+-- Name: idx_h_on_user_descriptions_id; Type: INDEX; Schema: ml_app; Owner: -
+--
+
+CREATE INDEX idx_h_on_user_descriptions_id ON ml_app.user_description_history USING btree (user_description_id);
+
+
+--
 -- Name: index_accuracy_score_history_on_accuracy_score_id; Type: INDEX; Schema: ml_app; Owner: -
 --
 
@@ -17441,150 +25563,10 @@ CREATE INDEX index_accuracy_scores_on_admin_id ON ml_app.accuracy_scores USING b
 
 
 --
--- Name: index_activity_log_bhs_assignment_history_on_activity_log_bhs_a; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_bhs_assignment_history_on_activity_log_bhs_a ON ml_app.activity_log_bhs_assignment_history USING btree (activity_log_bhs_assignment_id);
-
-
---
--- Name: index_activity_log_bhs_assignment_history_on_bhs_assignment_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_bhs_assignment_history_on_bhs_assignment_id ON ml_app.activity_log_bhs_assignment_history USING btree (bhs_assignment_id);
-
-
---
--- Name: index_activity_log_bhs_assignment_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_bhs_assignment_history_on_master_id ON ml_app.activity_log_bhs_assignment_history USING btree (master_id);
-
-
---
--- Name: index_activity_log_bhs_assignment_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_bhs_assignment_history_on_user_id ON ml_app.activity_log_bhs_assignment_history USING btree (user_id);
-
-
---
--- Name: index_activity_log_bhs_assignments_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_bhs_assignments_on_master_id ON ml_app.activity_log_bhs_assignments USING btree (master_id);
-
-
---
--- Name: index_activity_log_bhs_assignments_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_bhs_assignments_on_user_id ON ml_app.activity_log_bhs_assignments USING btree (user_id);
-
-
---
--- Name: index_activity_log_ext_assignment_history_on_activity_log_ext_a; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_ext_assignment_history_on_activity_log_ext_a ON ml_app.activity_log_ext_assignment_history USING btree (activity_log_ext_assignment_id);
-
-
---
--- Name: index_activity_log_ext_assignment_history_on_ext_assignment_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_ext_assignment_history_on_ext_assignment_id ON ml_app.activity_log_ext_assignment_history USING btree (ext_assignment_id);
-
-
---
--- Name: index_activity_log_ext_assignment_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_ext_assignment_history_on_master_id ON ml_app.activity_log_ext_assignment_history USING btree (master_id);
-
-
---
--- Name: index_activity_log_ext_assignment_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_ext_assignment_history_on_user_id ON ml_app.activity_log_ext_assignment_history USING btree (user_id);
-
-
---
--- Name: index_activity_log_ext_assignments_on_ext_assignment_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_ext_assignments_on_ext_assignment_id ON ml_app.activity_log_ext_assignments USING btree (ext_assignment_id);
-
-
---
--- Name: index_activity_log_ext_assignments_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_ext_assignments_on_master_id ON ml_app.activity_log_ext_assignments USING btree (master_id);
-
-
---
--- Name: index_activity_log_ext_assignments_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_ext_assignments_on_user_id ON ml_app.activity_log_ext_assignments USING btree (user_id);
-
-
---
 -- Name: index_activity_log_history_on_activity_log_id; Type: INDEX; Schema: ml_app; Owner: -
 --
 
 CREATE INDEX index_activity_log_history_on_activity_log_id ON ml_app.activity_log_history USING btree (activity_log_id);
-
-
---
--- Name: index_activity_log_new_test_history_on_activity_log_new_test_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_new_test_history_on_activity_log_new_test_id ON ml_app.activity_log_new_test_history USING btree (activity_log_new_test_id);
-
-
---
--- Name: index_activity_log_new_test_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_new_test_history_on_master_id ON ml_app.activity_log_new_test_history USING btree (master_id);
-
-
---
--- Name: index_activity_log_new_test_history_on_new_test_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_new_test_history_on_new_test_id ON ml_app.activity_log_new_test_history USING btree (new_test_id);
-
-
---
--- Name: index_activity_log_new_test_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_new_test_history_on_user_id ON ml_app.activity_log_new_test_history USING btree (user_id);
-
-
---
--- Name: index_activity_log_new_tests_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_new_tests_on_master_id ON ml_app.activity_log_new_tests USING btree (master_id);
-
-
---
--- Name: index_activity_log_new_tests_on_new_test_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_new_tests_on_new_test_id ON ml_app.activity_log_new_tests USING btree (new_test_id);
-
-
---
--- Name: index_activity_log_new_tests_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_new_tests_on_user_id ON ml_app.activity_log_new_tests USING btree (user_id);
 
 
 --
@@ -17641,55 +25623,6 @@ CREATE INDEX index_activity_log_player_contact_phones_on_protocol_id ON ml_app.a
 --
 
 CREATE INDEX index_activity_log_player_contact_phones_on_user_id ON ml_app.activity_log_player_contact_phones USING btree (user_id);
-
-
---
--- Name: index_activity_log_player_info_history_on_activity_log_player_i; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_player_info_history_on_activity_log_player_i ON ml_app.activity_log_player_info_history USING btree (activity_log_player_info_id);
-
-
---
--- Name: index_activity_log_player_info_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_player_info_history_on_master_id ON ml_app.activity_log_player_info_history USING btree (master_id);
-
-
---
--- Name: index_activity_log_player_info_history_on_player_info_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_player_info_history_on_player_info_id ON ml_app.activity_log_player_info_history USING btree (player_info_id);
-
-
---
--- Name: index_activity_log_player_info_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_player_info_history_on_user_id ON ml_app.activity_log_player_info_history USING btree (user_id);
-
-
---
--- Name: index_activity_log_player_infos_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_player_infos_on_master_id ON ml_app.activity_log_player_infos USING btree (master_id);
-
-
---
--- Name: index_activity_log_player_infos_on_player_info_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_player_infos_on_player_info_id ON ml_app.activity_log_player_infos USING btree (player_info_id);
-
-
---
--- Name: index_activity_log_player_infos_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_activity_log_player_infos_on_user_id ON ml_app.activity_log_player_infos USING btree (user_id);
 
 
 --
@@ -17812,55 +25745,6 @@ CREATE INDEX index_app_types_on_admin_id ON ml_app.app_types USING btree (admin_
 
 
 --
--- Name: index_bhs_assignment_history_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_bhs_assignment_history_on_admin_id ON ml_app.bhs_assignment_history USING btree (admin_id);
-
-
---
--- Name: index_bhs_assignment_history_on_bhs_assignment_table_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_bhs_assignment_history_on_bhs_assignment_table_id ON ml_app.bhs_assignment_history USING btree (bhs_assignment_table_id);
-
-
---
--- Name: index_bhs_assignment_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_bhs_assignment_history_on_master_id ON ml_app.bhs_assignment_history USING btree (master_id);
-
-
---
--- Name: index_bhs_assignment_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_bhs_assignment_history_on_user_id ON ml_app.bhs_assignment_history USING btree (user_id);
-
-
---
--- Name: index_bhs_assignments_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_bhs_assignments_on_admin_id ON ml_app.bhs_assignments USING btree (admin_id);
-
-
---
--- Name: index_bhs_assignments_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_bhs_assignments_on_master_id ON ml_app.bhs_assignments USING btree (master_id);
-
-
---
--- Name: index_bhs_assignments_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_bhs_assignments_on_user_id ON ml_app.bhs_assignments USING btree (user_id);
-
-
---
 -- Name: index_college_history_on_college_id; Type: INDEX; Schema: ml_app; Owner: -
 --
 
@@ -17931,90 +25815,6 @@ CREATE INDEX index_exception_logs_on_user_id ON ml_app.exception_logs USING btre
 
 
 --
--- Name: index_ext_assignment_history_on_ext_assignment_table_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_ext_assignment_history_on_ext_assignment_table_id ON ml_app.ext_assignment_history USING btree (ext_assignment_table_id);
-
-
---
--- Name: index_ext_assignment_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_ext_assignment_history_on_master_id ON ml_app.ext_assignment_history USING btree (master_id);
-
-
---
--- Name: index_ext_assignment_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_ext_assignment_history_on_user_id ON ml_app.ext_assignment_history USING btree (user_id);
-
-
---
--- Name: index_ext_assignments_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_ext_assignments_on_master_id ON ml_app.ext_assignments USING btree (master_id);
-
-
---
--- Name: index_ext_assignments_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_ext_assignments_on_user_id ON ml_app.ext_assignments USING btree (user_id);
-
-
---
--- Name: index_ext_gen_assignment_history_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_ext_gen_assignment_history_on_admin_id ON ml_app.ext_gen_assignment_history USING btree (admin_id);
-
-
---
--- Name: index_ext_gen_assignment_history_on_ext_gen_assignment_table_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_ext_gen_assignment_history_on_ext_gen_assignment_table_id ON ml_app.ext_gen_assignment_history USING btree (ext_gen_assignment_table_id);
-
-
---
--- Name: index_ext_gen_assignment_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_ext_gen_assignment_history_on_master_id ON ml_app.ext_gen_assignment_history USING btree (master_id);
-
-
---
--- Name: index_ext_gen_assignment_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_ext_gen_assignment_history_on_user_id ON ml_app.ext_gen_assignment_history USING btree (user_id);
-
-
---
--- Name: index_ext_gen_assignments_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_ext_gen_assignments_on_admin_id ON ml_app.ext_gen_assignments USING btree (admin_id);
-
-
---
--- Name: index_ext_gen_assignments_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_ext_gen_assignments_on_master_id ON ml_app.ext_gen_assignments USING btree (master_id);
-
-
---
--- Name: index_ext_gen_assignments_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_ext_gen_assignments_on_user_id ON ml_app.ext_gen_assignments USING btree (user_id);
-
-
---
 -- Name: index_external_identifier_history_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
 --
 
@@ -18061,55 +25861,6 @@ CREATE INDEX index_general_selection_history_on_general_selection_id ON ml_app.g
 --
 
 CREATE INDEX index_general_selections_on_admin_id ON ml_app.general_selections USING btree (admin_id);
-
-
---
--- Name: index_grit_assignment_history_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_grit_assignment_history_on_admin_id ON ml_app.grit_assignment_history USING btree (admin_id);
-
-
---
--- Name: index_grit_assignment_history_on_grit_assignment_table_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_grit_assignment_history_on_grit_assignment_table_id ON ml_app.grit_assignment_history USING btree (grit_assignment_table_id);
-
-
---
--- Name: index_grit_assignment_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_grit_assignment_history_on_master_id ON ml_app.grit_assignment_history USING btree (master_id);
-
-
---
--- Name: index_grit_assignment_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_grit_assignment_history_on_user_id ON ml_app.grit_assignment_history USING btree (user_id);
-
-
---
--- Name: index_grit_assignments_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_grit_assignments_on_admin_id ON ml_app.grit_assignments USING btree (admin_id);
-
-
---
--- Name: index_grit_assignments_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_grit_assignments_on_master_id ON ml_app.grit_assignments USING btree (master_id);
-
-
---
--- Name: index_grit_assignments_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_grit_assignments_on_user_id ON ml_app.grit_assignments USING btree (user_id);
 
 
 --
@@ -18246,13 +25997,6 @@ CREATE INDEX index_message_templates_on_admin_id ON ml_app.message_templates USI
 
 
 --
--- Name: index_ml_app.activity_log_bhs_assignments_on_bhs_assignment_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX "index_ml_app.activity_log_bhs_assignments_on_bhs_assignment_id" ON ml_app.activity_log_bhs_assignments USING btree (bhs_assignment_id);
-
-
---
 -- Name: index_model_references_on_from_record_master_id; Type: INDEX; Schema: ml_app; Owner: -
 --
 
@@ -18285,55 +26029,6 @@ CREATE INDEX index_model_references_on_to_record_type_and_to_record_id ON ml_app
 --
 
 CREATE INDEX index_model_references_on_user_id ON ml_app.model_references USING btree (user_id);
-
-
---
--- Name: index_new_test_history_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_new_test_history_on_admin_id ON ml_app.new_test_history USING btree (admin_id);
-
-
---
--- Name: index_new_test_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_new_test_history_on_master_id ON ml_app.new_test_history USING btree (master_id);
-
-
---
--- Name: index_new_test_history_on_new_test_table_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_new_test_history_on_new_test_table_id ON ml_app.new_test_history USING btree (new_test_table_id);
-
-
---
--- Name: index_new_test_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_new_test_history_on_user_id ON ml_app.new_test_history USING btree (user_id);
-
-
---
--- Name: index_new_tests_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_new_tests_on_admin_id ON ml_app.new_tests USING btree (admin_id);
-
-
---
--- Name: index_new_tests_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_new_tests_on_master_id ON ml_app.new_tests USING btree (master_id);
-
-
---
--- Name: index_new_tests_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_new_tests_on_user_id ON ml_app.new_tests USING btree (user_id);
 
 
 --
@@ -18708,41 +26403,6 @@ CREATE INDEX index_sage_assignments_on_user_id ON ml_app.sage_assignments USING 
 
 
 --
--- Name: index_sage_two_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_sage_two_history_on_master_id ON ml_app.sage_two_history USING btree (master_id);
-
-
---
--- Name: index_sage_two_history_on_sage_two_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_sage_two_history_on_sage_two_id ON ml_app.sage_two_history USING btree (sage_two_id);
-
-
---
--- Name: index_sage_two_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_sage_two_history_on_user_id ON ml_app.sage_two_history USING btree (user_id);
-
-
---
--- Name: index_sage_twos_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_sage_twos_on_master_id ON ml_app.sage_twos USING btree (master_id);
-
-
---
--- Name: index_sage_twos_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_sage_twos_on_user_id ON ml_app.sage_twos USING btree (user_id);
-
-
---
 -- Name: index_scantron_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
 --
 
@@ -18761,90 +26421,6 @@ CREATE INDEX index_scantron_history_on_scantron_table_id ON ml_app.scantron_hist
 --
 
 CREATE INDEX index_scantron_history_on_user_id ON ml_app.scantron_history USING btree (user_id);
-
-
---
--- Name: index_scantron_q2_history_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_scantron_q2_history_on_admin_id ON ml_app.scantron_q2_history USING btree (admin_id);
-
-
---
--- Name: index_scantron_q2_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_scantron_q2_history_on_master_id ON ml_app.scantron_q2_history USING btree (master_id);
-
-
---
--- Name: index_scantron_q2_history_on_scantron_q2_table_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_scantron_q2_history_on_scantron_q2_table_id ON ml_app.scantron_q2_history USING btree (scantron_q2_table_id);
-
-
---
--- Name: index_scantron_q2_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_scantron_q2_history_on_user_id ON ml_app.scantron_q2_history USING btree (user_id);
-
-
---
--- Name: index_scantron_q2s_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_scantron_q2s_on_admin_id ON ml_app.scantron_q2s USING btree (admin_id);
-
-
---
--- Name: index_scantron_q2s_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_scantron_q2s_on_master_id ON ml_app.scantron_q2s USING btree (master_id);
-
-
---
--- Name: index_scantron_q2s_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_scantron_q2s_on_user_id ON ml_app.scantron_q2s USING btree (user_id);
-
-
---
--- Name: index_scantron_series_two_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_scantron_series_two_history_on_master_id ON ml_app.scantron_series_two_history USING btree (master_id);
-
-
---
--- Name: index_scantron_series_two_history_on_scantron_series_two_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_scantron_series_two_history_on_scantron_series_two_id ON ml_app.scantron_series_two_history USING btree (scantron_series_two_id);
-
-
---
--- Name: index_scantron_series_two_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_scantron_series_two_history_on_user_id ON ml_app.scantron_series_two_history USING btree (user_id);
-
-
---
--- Name: index_scantron_series_twos_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_scantron_series_twos_on_master_id ON ml_app.scantron_series_twos USING btree (master_id);
-
-
---
--- Name: index_scantron_series_twos_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_scantron_series_twos_on_user_id ON ml_app.scantron_series_twos USING btree (user_id);
 
 
 --
@@ -18876,55 +26452,6 @@ CREATE INDEX index_sessions_on_updated_at ON ml_app.sessions USING btree (update
 
 
 --
--- Name: index_sleep_assignment_history_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_sleep_assignment_history_on_admin_id ON ml_app.sleep_assignment_history USING btree (admin_id);
-
-
---
--- Name: index_sleep_assignment_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_sleep_assignment_history_on_master_id ON ml_app.sleep_assignment_history USING btree (master_id);
-
-
---
--- Name: index_sleep_assignment_history_on_sleep_assignment_table_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_sleep_assignment_history_on_sleep_assignment_table_id ON ml_app.sleep_assignment_history USING btree (sleep_assignment_table_id);
-
-
---
--- Name: index_sleep_assignment_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_sleep_assignment_history_on_user_id ON ml_app.sleep_assignment_history USING btree (user_id);
-
-
---
--- Name: index_sleep_assignments_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_sleep_assignments_on_admin_id ON ml_app.sleep_assignments USING btree (admin_id);
-
-
---
--- Name: index_sleep_assignments_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_sleep_assignments_on_master_id ON ml_app.sleep_assignments USING btree (master_id);
-
-
---
--- Name: index_sleep_assignments_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_sleep_assignments_on_user_id ON ml_app.sleep_assignments USING btree (user_id);
-
-
---
 -- Name: index_sub_process_history_on_sub_process_id; Type: INDEX; Schema: ml_app; Owner: -
 --
 
@@ -18943,258 +26470,6 @@ CREATE INDEX index_sub_processes_on_admin_id ON ml_app.sub_processes USING btree
 --
 
 CREATE INDEX index_sub_processes_on_protocol_id ON ml_app.sub_processes USING btree (protocol_id);
-
-
---
--- Name: index_test1_history_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test1_history_on_admin_id ON ml_app.test1_history USING btree (admin_id);
-
-
---
--- Name: index_test1_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test1_history_on_master_id ON ml_app.test1_history USING btree (master_id);
-
-
---
--- Name: index_test1_history_on_test1_table_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test1_history_on_test1_table_id ON ml_app.test1_history USING btree (test1_table_id);
-
-
---
--- Name: index_test1_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test1_history_on_user_id ON ml_app.test1_history USING btree (user_id);
-
-
---
--- Name: index_test1s_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test1s_on_admin_id ON ml_app.test1s USING btree (admin_id);
-
-
---
--- Name: index_test1s_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test1s_on_master_id ON ml_app.test1s USING btree (master_id);
-
-
---
--- Name: index_test1s_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test1s_on_user_id ON ml_app.test1s USING btree (user_id);
-
-
---
--- Name: index_test2_history_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test2_history_on_admin_id ON ml_app.test2_history USING btree (admin_id);
-
-
---
--- Name: index_test2_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test2_history_on_master_id ON ml_app.test2_history USING btree (master_id);
-
-
---
--- Name: index_test2_history_on_test2_table_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test2_history_on_test2_table_id ON ml_app.test2_history USING btree (test2_table_id);
-
-
---
--- Name: index_test2_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test2_history_on_user_id ON ml_app.test2_history USING btree (user_id);
-
-
---
--- Name: index_test2s_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test2s_on_admin_id ON ml_app.test2s USING btree (admin_id);
-
-
---
--- Name: index_test2s_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test2s_on_master_id ON ml_app.test2s USING btree (master_id);
-
-
---
--- Name: index_test2s_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test2s_on_user_id ON ml_app.test2s USING btree (user_id);
-
-
---
--- Name: index_test_2_history_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test_2_history_on_admin_id ON ml_app.test_2_history USING btree (admin_id);
-
-
---
--- Name: index_test_2_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test_2_history_on_master_id ON ml_app.test_2_history USING btree (master_id);
-
-
---
--- Name: index_test_2_history_on_test_2_table_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test_2_history_on_test_2_table_id ON ml_app.test_2_history USING btree (test_2_table_id);
-
-
---
--- Name: index_test_2_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test_2_history_on_user_id ON ml_app.test_2_history USING btree (user_id);
-
-
---
--- Name: index_test_2s_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test_2s_on_admin_id ON ml_app.test_2s USING btree (admin_id);
-
-
---
--- Name: index_test_2s_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test_2s_on_master_id ON ml_app.test_2s USING btree (master_id);
-
-
---
--- Name: index_test_2s_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test_2s_on_user_id ON ml_app.test_2s USING btree (user_id);
-
-
---
--- Name: index_test_ext2_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test_ext2_history_on_master_id ON ml_app.test_ext2_history USING btree (master_id);
-
-
---
--- Name: index_test_ext2_history_on_test_ext2_table_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test_ext2_history_on_test_ext2_table_id ON ml_app.test_ext2_history USING btree (test_ext2_table_id);
-
-
---
--- Name: index_test_ext2_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test_ext2_history_on_user_id ON ml_app.test_ext2_history USING btree (user_id);
-
-
---
--- Name: index_test_ext2s_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test_ext2s_on_master_id ON ml_app.test_ext2s USING btree (master_id);
-
-
---
--- Name: index_test_ext2s_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test_ext2s_on_user_id ON ml_app.test_ext2s USING btree (user_id);
-
-
---
--- Name: index_test_ext_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test_ext_history_on_master_id ON ml_app.test_ext_history USING btree (master_id);
-
-
---
--- Name: index_test_ext_history_on_test_ext_table_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test_ext_history_on_test_ext_table_id ON ml_app.test_ext_history USING btree (test_ext_table_id);
-
-
---
--- Name: index_test_ext_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test_ext_history_on_user_id ON ml_app.test_ext_history USING btree (user_id);
-
-
---
--- Name: index_test_exts_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test_exts_on_master_id ON ml_app.test_exts USING btree (master_id);
-
-
---
--- Name: index_test_exts_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test_exts_on_user_id ON ml_app.test_exts USING btree (user_id);
-
-
---
--- Name: index_test_item_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test_item_history_on_master_id ON ml_app.test_item_history USING btree (master_id);
-
-
---
--- Name: index_test_item_history_on_test_item_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test_item_history_on_test_item_id ON ml_app.test_item_history USING btree (test_item_id);
-
-
---
--- Name: index_test_item_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test_item_history_on_user_id ON ml_app.test_item_history USING btree (user_id);
-
-
---
--- Name: index_test_items_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test_items_on_master_id ON ml_app.test_items USING btree (master_id);
-
-
---
--- Name: index_test_items_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE INDEX index_test_items_on_user_id ON ml_app.test_items USING btree (user_id);
 
 
 --
@@ -19331,6 +26606,34 @@ CREATE INDEX index_user_authorization_history_on_user_authorization_id ON ml_app
 
 
 --
+-- Name: index_user_description_history_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
+--
+
+CREATE INDEX index_user_description_history_on_admin_id ON ml_app.user_description_history USING btree (admin_id);
+
+
+--
+-- Name: index_user_description_history_on_app_type_id; Type: INDEX; Schema: ml_app; Owner: -
+--
+
+CREATE INDEX index_user_description_history_on_app_type_id ON ml_app.user_description_history USING btree (app_type_id);
+
+
+--
+-- Name: index_user_descriptions_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
+--
+
+CREATE INDEX index_user_descriptions_on_admin_id ON ml_app.user_descriptions USING btree (admin_id);
+
+
+--
+-- Name: index_user_descriptions_on_app_type_id; Type: INDEX; Schema: ml_app; Owner: -
+--
+
+CREATE INDEX index_user_descriptions_on_app_type_id ON ml_app.user_descriptions USING btree (app_type_id);
+
+
+--
 -- Name: index_user_history_on_app_type_id; Type: INDEX; Schema: ml_app; Owner: -
 --
 
@@ -19457,27 +26760,6 @@ CREATE UNIQUE INDEX nfs_store_stored_files_unique_file ON ml_app.nfs_store_store
 
 
 --
--- Name: unique_master_protocol; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE UNIQUE INDEX unique_master_protocol ON ml_app.trackers USING btree (master_id, protocol_id);
-
-
---
--- Name: unique_master_protocol_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE UNIQUE INDEX unique_master_protocol_id ON ml_app.trackers USING btree (master_id, protocol_id, id);
-
-
---
--- Name: unique_protocol_and_id; Type: INDEX; Schema: ml_app; Owner: -
---
-
-CREATE UNIQUE INDEX unique_protocol_and_id ON ml_app.sub_processes USING btree (protocol_id, id);
-
-
---
 -- Name: unique_schema_migrations; Type: INDEX; Schema: ml_app; Owner: -
 --
 
@@ -19485,52 +26767,45 @@ CREATE UNIQUE INDEX unique_schema_migrations ON ml_app.schema_migrations USING b
 
 
 --
--- Name: unique_sub_process_and_id; Type: INDEX; Schema: ml_app; Owner: -
+-- Name: 13f4f74e_id_idx; Type: INDEX; Schema: redcap; Owner: -
 --
 
-CREATE UNIQUE INDEX unique_sub_process_and_id ON ml_app.protocol_events USING btree (sub_process_id, id);
-
-
---
--- Name: 5de73de6_id_idx; Type: INDEX; Schema: ref_data; Owner: -
---
-
-CREATE INDEX "5de73de6_id_idx" ON ref_data.redcap_user_status_rec_history USING btree (redcap_user_status_rec_id);
+CREATE INDEX "13f4f74e_id_idx" ON redcap.viva_meta_variable_history USING btree (viva_meta_variable_id);
 
 
 --
--- Name: 5de73de6_user_idx; Type: INDEX; Schema: ref_data; Owner: -
+-- Name: 13f4f74e_user_idx; Type: INDEX; Schema: redcap; Owner: -
 --
 
-CREATE INDEX "5de73de6_user_idx" ON ref_data.redcap_user_status_rec_history USING btree (user_id);
-
-
---
--- Name: d0aaf0ef_id_idx; Type: INDEX; Schema: ref_data; Owner: -
---
-
-CREATE INDEX d0aaf0ef_id_idx ON ref_data.data_variable_package_history USING btree (data_variable_package_id);
+CREATE INDEX "13f4f74e_user_idx" ON redcap.viva_meta_variable_history USING btree (user_id);
 
 
 --
--- Name: d0aaf0ef_user_idx; Type: INDEX; Schema: ref_data; Owner: -
+-- Name: b53dc2a4_id_idx; Type: INDEX; Schema: redcap; Owner: -
 --
 
-CREATE INDEX d0aaf0ef_user_idx ON ref_data.data_variable_package_history USING btree (user_id);
-
-
---
--- Name: f8d33562_id_idx; Type: INDEX; Schema: ref_data; Owner: -
---
-
-CREATE INDEX f8d33562_id_idx ON ref_data.domain_mapping_history USING btree (domain_mapping_id);
+CREATE INDEX b53dc2a4_id_idx ON redcap.q2_demo_rc_history USING btree (q2_demo_rc_id);
 
 
 --
--- Name: f8d33562_user_idx; Type: INDEX; Schema: ref_data; Owner: -
+-- Name: b53dc2a4_user_idx; Type: INDEX; Schema: redcap; Owner: -
 --
 
-CREATE INDEX f8d33562_user_idx ON ref_data.domain_mapping_history USING btree (user_id);
+CREATE INDEX b53dc2a4_user_idx ON redcap.q2_demo_rc_history USING btree (user_id);
+
+
+--
+-- Name: index_redcap.q2_demo_rcs_on_user_id; Type: INDEX; Schema: redcap; Owner: -
+--
+
+CREATE INDEX "index_redcap.q2_demo_rcs_on_user_id" ON redcap.q2_demo_rcs USING btree (user_id);
+
+
+--
+-- Name: index_redcap.viva_meta_variables_on_user_id; Type: INDEX; Schema: redcap; Owner: -
+--
+
+CREATE INDEX "index_redcap.viva_meta_variables_on_user_id" ON redcap.viva_meta_variables USING btree (user_id);
 
 
 --
@@ -19653,10 +26928,10 @@ CREATE INDEX idx_rdcih_on_proj_admin_id ON ref_data.redcap_data_collection_instr
 
 
 --
--- Name: index_data_requests.data_variable_packages_on_user_id; Type: INDEX; Schema: ref_data; Owner: -
+-- Name: index_datadic_variable_history_on_user_id; Type: INDEX; Schema: ref_data; Owner: -
 --
 
-CREATE INDEX "index_data_requests.data_variable_packages_on_user_id" ON ref_data.data_variable_packages USING btree (user_id);
+CREATE INDEX index_datadic_variable_history_on_user_id ON ref_data.datadic_variable_history USING btree (user_id);
 
 
 --
@@ -19706,13 +26981,6 @@ CREATE INDEX "index_ref_data.datadic_variables_on_admin_id" ON ref_data.datadic_
 --
 
 CREATE INDEX "index_ref_data.datadic_variables_on_redcap_data_dictionary_id" ON ref_data.datadic_variables USING btree (redcap_data_dictionary_id);
-
-
---
--- Name: index_ref_data.domain_mappings_on_user_id; Type: INDEX; Schema: ref_data; Owner: -
---
-
-CREATE INDEX "index_ref_data.domain_mappings_on_user_id" ON ref_data.domain_mappings USING btree (user_id);
 
 
 --
@@ -19779,17 +27047,227 @@ CREATE INDEX "index_ref_data.redcap_project_users_on_redcap_project_admin_id" ON
 
 
 --
--- Name: index_ref_data.redcap_user_status_recs_on_user_id; Type: INDEX; Schema: ref_data; Owner: -
+-- Name: activity_log_project_assignment_simple_tests log_activity_log_project_assignment_simple_test_history_insert; Type: TRIGGER; Schema: dynamic; Owner: -
 --
 
-CREATE INDEX "index_ref_data.redcap_user_status_recs_on_user_id" ON ref_data.redcap_user_status_recs USING btree (user_id);
+CREATE TRIGGER log_activity_log_project_assignment_simple_test_history_insert AFTER INSERT ON dynamic.activity_log_project_assignment_simple_tests FOR EACH ROW EXECUTE FUNCTION dynamic.log_activity_log_project_assignment_simple_tests_update();
 
 
 --
--- Name: oldd0aaf0ef_user_idx; Type: INDEX; Schema: ref_data; Owner: -
+-- Name: activity_log_project_assignment_simple_tests log_activity_log_project_assignment_simple_test_history_update; Type: TRIGGER; Schema: dynamic; Owner: -
 --
 
-CREATE INDEX oldd0aaf0ef_user_idx ON ref_data.data_variable_package_var_history USING btree (user_id);
+CREATE TRIGGER log_activity_log_project_assignment_simple_test_history_update AFTER UPDATE ON dynamic.activity_log_project_assignment_simple_tests FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION dynamic.log_activity_log_project_assignment_simple_tests_update();
+
+
+--
+-- Name: project_imports log_project_import_history_insert; Type: TRIGGER; Schema: dynamic; Owner: -
+--
+
+CREATE TRIGGER log_project_import_history_insert AFTER INSERT ON dynamic.project_imports FOR EACH ROW EXECUTE FUNCTION dynamic.log_project_imports_update();
+
+
+--
+-- Name: project_imports log_project_import_history_update; Type: TRIGGER; Schema: dynamic; Owner: -
+--
+
+CREATE TRIGGER log_project_import_history_update AFTER UPDATE ON dynamic.project_imports FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION dynamic.log_project_imports_update();
+
+
+--
+-- Name: test_fields log_test_field_history_insert; Type: TRIGGER; Schema: dynamic; Owner: -
+--
+
+CREATE TRIGGER log_test_field_history_insert AFTER INSERT ON dynamic.test_fields FOR EACH ROW EXECUTE FUNCTION dynamic.log_test_fields_update();
+
+
+--
+-- Name: test_fields log_test_field_history_update; Type: TRIGGER; Schema: dynamic; Owner: -
+--
+
+CREATE TRIGGER log_test_field_history_update AFTER UPDATE ON dynamic.test_fields FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION dynamic.log_test_fields_update();
+
+
+--
+-- Name: tests log_test_history_insert; Type: TRIGGER; Schema: dynamic; Owner: -
+--
+
+CREATE TRIGGER log_test_history_insert AFTER INSERT ON dynamic.tests FOR EACH ROW EXECUTE FUNCTION dynamic.log_tests_update();
+
+
+--
+-- Name: tests log_test_history_update; Type: TRIGGER; Schema: dynamic; Owner: -
+--
+
+CREATE TRIGGER log_test_history_update AFTER UPDATE ON dynamic.tests FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION dynamic.log_tests_update();
+
+
+--
+-- Name: test_model_b_embeds log_test_model_b_embed_history_insert; Type: TRIGGER; Schema: dynamic; Owner: -
+--
+
+CREATE TRIGGER log_test_model_b_embed_history_insert AFTER INSERT ON dynamic.test_model_b_embeds FOR EACH ROW EXECUTE FUNCTION dynamic.log_test_model_b_embeds_update();
+
+
+--
+-- Name: test_model_b_embeds log_test_model_b_embed_history_update; Type: TRIGGER; Schema: dynamic; Owner: -
+--
+
+CREATE TRIGGER log_test_model_b_embed_history_update AFTER UPDATE ON dynamic.test_model_b_embeds FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION dynamic.log_test_model_b_embeds_update();
+
+
+--
+-- Name: test_model_b_embed_recs log_test_model_b_embed_rec_history_insert; Type: TRIGGER; Schema: dynamic; Owner: -
+--
+
+CREATE TRIGGER log_test_model_b_embed_rec_history_insert AFTER INSERT ON dynamic.test_model_b_embed_recs FOR EACH ROW EXECUTE FUNCTION dynamic.log_test_model_b_embed_recs_update();
+
+
+--
+-- Name: test_model_b_embed_recs log_test_model_b_embed_rec_history_update; Type: TRIGGER; Schema: dynamic; Owner: -
+--
+
+CREATE TRIGGER log_test_model_b_embed_rec_history_update AFTER UPDATE ON dynamic.test_model_b_embed_recs FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION dynamic.log_test_model_b_embed_recs_update();
+
+
+--
+-- Name: test_model_c_embeds log_test_model_c_embed_history_insert; Type: TRIGGER; Schema: dynamic; Owner: -
+--
+
+CREATE TRIGGER log_test_model_c_embed_history_insert AFTER INSERT ON dynamic.test_model_c_embeds FOR EACH ROW EXECUTE FUNCTION dynamic.log_test_model_c_embeds_update();
+
+
+--
+-- Name: test_model_c_embeds log_test_model_c_embed_history_update; Type: TRIGGER; Schema: dynamic; Owner: -
+--
+
+CREATE TRIGGER log_test_model_c_embed_history_update AFTER UPDATE ON dynamic.test_model_c_embeds FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION dynamic.log_test_model_c_embeds_update();
+
+
+--
+-- Name: test_model_c_embed_recs log_test_model_c_embed_rec_history_insert; Type: TRIGGER; Schema: dynamic; Owner: -
+--
+
+CREATE TRIGGER log_test_model_c_embed_rec_history_insert AFTER INSERT ON dynamic.test_model_c_embed_recs FOR EACH ROW EXECUTE FUNCTION dynamic.log_test_model_c_embed_recs_update();
+
+
+--
+-- Name: test_model_c_embed_recs log_test_model_c_embed_rec_history_update; Type: TRIGGER; Schema: dynamic; Owner: -
+--
+
+CREATE TRIGGER log_test_model_c_embed_rec_history_update AFTER UPDATE ON dynamic.test_model_c_embed_recs FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION dynamic.log_test_model_c_embed_recs_update();
+
+
+--
+-- Name: test_model_embeds log_test_model_embed_history_insert; Type: TRIGGER; Schema: dynamic; Owner: -
+--
+
+CREATE TRIGGER log_test_model_embed_history_insert AFTER INSERT ON dynamic.test_model_embeds FOR EACH ROW EXECUTE FUNCTION dynamic.log_test_model_embeds_update();
+
+
+--
+-- Name: test_model_embeds log_test_model_embed_history_update; Type: TRIGGER; Schema: dynamic; Owner: -
+--
+
+CREATE TRIGGER log_test_model_embed_history_update AFTER UPDATE ON dynamic.test_model_embeds FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION dynamic.log_test_model_embeds_update();
+
+
+--
+-- Name: test_model_embed_recs log_test_model_embed_rec_history_insert; Type: TRIGGER; Schema: dynamic; Owner: -
+--
+
+CREATE TRIGGER log_test_model_embed_rec_history_insert AFTER INSERT ON dynamic.test_model_embed_recs FOR EACH ROW EXECUTE FUNCTION dynamic.log_test_model_embed_recs_update();
+
+
+--
+-- Name: test_model_embed_recs log_test_model_embed_rec_history_update; Type: TRIGGER; Schema: dynamic; Owner: -
+--
+
+CREATE TRIGGER log_test_model_embed_rec_history_update AFTER UPDATE ON dynamic.test_model_embed_recs FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION dynamic.log_test_model_embed_recs_update();
+
+
+--
+-- Name: test_refs log_test_ref_history_insert; Type: TRIGGER; Schema: dynamic; Owner: -
+--
+
+CREATE TRIGGER log_test_ref_history_insert AFTER INSERT ON dynamic.test_refs FOR EACH ROW EXECUTE FUNCTION dynamic.log_test_refs_update();
+
+
+--
+-- Name: test_refs log_test_ref_history_update; Type: TRIGGER; Schema: dynamic; Owner: -
+--
+
+CREATE TRIGGER log_test_ref_history_update AFTER UPDATE ON dynamic.test_refs FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION dynamic.log_test_refs_update();
+
+
+--
+-- Name: test_references log_test_reference_history_insert; Type: TRIGGER; Schema: dynamic; Owner: -
+--
+
+CREATE TRIGGER log_test_reference_history_insert AFTER INSERT ON dynamic.test_references FOR EACH ROW EXECUTE FUNCTION dynamic.log_test_references_update();
+
+
+--
+-- Name: test_references log_test_reference_history_update; Type: TRIGGER; Schema: dynamic; Owner: -
+--
+
+CREATE TRIGGER log_test_reference_history_update AFTER UPDATE ON dynamic.test_references FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION dynamic.log_test_references_update();
+
+
+--
+-- Name: test_times log_test_time_history_insert; Type: TRIGGER; Schema: dynamic; Owner: -
+--
+
+CREATE TRIGGER log_test_time_history_insert AFTER INSERT ON dynamic.test_times FOR EACH ROW EXECUTE FUNCTION dynamic.log_test_times_update();
+
+
+--
+-- Name: test_times log_test_time_history_update; Type: TRIGGER; Schema: dynamic; Owner: -
+--
+
+CREATE TRIGGER log_test_time_history_update AFTER UPDATE ON dynamic.test_times FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION dynamic.log_test_times_update();
+
+
+--
+-- Name: grit_assignments log_grit_assignment_history_insert; Type: TRIGGER; Schema: extra_app; Owner: -
+--
+
+CREATE TRIGGER log_grit_assignment_history_insert AFTER INSERT ON extra_app.grit_assignments FOR EACH ROW EXECUTE FUNCTION extra_app.log_grit_assignments_update();
+
+
+--
+-- Name: grit_assignments log_grit_assignment_history_update; Type: TRIGGER; Schema: extra_app; Owner: -
+--
+
+CREATE TRIGGER log_grit_assignment_history_update AFTER UPDATE ON extra_app.grit_assignments FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION extra_app.log_grit_assignments_update();
+
+
+--
+-- Name: pitt_bhi_assignments log_pitt_bhi_assignment_history_insert; Type: TRIGGER; Schema: extra_app; Owner: -
+--
+
+CREATE TRIGGER log_pitt_bhi_assignment_history_insert AFTER INSERT ON extra_app.pitt_bhi_assignments FOR EACH ROW EXECUTE FUNCTION extra_app.log_pitt_bhi_assignments_update();
+
+
+--
+-- Name: pitt_bhi_assignments log_pitt_bhi_assignment_history_update; Type: TRIGGER; Schema: extra_app; Owner: -
+--
+
+CREATE TRIGGER log_pitt_bhi_assignment_history_update AFTER UPDATE ON extra_app.pitt_bhi_assignments FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION extra_app.log_pitt_bhi_assignments_update();
+
+
+--
+-- Name: sleep_assignments log_sleep_assignment_history_insert; Type: TRIGGER; Schema: extra_app; Owner: -
+--
+
+CREATE TRIGGER log_sleep_assignment_history_insert AFTER INSERT ON extra_app.sleep_assignments FOR EACH ROW EXECUTE FUNCTION extra_app.log_sleep_assignments_update();
+
+
+--
+-- Name: sleep_assignments log_sleep_assignment_history_update; Type: TRIGGER; Schema: extra_app; Owner: -
+--
+
+CREATE TRIGGER log_sleep_assignment_history_update AFTER UPDATE ON extra_app.sleep_assignments FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION extra_app.log_sleep_assignments_update();
 
 
 --
@@ -19807,48 +27285,6 @@ CREATE TRIGGER accuracy_score_history_update AFTER UPDATE ON ml_app.accuracy_sco
 
 
 --
--- Name: activity_log_bhs_assignments activity_log_bhs_assignment_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER activity_log_bhs_assignment_history_insert AFTER INSERT ON ml_app.activity_log_bhs_assignments FOR EACH ROW EXECUTE FUNCTION ml_app.log_activity_log_bhs_assignment_update();
-
-
---
--- Name: activity_log_bhs_assignments activity_log_bhs_assignment_history_update; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER activity_log_bhs_assignment_history_update AFTER UPDATE ON ml_app.activity_log_bhs_assignments FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.log_activity_log_bhs_assignment_update();
-
-
---
--- Name: activity_log_bhs_assignments activity_log_bhs_assignment_insert_defaults; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER activity_log_bhs_assignment_insert_defaults BEFORE INSERT ON ml_app.activity_log_bhs_assignments FOR EACH ROW EXECUTE FUNCTION ml_app.activity_log_bhs_assignment_insert_defaults();
-
-
---
--- Name: activity_log_bhs_assignments activity_log_bhs_assignment_insert_notification; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER activity_log_bhs_assignment_insert_notification AFTER INSERT ON ml_app.activity_log_bhs_assignments FOR EACH ROW EXECUTE FUNCTION ml_app.activity_log_bhs_assignment_insert_notification();
-
-
---
--- Name: activity_log_ext_assignments activity_log_ext_assignment_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER activity_log_ext_assignment_history_insert AFTER INSERT ON ml_app.activity_log_ext_assignments FOR EACH ROW EXECUTE FUNCTION ml_app.log_activity_log_ext_assignment_update();
-
-
---
--- Name: activity_log_ext_assignments activity_log_ext_assignment_history_update; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER activity_log_ext_assignment_history_update AFTER UPDATE ON ml_app.activity_log_ext_assignments FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.log_activity_log_ext_assignment_update();
-
-
---
 -- Name: activity_logs activity_log_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
 --
 
@@ -19863,20 +27299,6 @@ CREATE TRIGGER activity_log_history_update AFTER UPDATE ON ml_app.activity_logs 
 
 
 --
--- Name: activity_log_new_tests activity_log_new_test_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER activity_log_new_test_history_insert AFTER INSERT ON ml_app.activity_log_new_tests FOR EACH ROW EXECUTE FUNCTION ml_app.log_activity_log_new_test_update();
-
-
---
--- Name: activity_log_new_tests activity_log_new_test_history_update; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER activity_log_new_test_history_update AFTER UPDATE ON ml_app.activity_log_new_tests FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.log_activity_log_new_test_update();
-
-
---
 -- Name: activity_log_player_contact_phones activity_log_player_contact_phone_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
 --
 
@@ -19888,20 +27310,6 @@ CREATE TRIGGER activity_log_player_contact_phone_history_insert AFTER INSERT ON 
 --
 
 CREATE TRIGGER activity_log_player_contact_phone_history_update AFTER UPDATE ON ml_app.activity_log_player_contact_phones FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.log_activity_log_player_contact_phone_update();
-
-
---
--- Name: activity_log_player_infos activity_log_player_info_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER activity_log_player_info_history_insert AFTER INSERT ON ml_app.activity_log_player_infos FOR EACH ROW EXECUTE FUNCTION ml_app.log_activity_log_player_info_update();
-
-
---
--- Name: activity_log_player_infos activity_log_player_info_history_update; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER activity_log_player_info_history_update AFTER UPDATE ON ml_app.activity_log_player_infos FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.log_activity_log_player_info_update();
 
 
 --
@@ -19975,20 +27383,6 @@ CREATE TRIGGER app_type_history_update AFTER UPDATE ON ml_app.app_types FOR EACH
 
 
 --
--- Name: bhs_assignments bhs_assignment_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER bhs_assignment_history_insert AFTER INSERT ON ml_app.bhs_assignments FOR EACH ROW EXECUTE FUNCTION ml_app.log_bhs_assignment_update();
-
-
---
--- Name: bhs_assignments bhs_assignment_history_update; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER bhs_assignment_history_update AFTER UPDATE ON ml_app.bhs_assignments FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.log_bhs_assignment_update();
-
-
---
 -- Name: colleges college_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
 --
 
@@ -20028,34 +27422,6 @@ CREATE TRIGGER dynamic_model_history_insert AFTER INSERT ON ml_app.dynamic_model
 --
 
 CREATE TRIGGER dynamic_model_history_update AFTER UPDATE ON ml_app.dynamic_models FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.log_dynamic_model_update();
-
-
---
--- Name: ext_assignments ext_assignment_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER ext_assignment_history_insert AFTER INSERT ON ml_app.ext_assignments FOR EACH ROW EXECUTE FUNCTION ml_app.log_ext_assignment_update();
-
-
---
--- Name: ext_assignments ext_assignment_history_update; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER ext_assignment_history_update AFTER UPDATE ON ml_app.ext_assignments FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.log_ext_assignment_update();
-
-
---
--- Name: ext_gen_assignments ext_gen_assignment_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER ext_gen_assignment_history_insert AFTER INSERT ON ml_app.ext_gen_assignments FOR EACH ROW EXECUTE FUNCTION ml_app.log_ext_gen_assignment_update();
-
-
---
--- Name: ext_gen_assignments ext_gen_assignment_history_update; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER ext_gen_assignment_history_update AFTER UPDATE ON ml_app.ext_gen_assignments FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.log_ext_gen_assignment_update();
 
 
 --
@@ -20101,20 +27467,6 @@ CREATE TRIGGER general_selection_history_update AFTER UPDATE ON ml_app.general_s
 
 
 --
--- Name: grit_assignments grit_assignment_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER grit_assignment_history_insert AFTER INSERT ON ml_app.grit_assignments FOR EACH ROW EXECUTE FUNCTION grit.log_grit_assignment_update();
-
-
---
--- Name: grit_assignments grit_assignment_history_update; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER grit_assignment_history_update AFTER UPDATE ON ml_app.grit_assignments FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION grit.log_grit_assignment_update();
-
-
---
 -- Name: item_flags item_flag_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
 --
 
@@ -20143,34 +27495,6 @@ CREATE TRIGGER item_flag_name_history_update AFTER UPDATE ON ml_app.item_flag_na
 
 
 --
--- Name: activity_log_bhs_assignments log_activity_log_bhs_assignment_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER log_activity_log_bhs_assignment_history_insert AFTER INSERT ON ml_app.activity_log_bhs_assignments FOR EACH ROW EXECUTE FUNCTION ml_app.log_activity_log_bhs_assignments_update();
-
-
---
--- Name: activity_log_bhs_assignments log_activity_log_bhs_assignment_history_update; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER log_activity_log_bhs_assignment_history_update AFTER UPDATE ON ml_app.activity_log_bhs_assignments FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.log_activity_log_bhs_assignments_update();
-
-
---
--- Name: activity_log_player_contact_phones log_activity_log_player_contact_phone_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER log_activity_log_player_contact_phone_history_insert AFTER INSERT ON ml_app.activity_log_player_contact_phones FOR EACH ROW EXECUTE FUNCTION ml_app.log_activity_log_player_contact_phones_update();
-
-
---
--- Name: activity_log_player_contact_phones log_activity_log_player_contact_phone_history_update; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER log_activity_log_player_contact_phone_history_update AFTER UPDATE ON ml_app.activity_log_player_contact_phones FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.log_activity_log_player_contact_phones_update();
-
-
---
 -- Name: role_descriptions log_role_description_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
 --
 
@@ -20185,6 +27509,20 @@ CREATE TRIGGER log_role_description_history_update AFTER UPDATE ON ml_app.role_d
 
 
 --
+-- Name: user_descriptions log_user_description_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
+--
+
+CREATE TRIGGER log_user_description_history_insert AFTER INSERT ON ml_app.user_descriptions FOR EACH ROW EXECUTE FUNCTION ml_app.user_description_history_upd();
+
+
+--
+-- Name: user_descriptions log_user_description_history_update; Type: TRIGGER; Schema: ml_app; Owner: -
+--
+
+CREATE TRIGGER log_user_description_history_update AFTER UPDATE ON ml_app.user_descriptions FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.user_description_history_upd();
+
+
+--
 -- Name: message_templates message_template_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
 --
 
@@ -20196,20 +27534,6 @@ CREATE TRIGGER message_template_history_insert AFTER INSERT ON ml_app.message_te
 --
 
 CREATE TRIGGER message_template_history_update AFTER UPDATE ON ml_app.message_templates FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.log_message_template_update();
-
-
---
--- Name: new_tests new_test_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER new_test_history_insert AFTER INSERT ON ml_app.new_tests FOR EACH ROW EXECUTE FUNCTION ml_app.log_new_test_update();
-
-
---
--- Name: new_tests new_test_history_update; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER new_test_history_update AFTER UPDATE ON ml_app.new_tests FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.log_new_test_update();
 
 
 --
@@ -20423,34 +27747,6 @@ CREATE TRIGGER scantron_history_update AFTER UPDATE ON ml_app.scantrons FOR EACH
 
 
 --
--- Name: scantron_q2s scantron_q2_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER scantron_q2_history_insert AFTER INSERT ON ml_app.scantron_q2s FOR EACH ROW EXECUTE FUNCTION ml_app.log_scantron_q2_update();
-
-
---
--- Name: scantron_q2s scantron_q2_history_update; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER scantron_q2_history_update AFTER UPDATE ON ml_app.scantron_q2s FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.log_scantron_q2_update();
-
-
---
--- Name: sleep_assignments sleep_assignment_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER sleep_assignment_history_insert AFTER INSERT ON ml_app.sleep_assignments FOR EACH ROW EXECUTE FUNCTION ml_app.log_sleep_assignment_update();
-
-
---
--- Name: sleep_assignments sleep_assignment_history_update; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER sleep_assignment_history_update AFTER UPDATE ON ml_app.sleep_assignments FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.log_sleep_assignment_update();
-
-
---
 -- Name: sub_processes sub_process_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
 --
 
@@ -20462,76 +27758,6 @@ CREATE TRIGGER sub_process_history_insert AFTER INSERT ON ml_app.sub_processes F
 --
 
 CREATE TRIGGER sub_process_history_update AFTER UPDATE ON ml_app.sub_processes FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.log_sub_process_update();
-
-
---
--- Name: test1s test1_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER test1_history_insert AFTER INSERT ON ml_app.test1s FOR EACH ROW EXECUTE FUNCTION ml_app.log_test1_update();
-
-
---
--- Name: test1s test1_history_update; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER test1_history_update AFTER UPDATE ON ml_app.test1s FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.log_test1_update();
-
-
---
--- Name: test2s test2_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER test2_history_insert AFTER INSERT ON ml_app.test2s FOR EACH ROW EXECUTE FUNCTION ml_app.log_test2_update();
-
-
---
--- Name: test2s test2_history_update; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER test2_history_update AFTER UPDATE ON ml_app.test2s FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.log_test2_update();
-
-
---
--- Name: test_2s test_2_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER test_2_history_insert AFTER INSERT ON ml_app.test_2s FOR EACH ROW EXECUTE FUNCTION ml_app.log_test_2_update();
-
-
---
--- Name: test_2s test_2_history_update; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER test_2_history_update AFTER UPDATE ON ml_app.test_2s FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.log_test_2_update();
-
-
---
--- Name: test_ext2s test_ext2_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER test_ext2_history_insert AFTER INSERT ON ml_app.test_ext2s FOR EACH ROW EXECUTE FUNCTION ml_app.log_test_ext2_update();
-
-
---
--- Name: test_ext2s test_ext2_history_update; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER test_ext2_history_update AFTER UPDATE ON ml_app.test_ext2s FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.log_test_ext2_update();
-
-
---
--- Name: test_exts test_ext_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER test_ext_history_insert AFTER INSERT ON ml_app.test_exts FOR EACH ROW EXECUTE FUNCTION ml_app.log_test_ext_update();
-
-
---
--- Name: test_exts test_ext_history_update; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER test_ext_history_update AFTER UPDATE ON ml_app.test_exts FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ml_app.log_test_ext_update();
 
 
 --
@@ -20567,13 +27793,6 @@ CREATE TRIGGER tracker_record_delete AFTER DELETE ON ml_app.tracker_history FOR 
 --
 
 CREATE TRIGGER tracker_upsert BEFORE INSERT ON ml_app.trackers FOR EACH ROW EXECUTE FUNCTION ml_app.tracker_upsert();
-
-
---
--- Name: masters update_master_msid_trigger; Type: TRIGGER; Schema: ml_app; Owner: -
---
-
-CREATE TRIGGER update_master_msid_trigger AFTER INSERT ON ml_app.masters FOR EACH ROW EXECUTE FUNCTION ml_app.update_master_msid();
 
 
 --
@@ -20633,31 +27852,17 @@ CREATE TRIGGER user_role_history_update AFTER UPDATE ON ml_app.user_roles FOR EA
 
 
 --
--- Name: data_variable_packages log_data_variable_package_history_insert; Type: TRIGGER; Schema: ref_data; Owner: -
+-- Name: q2_demo_rcs log_q2_demo_rc_history_insert; Type: TRIGGER; Schema: redcap; Owner: -
 --
 
-CREATE TRIGGER log_data_variable_package_history_insert AFTER INSERT ON ref_data.data_variable_packages FOR EACH ROW EXECUTE FUNCTION ref_data.log_data_variable_packages_update();
-
-
---
--- Name: data_variable_packages log_data_variable_package_history_update; Type: TRIGGER; Schema: ref_data; Owner: -
---
-
-CREATE TRIGGER log_data_variable_package_history_update AFTER UPDATE ON ref_data.data_variable_packages FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ref_data.log_data_variable_packages_update();
+CREATE TRIGGER log_q2_demo_rc_history_insert AFTER INSERT ON redcap.q2_demo_rcs FOR EACH ROW EXECUTE FUNCTION redcap.log_q2_demo_rcs_update();
 
 
 --
--- Name: data_variable_package_vars log_data_variable_package_var_history_insert; Type: TRIGGER; Schema: ref_data; Owner: -
+-- Name: q2_demo_rcs log_q2_demo_rc_history_update; Type: TRIGGER; Schema: redcap; Owner: -
 --
 
-CREATE TRIGGER log_data_variable_package_var_history_insert AFTER INSERT ON ref_data.data_variable_package_vars FOR EACH ROW EXECUTE FUNCTION ref_data.log_data_variable_package_vars_update();
-
-
---
--- Name: data_variable_package_vars log_data_variable_package_var_history_update; Type: TRIGGER; Schema: ref_data; Owner: -
---
-
-CREATE TRIGGER log_data_variable_package_var_history_update AFTER UPDATE ON ref_data.data_variable_package_vars FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ref_data.log_data_variable_package_vars_update();
+CREATE TRIGGER log_q2_demo_rc_history_update AFTER UPDATE ON redcap.q2_demo_rcs FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION redcap.log_q2_demo_rcs_update();
 
 
 --
@@ -20686,20 +27891,6 @@ CREATE TRIGGER log_datadic_variable_history_insert AFTER INSERT ON ref_data.data
 --
 
 CREATE TRIGGER log_datadic_variable_history_update AFTER UPDATE ON ref_data.datadic_variables FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ref_data.log_datadic_variables_update();
-
-
---
--- Name: domain_mappings log_domain_mapping_history_insert; Type: TRIGGER; Schema: ref_data; Owner: -
---
-
-CREATE TRIGGER log_domain_mapping_history_insert AFTER INSERT ON ref_data.domain_mappings FOR EACH ROW EXECUTE FUNCTION ref_data.log_domain_mappings_update();
-
-
---
--- Name: domain_mappings log_domain_mapping_history_update; Type: TRIGGER; Schema: ref_data; Owner: -
---
-
-CREATE TRIGGER log_domain_mapping_history_update AFTER UPDATE ON ref_data.domain_mappings FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ref_data.log_domain_mappings_update();
 
 
 --
@@ -20759,17 +27950,675 @@ CREATE TRIGGER log_redcap_project_user_history_update AFTER UPDATE ON ref_data.r
 
 
 --
--- Name: redcap_user_status_recs log_redcap_user_status_rec_history_insert; Type: TRIGGER; Schema: ref_data; Owner: -
+-- Name: test_model_embeds fk_rails_03cdb7fc71; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
 --
 
-CREATE TRIGGER log_redcap_user_status_rec_history_insert AFTER INSERT ON ref_data.redcap_user_status_recs FOR EACH ROW EXECUTE FUNCTION ref_data.log_redcap_user_status_recs_update();
+ALTER TABLE ONLY dynamic.test_model_embeds
+    ADD CONSTRAINT fk_rails_03cdb7fc71 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
 
 
 --
--- Name: redcap_user_status_recs log_redcap_user_status_rec_history_update; Type: TRIGGER; Schema: ref_data; Owner: -
+-- Name: activity_log_project_assignment_simple_test_history fk_rails_04314ab903; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
 --
 
-CREATE TRIGGER log_redcap_user_status_rec_history_update AFTER UPDATE ON ref_data.redcap_user_status_recs FOR EACH ROW WHEN ((old.* IS DISTINCT FROM new.*)) EXECUTE FUNCTION ref_data.log_redcap_user_status_recs_update();
+ALTER TABLE ONLY dynamic.activity_log_project_assignment_simple_test_history
+    ADD CONSTRAINT fk_rails_04314ab903 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: test_model_embed_recs fk_rails_08a3f9cb73; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_embed_recs
+    ADD CONSTRAINT fk_rails_08a3f9cb73 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: test_model_b_embeds fk_rails_0a82559ea7; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_b_embeds
+    ADD CONSTRAINT fk_rails_0a82559ea7 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: test_model_embeds fk_rails_10c6929334; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_embeds
+    ADD CONSTRAINT fk_rails_10c6929334 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: test_model_b_embed_recs fk_rails_11313d7ae3; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_b_embed_recs
+    ADD CONSTRAINT fk_rails_11313d7ae3 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: test_model_b_embed_history fk_rails_12484d97b2; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_b_embed_history
+    ADD CONSTRAINT fk_rails_12484d97b2 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: activity_log_project_assignment_simple_test_history fk_rails_1380a03ce8; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.activity_log_project_assignment_simple_test_history
+    ADD CONSTRAINT fk_rails_1380a03ce8 FOREIGN KEY (project_assignment_id) REFERENCES projects.project_assignments(id);
+
+
+--
+-- Name: test_model_c_embed_rec_history fk_rails_13c6b52f98; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_c_embed_rec_history
+    ADD CONSTRAINT fk_rails_13c6b52f98 FOREIGN KEY (test_model_c_embed_rec_id) REFERENCES dynamic.test_model_c_embed_recs(id);
+
+
+--
+-- Name: test_references fk_rails_1b2fddbf39; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_references
+    ADD CONSTRAINT fk_rails_1b2fddbf39 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: test_model_embed_rec_history fk_rails_2376e547f6; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_embed_rec_history
+    ADD CONSTRAINT fk_rails_2376e547f6 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: test_model_b_embed_history fk_rails_239937ee4d; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_b_embed_history
+    ADD CONSTRAINT fk_rails_239937ee4d FOREIGN KEY (test_model_b_embed_id) REFERENCES dynamic.test_model_b_embeds(id);
+
+
+--
+-- Name: test_field_history fk_rails_247419beb3; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_field_history
+    ADD CONSTRAINT fk_rails_247419beb3 FOREIGN KEY (test_field_id) REFERENCES dynamic.test_fields(id);
+
+
+--
+-- Name: test_model_c_embeds fk_rails_250f9e6349; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_c_embeds
+    ADD CONSTRAINT fk_rails_250f9e6349 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: test_time_history fk_rails_26388ddca5; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_time_history
+    ADD CONSTRAINT fk_rails_26388ddca5 FOREIGN KEY (test_time_id) REFERENCES dynamic.test_times(id);
+
+
+--
+-- Name: activity_log_project_assignment_simple_test_history fk_rails_2a8011fa6d; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.activity_log_project_assignment_simple_test_history
+    ADD CONSTRAINT fk_rails_2a8011fa6d FOREIGN KEY (activity_log_project_assignment_simple_test_id) REFERENCES dynamic.activity_log_project_assignment_simple_tests(id);
+
+
+--
+-- Name: test_model_embed_history fk_rails_3377de4975; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_embed_history
+    ADD CONSTRAINT fk_rails_3377de4975 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: test_model_embed_history fk_rails_3874d697a9; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_embed_history
+    ADD CONSTRAINT fk_rails_3874d697a9 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: test_model_c_embed_recs fk_rails_3f9b57dccc; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_c_embed_recs
+    ADD CONSTRAINT fk_rails_3f9b57dccc FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: activity_log_project_assignment_simple_tests fk_rails_40a4af0a3b; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.activity_log_project_assignment_simple_tests
+    ADD CONSTRAINT fk_rails_40a4af0a3b FOREIGN KEY (project_assignment_id) REFERENCES projects.project_assignments(id);
+
+
+--
+-- Name: project_import_history fk_rails_42472c918e; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.project_import_history
+    ADD CONSTRAINT fk_rails_42472c918e FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: test_history fk_rails_43a2e0bc36; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_history
+    ADD CONSTRAINT fk_rails_43a2e0bc36 FOREIGN KEY (test_id) REFERENCES dynamic.tests(id);
+
+
+--
+-- Name: test_model_embed_recs fk_rails_444c1fc708; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_embed_recs
+    ADD CONSTRAINT fk_rails_444c1fc708 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: test_model_c_embed_history fk_rails_44e847fb73; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_c_embed_history
+    ADD CONSTRAINT fk_rails_44e847fb73 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: test_field_history fk_rails_45efcd0314; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_field_history
+    ADD CONSTRAINT fk_rails_45efcd0314 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: test_model_c_embed_rec_history fk_rails_46e70e42db; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_c_embed_rec_history
+    ADD CONSTRAINT fk_rails_46e70e42db FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: test_reference_history fk_rails_4bd2212f34; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_reference_history
+    ADD CONSTRAINT fk_rails_4bd2212f34 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: test_references fk_rails_4cdb4d2a71; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_references
+    ADD CONSTRAINT fk_rails_4cdb4d2a71 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: test_model_b_embed_rec_history fk_rails_56bf918815; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_b_embed_rec_history
+    ADD CONSTRAINT fk_rails_56bf918815 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: test_times fk_rails_5726c3b693; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_times
+    ADD CONSTRAINT fk_rails_5726c3b693 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: test_model_c_embed_history fk_rails_6fec2d919e; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_c_embed_history
+    ADD CONSTRAINT fk_rails_6fec2d919e FOREIGN KEY (test_model_c_embed_id) REFERENCES dynamic.test_model_c_embeds(id);
+
+
+--
+-- Name: activity_log_project_assignment_simple_test_history fk_rails_74888510b1; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.activity_log_project_assignment_simple_test_history
+    ADD CONSTRAINT fk_rails_74888510b1 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: test_fields fk_rails_7c87f5820a; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_fields
+    ADD CONSTRAINT fk_rails_7c87f5820a FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: test_model_b_embed_rec_history fk_rails_85eb650828; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_b_embed_rec_history
+    ADD CONSTRAINT fk_rails_85eb650828 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: activity_log_project_assignment_simple_tests fk_rails_8cb88e458a; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.activity_log_project_assignment_simple_tests
+    ADD CONSTRAINT fk_rails_8cb88e458a FOREIGN KEY (created_by_user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: test_history fk_rails_8da75b7058; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_history
+    ADD CONSTRAINT fk_rails_8da75b7058 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: test_time_history fk_rails_977fc4271c; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_time_history
+    ADD CONSTRAINT fk_rails_977fc4271c FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: test_model_c_embed_rec_history fk_rails_9913e7ab1d; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_c_embed_rec_history
+    ADD CONSTRAINT fk_rails_9913e7ab1d FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: test_model_embed_history fk_rails_9a84a23fc3; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_embed_history
+    ADD CONSTRAINT fk_rails_9a84a23fc3 FOREIGN KEY (test_model_embed_id) REFERENCES dynamic.test_model_embeds(id);
+
+
+--
+-- Name: test_model_b_embeds fk_rails_a1efd0409c; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_b_embeds
+    ADD CONSTRAINT fk_rails_a1efd0409c FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: test_ref_history fk_rails_a520d50d17; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_ref_history
+    ADD CONSTRAINT fk_rails_a520d50d17 FOREIGN KEY (test_ref_id) REFERENCES dynamic.test_refs(id);
+
+
+--
+-- Name: activity_log_project_assignment_simple_tests fk_rails_a583f8596a; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.activity_log_project_assignment_simple_tests
+    ADD CONSTRAINT fk_rails_a583f8596a FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: test_refs fk_rails_aa1993b784; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_refs
+    ADD CONSTRAINT fk_rails_aa1993b784 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: test_model_embed_rec_history fk_rails_afe687234b; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_embed_rec_history
+    ADD CONSTRAINT fk_rails_afe687234b FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: test_model_c_embed_recs fk_rails_b0f7c5c5a1; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_c_embed_recs
+    ADD CONSTRAINT fk_rails_b0f7c5c5a1 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: test_model_b_embed_rec_history fk_rails_b34144f5b5; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_b_embed_rec_history
+    ADD CONSTRAINT fk_rails_b34144f5b5 FOREIGN KEY (test_model_b_embed_rec_id) REFERENCES dynamic.test_model_b_embed_recs(id);
+
+
+--
+-- Name: test_reference_history fk_rails_b8cc1fcb00; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_reference_history
+    ADD CONSTRAINT fk_rails_b8cc1fcb00 FOREIGN KEY (test_reference_id) REFERENCES dynamic.test_references(id);
+
+
+--
+-- Name: test_field_history fk_rails_ba7f2f9b9a; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_field_history
+    ADD CONSTRAINT fk_rails_ba7f2f9b9a FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: project_imports fk_rails_bfbc93fc96; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.project_imports
+    ADD CONSTRAINT fk_rails_bfbc93fc96 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: test_model_c_embed_history fk_rails_d25273d2e4; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_c_embed_history
+    ADD CONSTRAINT fk_rails_d25273d2e4 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: project_import_history fk_rails_dbc5339fab; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.project_import_history
+    ADD CONSTRAINT fk_rails_dbc5339fab FOREIGN KEY (project_import_id) REFERENCES dynamic.project_imports(id);
+
+
+--
+-- Name: project_import_history fk_rails_e0bb58632d; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.project_import_history
+    ADD CONSTRAINT fk_rails_e0bb58632d FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: test_model_b_embed_recs fk_rails_e6107b8d6a; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_b_embed_recs
+    ADD CONSTRAINT fk_rails_e6107b8d6a FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: test_model_b_embed_history fk_rails_ec50800a5f; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_b_embed_history
+    ADD CONSTRAINT fk_rails_ec50800a5f FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: project_imports fk_rails_f01fbb2df4; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.project_imports
+    ADD CONSTRAINT fk_rails_f01fbb2df4 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: activity_log_project_assignment_simple_test_history fk_rails_f052debd11; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.activity_log_project_assignment_simple_test_history
+    ADD CONSTRAINT fk_rails_f052debd11 FOREIGN KEY (created_by_user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: test_reference_history fk_rails_f398788c07; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_reference_history
+    ADD CONSTRAINT fk_rails_f398788c07 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: tests fk_rails_f48c9c1bd6; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.tests
+    ADD CONSTRAINT fk_rails_f48c9c1bd6 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: activity_log_project_assignment_simple_tests fk_rails_f4ba922a7e; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.activity_log_project_assignment_simple_tests
+    ADD CONSTRAINT fk_rails_f4ba922a7e FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: test_ref_history fk_rails_f51ac81ec1; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_ref_history
+    ADD CONSTRAINT fk_rails_f51ac81ec1 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: test_model_embed_rec_history fk_rails_f6cceb1d38; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_embed_rec_history
+    ADD CONSTRAINT fk_rails_f6cceb1d38 FOREIGN KEY (test_model_embed_rec_id) REFERENCES dynamic.test_model_embed_recs(id);
+
+
+--
+-- Name: test_fields fk_rails_f81a05a3de; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_fields
+    ADD CONSTRAINT fk_rails_f81a05a3de FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: test_model_c_embeds fk_rails_fdbe544c3c; Type: FK CONSTRAINT; Schema: dynamic; Owner: -
+--
+
+ALTER TABLE ONLY dynamic.test_model_c_embeds
+    ADD CONSTRAINT fk_rails_fdbe544c3c FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: grit_assignments fk_rails_081ee3469f; Type: FK CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.grit_assignments
+    ADD CONSTRAINT fk_rails_081ee3469f FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
+
+
+--
+-- Name: grit_assignment_history fk_rails_15a9d2b53b; Type: FK CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.grit_assignment_history
+    ADD CONSTRAINT fk_rails_15a9d2b53b FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: pitt_bhi_assignment_history fk_rails_3657d6c5a5; Type: FK CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.pitt_bhi_assignment_history
+    ADD CONSTRAINT fk_rails_3657d6c5a5 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: pitt_bhi_assignments fk_rails_3e2d90b6a7; Type: FK CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.pitt_bhi_assignments
+    ADD CONSTRAINT fk_rails_3e2d90b6a7 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: sleep_assignment_history fk_rails_4498353cb8; Type: FK CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.sleep_assignment_history
+    ADD CONSTRAINT fk_rails_4498353cb8 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: sleep_assignment_history fk_rails_5948cd2e04; Type: FK CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.sleep_assignment_history
+    ADD CONSTRAINT fk_rails_5948cd2e04 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: grit_assignments fk_rails_5953540cf4; Type: FK CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.grit_assignments
+    ADD CONSTRAINT fk_rails_5953540cf4 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: pitt_bhi_assignments fk_rails_675c55afb1; Type: FK CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.pitt_bhi_assignments
+    ADD CONSTRAINT fk_rails_675c55afb1 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: grit_assignment_history fk_rails_6fb9cf3716; Type: FK CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.grit_assignment_history
+    ADD CONSTRAINT fk_rails_6fb9cf3716 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: pitt_bhi_assignment_history fk_rails_8075a87e8f; Type: FK CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.pitt_bhi_assignment_history
+    ADD CONSTRAINT fk_rails_8075a87e8f FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: sleep_assignments fk_rails_821973c8c6; Type: FK CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.sleep_assignments
+    ADD CONSTRAINT fk_rails_821973c8c6 FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
+
+
+--
+-- Name: sleep_assignment_history fk_rails_838684f7e8; Type: FK CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.sleep_assignment_history
+    ADD CONSTRAINT fk_rails_838684f7e8 FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
+
+
+--
+-- Name: sleep_assignments fk_rails_8b41db7451; Type: FK CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.sleep_assignments
+    ADD CONSTRAINT fk_rails_8b41db7451 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
+
+
+--
+-- Name: sleep_assignment_history fk_rails_8fcf1391e1; Type: FK CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.sleep_assignment_history
+    ADD CONSTRAINT fk_rails_8fcf1391e1 FOREIGN KEY (sleep_assignment_table_id) REFERENCES extra_app.sleep_assignments(id);
+
+
+--
+-- Name: sleep_assignments fk_rails_ab8e683d49; Type: FK CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.sleep_assignments
+    ADD CONSTRAINT fk_rails_ab8e683d49 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: pitt_bhi_assignments fk_rails_cbc00f914a; Type: FK CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.pitt_bhi_assignments
+    ADD CONSTRAINT fk_rails_cbc00f914a FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
+
+
+--
+-- Name: grit_assignment_history fk_rails_cbe030ce55; Type: FK CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.grit_assignment_history
+    ADD CONSTRAINT fk_rails_cbe030ce55 FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
+
+
+--
+-- Name: grit_assignments fk_rails_db9353d15f; Type: FK CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.grit_assignments
+    ADD CONSTRAINT fk_rails_db9353d15f FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: pitt_bhi_assignment_history fk_rails_dc3803548c; Type: FK CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.pitt_bhi_assignment_history
+    ADD CONSTRAINT fk_rails_dc3803548c FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
+
+
+--
+-- Name: grit_assignment_history fk_rails_de5807ee5f; Type: FK CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.grit_assignment_history
+    ADD CONSTRAINT fk_rails_de5807ee5f FOREIGN KEY (grit_assignment_table_id) REFERENCES extra_app.grit_assignments(id);
+
+
+--
+-- Name: pitt_bhi_assignment_history fk_rails_fdd5a80000; Type: FK CONSTRAINT; Schema: extra_app; Owner: -
+--
+
+ALTER TABLE ONLY extra_app.pitt_bhi_assignment_history
+    ADD CONSTRAINT fk_rails_fdd5a80000 FOREIGN KEY (pitt_bhi_assignment_table_id) REFERENCES extra_app.pitt_bhi_assignments(id);
 
 
 --
@@ -20778,102 +28627,6 @@ CREATE TRIGGER log_redcap_user_status_rec_history_update AFTER UPDATE ON ref_dat
 
 ALTER TABLE ONLY ml_app.accuracy_score_history
     ADD CONSTRAINT fk_accuracy_score_history_accuracy_scores FOREIGN KEY (accuracy_score_id) REFERENCES ml_app.accuracy_scores(id);
-
-
---
--- Name: activity_log_bhs_assignment_history fk_activity_log_bhs_assignment_history_activity_log_bhs_assignm; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_bhs_assignment_history
-    ADD CONSTRAINT fk_activity_log_bhs_assignment_history_activity_log_bhs_assignm FOREIGN KEY (activity_log_bhs_assignment_id) REFERENCES ml_app.activity_log_bhs_assignments(id);
-
-
---
--- Name: activity_log_bhs_assignment_history fk_activity_log_bhs_assignment_history_bhs_assignment_id; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_bhs_assignment_history
-    ADD CONSTRAINT fk_activity_log_bhs_assignment_history_bhs_assignment_id FOREIGN KEY (bhs_assignment_id) REFERENCES ml_app.bhs_assignments(id);
-
-
---
--- Name: activity_log_bhs_assignment_history fk_activity_log_bhs_assignment_history_masters; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_bhs_assignment_history
-    ADD CONSTRAINT fk_activity_log_bhs_assignment_history_masters FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: activity_log_bhs_assignment_history fk_activity_log_bhs_assignment_history_users; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_bhs_assignment_history
-    ADD CONSTRAINT fk_activity_log_bhs_assignment_history_users FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: activity_log_ext_assignment_history fk_activity_log_ext_assignment_history_activity_log_ext_assignm; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_ext_assignment_history
-    ADD CONSTRAINT fk_activity_log_ext_assignment_history_activity_log_ext_assignm FOREIGN KEY (activity_log_ext_assignment_id) REFERENCES ml_app.activity_log_ext_assignments(id);
-
-
---
--- Name: activity_log_ext_assignment_history fk_activity_log_ext_assignment_history_ext_assignment_id; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_ext_assignment_history
-    ADD CONSTRAINT fk_activity_log_ext_assignment_history_ext_assignment_id FOREIGN KEY (ext_assignment_id) REFERENCES ml_app.ext_assignments(id);
-
-
---
--- Name: activity_log_ext_assignment_history fk_activity_log_ext_assignment_history_masters; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_ext_assignment_history
-    ADD CONSTRAINT fk_activity_log_ext_assignment_history_masters FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: activity_log_ext_assignment_history fk_activity_log_ext_assignment_history_users; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_ext_assignment_history
-    ADD CONSTRAINT fk_activity_log_ext_assignment_history_users FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: activity_log_new_test_history fk_activity_log_new_test_history_activity_log_new_tests; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_new_test_history
-    ADD CONSTRAINT fk_activity_log_new_test_history_activity_log_new_tests FOREIGN KEY (activity_log_new_test_id) REFERENCES ml_app.activity_log_new_tests(id);
-
-
---
--- Name: activity_log_new_test_history fk_activity_log_new_test_history_masters; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_new_test_history
-    ADD CONSTRAINT fk_activity_log_new_test_history_masters FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: activity_log_new_test_history fk_activity_log_new_test_history_new_test_id; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_new_test_history
-    ADD CONSTRAINT fk_activity_log_new_test_history_new_test_id FOREIGN KEY (new_test_id) REFERENCES ml_app.new_tests(id);
-
-
---
--- Name: activity_log_new_test_history fk_activity_log_new_test_history_users; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_new_test_history
-    ADD CONSTRAINT fk_activity_log_new_test_history_users FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
 
 
 --
@@ -20906,38 +28659,6 @@ ALTER TABLE ONLY ml_app.activity_log_player_contact_phone_history
 
 ALTER TABLE ONLY ml_app.activity_log_player_contact_phone_history
     ADD CONSTRAINT fk_activity_log_player_contact_phone_history_users FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: activity_log_player_info_history fk_activity_log_player_info_history_activity_log_player_infos; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_player_info_history
-    ADD CONSTRAINT fk_activity_log_player_info_history_activity_log_player_infos FOREIGN KEY (activity_log_player_info_id) REFERENCES ml_app.activity_log_player_infos(id);
-
-
---
--- Name: activity_log_player_info_history fk_activity_log_player_info_history_masters; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_player_info_history
-    ADD CONSTRAINT fk_activity_log_player_info_history_masters FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: activity_log_player_info_history fk_activity_log_player_info_history_player_info_id; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_player_info_history
-    ADD CONSTRAINT fk_activity_log_player_info_history_player_info_id FOREIGN KEY (player_info_id) REFERENCES ml_app.player_infos(id);
-
-
---
--- Name: activity_log_player_info_history fk_activity_log_player_info_history_users; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_player_info_history
-    ADD CONSTRAINT fk_activity_log_player_info_history_users FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
 
 
 --
@@ -21013,38 +28734,6 @@ ALTER TABLE ONLY ml_app.app_type_history
 
 
 --
--- Name: bhs_assignment_history fk_bhs_assignment_history_admins; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.bhs_assignment_history
-    ADD CONSTRAINT fk_bhs_assignment_history_admins FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
-
-
---
--- Name: bhs_assignment_history fk_bhs_assignment_history_bhs_assignments; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.bhs_assignment_history
-    ADD CONSTRAINT fk_bhs_assignment_history_bhs_assignments FOREIGN KEY (bhs_assignment_table_id) REFERENCES ml_app.bhs_assignments(id);
-
-
---
--- Name: bhs_assignment_history fk_bhs_assignment_history_masters; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.bhs_assignment_history
-    ADD CONSTRAINT fk_bhs_assignment_history_masters FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: bhs_assignment_history fk_bhs_assignment_history_users; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.bhs_assignment_history
-    ADD CONSTRAINT fk_bhs_assignment_history_users FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
 -- Name: college_history fk_college_history_colleges; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
 --
 
@@ -21061,62 +28750,6 @@ ALTER TABLE ONLY ml_app.dynamic_model_history
 
 
 --
--- Name: ext_assignment_history fk_ext_assignment_history_ext_assignments; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.ext_assignment_history
-    ADD CONSTRAINT fk_ext_assignment_history_ext_assignments FOREIGN KEY (ext_assignment_table_id) REFERENCES ml_app.ext_assignments(id);
-
-
---
--- Name: ext_assignment_history fk_ext_assignment_history_masters; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.ext_assignment_history
-    ADD CONSTRAINT fk_ext_assignment_history_masters FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: ext_assignment_history fk_ext_assignment_history_users; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.ext_assignment_history
-    ADD CONSTRAINT fk_ext_assignment_history_users FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: ext_gen_assignment_history fk_ext_gen_assignment_history_admins; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.ext_gen_assignment_history
-    ADD CONSTRAINT fk_ext_gen_assignment_history_admins FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
-
-
---
--- Name: ext_gen_assignment_history fk_ext_gen_assignment_history_ext_gen_assignments; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.ext_gen_assignment_history
-    ADD CONSTRAINT fk_ext_gen_assignment_history_ext_gen_assignments FOREIGN KEY (ext_gen_assignment_table_id) REFERENCES ml_app.ext_gen_assignments(id);
-
-
---
--- Name: ext_gen_assignment_history fk_ext_gen_assignment_history_masters; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.ext_gen_assignment_history
-    ADD CONSTRAINT fk_ext_gen_assignment_history_masters FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: ext_gen_assignment_history fk_ext_gen_assignment_history_users; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.ext_gen_assignment_history
-    ADD CONSTRAINT fk_ext_gen_assignment_history_users FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
 -- Name: external_link_history fk_external_link_history_external_links; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
 --
 
@@ -21130,38 +28763,6 @@ ALTER TABLE ONLY ml_app.external_link_history
 
 ALTER TABLE ONLY ml_app.general_selection_history
     ADD CONSTRAINT fk_general_selection_history_general_selections FOREIGN KEY (general_selection_id) REFERENCES ml_app.general_selections(id);
-
-
---
--- Name: grit_assignment_history fk_grit_assignment_history_admins; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.grit_assignment_history
-    ADD CONSTRAINT fk_grit_assignment_history_admins FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
-
-
---
--- Name: grit_assignment_history fk_grit_assignment_history_grit_assignments; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.grit_assignment_history
-    ADD CONSTRAINT fk_grit_assignment_history_grit_assignments FOREIGN KEY (grit_assignment_table_id) REFERENCES ml_app.grit_assignments(id);
-
-
---
--- Name: grit_assignment_history fk_grit_assignment_history_masters; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.grit_assignment_history
-    ADD CONSTRAINT fk_grit_assignment_history_masters FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: grit_assignment_history fk_grit_assignment_history_users; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.grit_assignment_history
-    ADD CONSTRAINT fk_grit_assignment_history_users FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
 
 
 --
@@ -21194,38 +28795,6 @@ ALTER TABLE ONLY ml_app.message_template_history
 
 ALTER TABLE ONLY ml_app.message_template_history
     ADD CONSTRAINT fk_message_template_history_message_templates FOREIGN KEY (message_template_id) REFERENCES ml_app.message_templates(id);
-
-
---
--- Name: new_test_history fk_new_test_history_admins; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.new_test_history
-    ADD CONSTRAINT fk_new_test_history_admins FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
-
-
---
--- Name: new_test_history fk_new_test_history_masters; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.new_test_history
-    ADD CONSTRAINT fk_new_test_history_masters FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: new_test_history fk_new_test_history_new_tests; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.new_test_history
-    ADD CONSTRAINT fk_new_test_history_new_tests FOREIGN KEY (new_test_table_id) REFERENCES ml_app.new_tests(id);
-
-
---
--- Name: new_test_history fk_new_test_history_users; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.new_test_history
-    ADD CONSTRAINT fk_new_test_history_users FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
 
 
 --
@@ -21525,198 +29094,6 @@ ALTER TABLE ONLY ml_app.scantrons
 
 
 --
--- Name: test_exts fk_rails_1a7e2b01e0; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_exts
-    ADD CONSTRAINT fk_rails_1a7e2b01e0 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: test_ext2s fk_rails_1a7e2b01e0; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_ext2s
-    ADD CONSTRAINT fk_rails_1a7e2b01e0 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: ext_assignments fk_rails_1a7e2b01e0; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.ext_assignments
-    ADD CONSTRAINT fk_rails_1a7e2b01e0 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: activity_log_ext_assignments fk_rails_1a7e2b01e0; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_ext_assignments
-    ADD CONSTRAINT fk_rails_1a7e2b01e0 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: ext_gen_assignments fk_rails_1a7e2b01e0; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.ext_gen_assignments
-    ADD CONSTRAINT fk_rails_1a7e2b01e0 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: test1s fk_rails_1a7e2b01e0; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test1s
-    ADD CONSTRAINT fk_rails_1a7e2b01e0 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: test_2s fk_rails_1a7e2b01e0; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_2s
-    ADD CONSTRAINT fk_rails_1a7e2b01e0 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: test2s fk_rails_1a7e2b01e0; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test2s
-    ADD CONSTRAINT fk_rails_1a7e2b01e0 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: activity_log_player_infos fk_rails_1a7e2b01e0; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_player_infos
-    ADD CONSTRAINT fk_rails_1a7e2b01e0 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: new_tests fk_rails_1a7e2b01e0; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.new_tests
-    ADD CONSTRAINT fk_rails_1a7e2b01e0 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: activity_log_new_tests fk_rails_1a7e2b01e0; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_new_tests
-    ADD CONSTRAINT fk_rails_1a7e2b01e0 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: bhs_assignments fk_rails_1a7e2b01e0; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.bhs_assignments
-    ADD CONSTRAINT fk_rails_1a7e2b01e0 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: activity_log_bhs_assignments fk_rails_1a7e2b01e0; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_bhs_assignments
-    ADD CONSTRAINT fk_rails_1a7e2b01e0 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: sleep_assignments fk_rails_1a7e2b01e0; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.sleep_assignments
-    ADD CONSTRAINT fk_rails_1a7e2b01e0 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: grit_assignments fk_rails_1a7e2b01e0; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.grit_assignments
-    ADD CONSTRAINT fk_rails_1a7e2b01e0 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: scantron_q2s fk_rails_1a7e2b01e0; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.scantron_q2s
-    ADD CONSTRAINT fk_rails_1a7e2b01e0 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: test1s fk_rails_1a7e2b01e0admin; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test1s
-    ADD CONSTRAINT fk_rails_1a7e2b01e0admin FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
-
-
---
--- Name: test_2s fk_rails_1a7e2b01e0admin; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_2s
-    ADD CONSTRAINT fk_rails_1a7e2b01e0admin FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
-
-
---
--- Name: test2s fk_rails_1a7e2b01e0admin; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test2s
-    ADD CONSTRAINT fk_rails_1a7e2b01e0admin FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
-
-
---
--- Name: new_tests fk_rails_1a7e2b01e0admin; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.new_tests
-    ADD CONSTRAINT fk_rails_1a7e2b01e0admin FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
-
-
---
--- Name: bhs_assignments fk_rails_1a7e2b01e0admin; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.bhs_assignments
-    ADD CONSTRAINT fk_rails_1a7e2b01e0admin FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
-
-
---
--- Name: sleep_assignments fk_rails_1a7e2b01e0admin; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.sleep_assignments
-    ADD CONSTRAINT fk_rails_1a7e2b01e0admin FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
-
-
---
--- Name: grit_assignments fk_rails_1a7e2b01e0admin; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.grit_assignments
-    ADD CONSTRAINT fk_rails_1a7e2b01e0admin FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
-
-
---
--- Name: scantron_q2s fk_rails_1a7e2b01e0admin; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.scantron_q2s
-    ADD CONSTRAINT fk_rails_1a7e2b01e0admin FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
-
-
---
 -- Name: nfs_store_stored_files fk_rails_1cc4562569; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
 --
 
@@ -21805,6 +29182,14 @@ ALTER TABLE ONLY ml_app.nfs_store_archived_files
 
 
 --
+-- Name: user_description_history fk_rails_2cf2ce330f; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.user_description_history
+    ADD CONSTRAINT fk_rails_2cf2ce330f FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
+
+
+--
 -- Name: model_references fk_rails_2d8072edea; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
 --
 
@@ -21881,134 +29266,6 @@ ALTER TABLE ONLY ml_app.trackers
 --
 
 ALTER TABLE ONLY ml_app.scantrons
-    ADD CONSTRAINT fk_rails_45205ed085 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: test_exts fk_rails_45205ed085; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_exts
-    ADD CONSTRAINT fk_rails_45205ed085 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: test_ext2s fk_rails_45205ed085; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_ext2s
-    ADD CONSTRAINT fk_rails_45205ed085 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: ext_assignments fk_rails_45205ed085; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.ext_assignments
-    ADD CONSTRAINT fk_rails_45205ed085 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: activity_log_ext_assignments fk_rails_45205ed085; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_ext_assignments
-    ADD CONSTRAINT fk_rails_45205ed085 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: ext_gen_assignments fk_rails_45205ed085; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.ext_gen_assignments
-    ADD CONSTRAINT fk_rails_45205ed085 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: test1s fk_rails_45205ed085; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test1s
-    ADD CONSTRAINT fk_rails_45205ed085 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: test_2s fk_rails_45205ed085; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_2s
-    ADD CONSTRAINT fk_rails_45205ed085 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: test2s fk_rails_45205ed085; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test2s
-    ADD CONSTRAINT fk_rails_45205ed085 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: activity_log_player_infos fk_rails_45205ed085; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_player_infos
-    ADD CONSTRAINT fk_rails_45205ed085 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: new_tests fk_rails_45205ed085; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.new_tests
-    ADD CONSTRAINT fk_rails_45205ed085 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: activity_log_new_tests fk_rails_45205ed085; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_new_tests
-    ADD CONSTRAINT fk_rails_45205ed085 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: bhs_assignments fk_rails_45205ed085; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.bhs_assignments
-    ADD CONSTRAINT fk_rails_45205ed085 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: activity_log_bhs_assignments fk_rails_45205ed085; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_bhs_assignments
-    ADD CONSTRAINT fk_rails_45205ed085 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: sleep_assignments fk_rails_45205ed085; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.sleep_assignments
-    ADD CONSTRAINT fk_rails_45205ed085 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: grit_assignments fk_rails_45205ed085; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.grit_assignments
-    ADD CONSTRAINT fk_rails_45205ed085 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: scantron_q2s fk_rails_45205ed085; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.scantron_q2s
     ADD CONSTRAINT fk_rails_45205ed085 FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
 
 
@@ -22090,6 +29347,14 @@ ALTER TABLE ONLY ml_app.exception_logs
 
 ALTER TABLE ONLY ml_app.protocol_events
     ADD CONSTRAINT fk_rails_564af80fb6 FOREIGN KEY (sub_process_id) REFERENCES ml_app.sub_processes(id);
+
+
+--
+-- Name: user_descriptions fk_rails_5a9926bbe8; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.user_descriptions
+    ADD CONSTRAINT fk_rails_5a9926bbe8 FOREIGN KEY (app_type_id) REFERENCES ml_app.app_types(id);
 
 
 --
@@ -22213,30 +29478,6 @@ ALTER TABLE ONLY ml_app.users_contact_infos
 
 
 --
--- Name: activity_log_ext_assignments fk_rails_78888ed085; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_ext_assignments
-    ADD CONSTRAINT fk_rails_78888ed085 FOREIGN KEY (ext_assignment_id) REFERENCES ml_app.ext_assignments(id);
-
-
---
--- Name: activity_log_player_infos fk_rails_78888ed085; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_player_infos
-    ADD CONSTRAINT fk_rails_78888ed085 FOREIGN KEY (player_info_id) REFERENCES ml_app.player_infos(id);
-
-
---
--- Name: activity_log_new_tests fk_rails_78888ed085; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.activity_log_new_tests
-    ADD CONSTRAINT fk_rails_78888ed085 FOREIGN KEY (new_test_id) REFERENCES ml_app.new_tests(id);
-
-
---
 -- Name: sub_processes fk_rails_7c10a99849; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
 --
 
@@ -22261,6 +29502,14 @@ ALTER TABLE ONLY ml_app.tracker_history
 
 
 --
+-- Name: user_description_history fk_rails_864938f733; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.user_description_history
+    ADD CONSTRAINT fk_rails_864938f733 FOREIGN KEY (user_description_id) REFERENCES ml_app.user_descriptions(id);
+
+
+--
 -- Name: pro_infos fk_rails_86cecb1e36; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
 --
 
@@ -22282,6 +29531,14 @@ ALTER TABLE ONLY ml_app.config_library_history
 
 ALTER TABLE ONLY ml_app.app_types
     ADD CONSTRAINT fk_rails_8be93bcf4b FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
+
+
+--
+-- Name: user_description_history fk_rails_8f99de6d81; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.user_description_history
+    ADD CONSTRAINT fk_rails_8f99de6d81 FOREIGN KEY (app_type_id) REFERENCES ml_app.app_types(id);
 
 
 --
@@ -22493,14 +29750,6 @@ ALTER TABLE ONLY ml_app.user_action_logs
 
 
 --
--- Name: masters fk_rails_c9d7977c0c; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.masters
-    ADD CONSTRAINT fk_rails_c9d7977c0c FOREIGN KEY (pro_info_id) REFERENCES ml_app.pro_infos(id);
-
-
---
 -- Name: nfs_store_downloads fk_rails_cd756b42dd; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
 --
 
@@ -22514,6 +29763,14 @@ ALTER TABLE ONLY ml_app.nfs_store_downloads
 
 ALTER TABLE ONLY ml_app.user_action_logs
     ADD CONSTRAINT fk_rails_cfc9dc539f FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: user_descriptions fk_rails_d15f63d454; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
+--
+
+ALTER TABLE ONLY ml_app.user_descriptions
+    ADD CONSTRAINT fk_rails_d15f63d454 FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
 
 
 --
@@ -22701,219 +29958,11 @@ ALTER TABLE ONLY ml_app.scantron_history
 
 
 --
--- Name: scantron_q2_history fk_scantron_q2_history_admins; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.scantron_q2_history
-    ADD CONSTRAINT fk_scantron_q2_history_admins FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
-
-
---
--- Name: scantron_q2_history fk_scantron_q2_history_masters; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.scantron_q2_history
-    ADD CONSTRAINT fk_scantron_q2_history_masters FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: scantron_q2_history fk_scantron_q2_history_scantron_q2s; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.scantron_q2_history
-    ADD CONSTRAINT fk_scantron_q2_history_scantron_q2s FOREIGN KEY (scantron_q2_table_id) REFERENCES ml_app.scantron_q2s(id);
-
-
---
--- Name: scantron_q2_history fk_scantron_q2_history_users; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.scantron_q2_history
-    ADD CONSTRAINT fk_scantron_q2_history_users FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: sleep_assignment_history fk_sleep_assignment_history_admins; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.sleep_assignment_history
-    ADD CONSTRAINT fk_sleep_assignment_history_admins FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
-
-
---
--- Name: sleep_assignment_history fk_sleep_assignment_history_masters; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.sleep_assignment_history
-    ADD CONSTRAINT fk_sleep_assignment_history_masters FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: sleep_assignment_history fk_sleep_assignment_history_sleep_assignments; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.sleep_assignment_history
-    ADD CONSTRAINT fk_sleep_assignment_history_sleep_assignments FOREIGN KEY (sleep_assignment_table_id) REFERENCES ml_app.sleep_assignments(id);
-
-
---
--- Name: sleep_assignment_history fk_sleep_assignment_history_users; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.sleep_assignment_history
-    ADD CONSTRAINT fk_sleep_assignment_history_users FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
 -- Name: sub_process_history fk_sub_process_history_sub_processes; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
 --
 
 ALTER TABLE ONLY ml_app.sub_process_history
     ADD CONSTRAINT fk_sub_process_history_sub_processes FOREIGN KEY (sub_process_id) REFERENCES ml_app.sub_processes(id);
-
-
---
--- Name: test1_history fk_test1_history_admins; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test1_history
-    ADD CONSTRAINT fk_test1_history_admins FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
-
-
---
--- Name: test1_history fk_test1_history_masters; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test1_history
-    ADD CONSTRAINT fk_test1_history_masters FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: test1_history fk_test1_history_test1s; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test1_history
-    ADD CONSTRAINT fk_test1_history_test1s FOREIGN KEY (test1_table_id) REFERENCES ml_app.test1s(id);
-
-
---
--- Name: test1_history fk_test1_history_users; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test1_history
-    ADD CONSTRAINT fk_test1_history_users FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: test2_history fk_test2_history_admins; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test2_history
-    ADD CONSTRAINT fk_test2_history_admins FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
-
-
---
--- Name: test2_history fk_test2_history_masters; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test2_history
-    ADD CONSTRAINT fk_test2_history_masters FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: test2_history fk_test2_history_test2s; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test2_history
-    ADD CONSTRAINT fk_test2_history_test2s FOREIGN KEY (test2_table_id) REFERENCES ml_app.test2s(id);
-
-
---
--- Name: test2_history fk_test2_history_users; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test2_history
-    ADD CONSTRAINT fk_test2_history_users FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: test_2_history fk_test_2_history_admins; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_2_history
-    ADD CONSTRAINT fk_test_2_history_admins FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
-
-
---
--- Name: test_2_history fk_test_2_history_masters; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_2_history
-    ADD CONSTRAINT fk_test_2_history_masters FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: test_2_history fk_test_2_history_test_2s; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_2_history
-    ADD CONSTRAINT fk_test_2_history_test_2s FOREIGN KEY (test_2_table_id) REFERENCES ml_app.test_2s(id);
-
-
---
--- Name: test_2_history fk_test_2_history_users; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_2_history
-    ADD CONSTRAINT fk_test_2_history_users FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: test_ext2_history fk_test_ext2_history_masters; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_ext2_history
-    ADD CONSTRAINT fk_test_ext2_history_masters FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: test_ext2_history fk_test_ext2_history_test_ext2s; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_ext2_history
-    ADD CONSTRAINT fk_test_ext2_history_test_ext2s FOREIGN KEY (test_ext2_table_id) REFERENCES ml_app.test_ext2s(id);
-
-
---
--- Name: test_ext2_history fk_test_ext2_history_users; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_ext2_history
-    ADD CONSTRAINT fk_test_ext2_history_users FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: test_ext_history fk_test_ext_history_masters; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_ext_history
-    ADD CONSTRAINT fk_test_ext_history_masters FOREIGN KEY (master_id) REFERENCES ml_app.masters(id);
-
-
---
--- Name: test_ext_history fk_test_ext_history_test_exts; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_ext_history
-    ADD CONSTRAINT fk_test_ext_history_test_exts FOREIGN KEY (test_ext_table_id) REFERENCES ml_app.test_exts(id);
-
-
---
--- Name: test_ext_history fk_test_ext_history_users; Type: FK CONSTRAINT; Schema: ml_app; Owner: -
---
-
-ALTER TABLE ONLY ml_app.test_ext_history
-    ADD CONSTRAINT fk_test_ext_history_users FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
 
 
 --
@@ -23013,6 +30062,54 @@ ALTER TABLE ONLY ml_app.tracker_history
 
 
 --
+-- Name: viva_meta_variables fk_rails_22773d2230; Type: FK CONSTRAINT; Schema: redcap; Owner: -
+--
+
+ALTER TABLE ONLY redcap.viva_meta_variables
+    ADD CONSTRAINT fk_rails_22773d2230 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: q2_demo_rc_history fk_rails_6ce39db68e; Type: FK CONSTRAINT; Schema: redcap; Owner: -
+--
+
+ALTER TABLE ONLY redcap.q2_demo_rc_history
+    ADD CONSTRAINT fk_rails_6ce39db68e FOREIGN KEY (q2_demo_rc_id) REFERENCES redcap.q2_demo_rcs(id);
+
+
+--
+-- Name: q2_demo_rcs fk_rails_8e5c114b0e; Type: FK CONSTRAINT; Schema: redcap; Owner: -
+--
+
+ALTER TABLE ONLY redcap.q2_demo_rcs
+    ADD CONSTRAINT fk_rails_8e5c114b0e FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: q2_demo_rc_history fk_rails_9042bcd15d; Type: FK CONSTRAINT; Schema: redcap; Owner: -
+--
+
+ALTER TABLE ONLY redcap.q2_demo_rc_history
+    ADD CONSTRAINT fk_rails_9042bcd15d FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: viva_meta_variable_history fk_rails_c53c5126b5; Type: FK CONSTRAINT; Schema: redcap; Owner: -
+--
+
+ALTER TABLE ONLY redcap.viva_meta_variable_history
+    ADD CONSTRAINT fk_rails_c53c5126b5 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
+
+
+--
+-- Name: viva_meta_variable_history fk_rails_e5b7c1d45d; Type: FK CONSTRAINT; Schema: redcap; Owner: -
+--
+
+ALTER TABLE ONLY redcap.viva_meta_variable_history
+    ADD CONSTRAINT fk_rails_e5b7c1d45d FOREIGN KEY (viva_meta_variable_id) REFERENCES redcap.viva_meta_variables(id);
+
+
+--
 -- Name: datadic_variables fk_rails_029902d3e3; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
 --
 
@@ -23042,14 +30139,6 @@ ALTER TABLE ONLY ref_data.redcap_data_dictionaries
 
 ALTER TABLE ONLY ref_data.redcap_data_dictionary_history
     ADD CONSTRAINT fk_rails_25f366a78c FOREIGN KEY (redcap_data_dictionary_id) REFERENCES ref_data.redcap_data_dictionaries(id);
-
-
---
--- Name: domain_mappings fk_rails_27e301a846; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
---
-
-ALTER TABLE ONLY ref_data.domain_mappings
-    ADD CONSTRAINT fk_rails_27e301a846 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
 
 
 --
@@ -23085,43 +30174,11 @@ ALTER TABLE ONLY ref_data.redcap_project_users
 
 
 --
--- Name: data_variable_package_history fk_rails_3935f6da80; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
---
-
-ALTER TABLE ONLY ref_data.data_variable_package_history
-    ADD CONSTRAINT fk_rails_3935f6da80 FOREIGN KEY (data_variable_package_id) REFERENCES ref_data.data_variable_packages(id);
-
-
---
--- Name: redcap_user_status_rec_history fk_rails_409869f35a; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
---
-
-ALTER TABLE ONLY ref_data.redcap_user_status_rec_history
-    ADD CONSTRAINT fk_rails_409869f35a FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
 -- Name: datadic_choice_history fk_rails_42389740a0; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
 --
 
 ALTER TABLE ONLY ref_data.datadic_choice_history
     ADD CONSTRAINT fk_rails_42389740a0 FOREIGN KEY (admin_id) REFERENCES ml_app.admins(id);
-
-
---
--- Name: data_variable_package_var_history fk_rails_45489901da; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
---
-
-ALTER TABLE ONLY ref_data.data_variable_package_var_history
-    ADD CONSTRAINT fk_rails_45489901da FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: data_variable_package_history fk_rails_45489901da; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
---
-
-ALTER TABLE ONLY ref_data.data_variable_package_history
-    ADD CONSTRAINT fk_rails_45489901da FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
 
 
 --
@@ -23141,22 +30198,6 @@ ALTER TABLE ONLY ref_data.datadic_variable_history
 
 
 --
--- Name: datadic_variables fk_rails_5578e37430; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
---
-
-ALTER TABLE ONLY ref_data.datadic_variables
-    ADD CONSTRAINT fk_rails_5578e37430 FOREIGN KEY (redcap_data_dictionary_id) REFERENCES ref_data.redcap_data_dictionaries(id);
-
-
---
--- Name: domain_mapping_history fk_rails_622af264e4; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
---
-
-ALTER TABLE ONLY ref_data.domain_mapping_history
-    ADD CONSTRAINT fk_rails_622af264e4 FOREIGN KEY (domain_mapping_id) REFERENCES ref_data.domain_mappings(id);
-
-
---
 -- Name: datadic_choice_history fk_rails_63103b7cf7; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
 --
 
@@ -23173,14 +30214,6 @@ ALTER TABLE ONLY ref_data.datadic_choices
 
 
 --
--- Name: datadic_variable_history fk_rails_6ba6ab1e1f; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
---
-
-ALTER TABLE ONLY ref_data.datadic_variable_history
-    ADD CONSTRAINT fk_rails_6ba6ab1e1f FOREIGN KEY (redcap_data_dictionary_id) REFERENCES ref_data.redcap_data_dictionaries(id);
-
-
---
 -- Name: redcap_data_collection_instrument_history fk_rails_6c93846f69; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
 --
 
@@ -23194,14 +30227,6 @@ ALTER TABLE ONLY ref_data.redcap_data_collection_instrument_history
 
 ALTER TABLE ONLY ref_data.redcap_project_user_history
     ADD CONSTRAINT fk_rails_7ba2e90d7d FOREIGN KEY (redcap_project_user_id) REFERENCES ref_data.redcap_project_users(id);
-
-
---
--- Name: domain_mapping_history fk_rails_7c6956e2d4; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
---
-
-ALTER TABLE ONLY ref_data.domain_mapping_history
-    ADD CONSTRAINT fk_rails_7c6956e2d4 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
 
 
 --
@@ -23229,14 +30254,6 @@ ALTER TABLE ONLY ref_data.redcap_data_dictionary_history
 
 
 --
--- Name: redcap_user_status_recs fk_rails_9c8b8f3760; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
---
-
-ALTER TABLE ONLY ref_data.redcap_user_status_recs
-    ADD CONSTRAINT fk_rails_9c8b8f3760 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
 -- Name: redcap_project_user_history fk_rails_a0bf0fdddb; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
 --
 
@@ -23261,35 +30278,11 @@ ALTER TABLE ONLY ref_data.redcap_project_admin_history
 
 
 --
--- Name: data_variable_package_vars fk_rails_a89c82cd43; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
---
-
-ALTER TABLE ONLY ref_data.data_variable_package_vars
-    ADD CONSTRAINT fk_rails_a89c82cd43 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
--- Name: data_variable_packages fk_rails_a89c82cd43; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
---
-
-ALTER TABLE ONLY ref_data.data_variable_packages
-    ADD CONSTRAINT fk_rails_a89c82cd43 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
-
-
---
 -- Name: redcap_data_collection_instrument_history fk_rails_cb0b57b6c1; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
 --
 
 ALTER TABLE ONLY ref_data.redcap_data_collection_instrument_history
     ADD CONSTRAINT fk_rails_cb0b57b6c1 FOREIGN KEY (redcap_project_admin_id) REFERENCES ref_data.redcap_project_admins(id);
-
-
---
--- Name: datadic_choice_history fk_rails_cb8a1e9d10; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
---
-
-ALTER TABLE ONLY ref_data.datadic_choice_history
-    ADD CONSTRAINT fk_rails_cb8a1e9d10 FOREIGN KEY (redcap_data_dictionary_id) REFERENCES ref_data.redcap_data_dictionaries(id);
 
 
 --
@@ -23309,11 +30302,11 @@ ALTER TABLE ONLY ref_data.datadic_variable_history
 
 
 --
--- Name: datadic_choices fk_rails_f5497a3583; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
+-- Name: datadic_variable_history fk_rails_ef47f37820; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
 --
 
-ALTER TABLE ONLY ref_data.datadic_choices
-    ADD CONSTRAINT fk_rails_f5497a3583 FOREIGN KEY (redcap_data_dictionary_id) REFERENCES ref_data.redcap_data_dictionaries(id);
+ALTER TABLE ONLY ref_data.datadic_variable_history
+    ADD CONSTRAINT fk_rails_ef47f37820 FOREIGN KEY (user_id) REFERENCES ml_app.users(id);
 
 
 --
@@ -23328,7 +30321,7 @@ ALTER TABLE ONLY ref_data.redcap_data_dictionary_history
 -- PostgreSQL database dump complete
 --
 
-SET search_path TO ml_app,ref_data;
+SET search_path TO ml_app,extra_app,ref_data,redcap,dynamic;
 
 INSERT INTO "schema_migrations" (version) VALUES
 ('20150602181200'),
@@ -23453,21 +30446,11 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20151208244916'),
 ('20151208244917'),
 ('20151208244918'),
-('20151215165127'),
-('20151215170733'),
 ('20151216102328'),
 ('20151218203119'),
-('20160203120436'),
-('20160203121701'),
-('20160203130714'),
-('20160203151737'),
-('20160203211330'),
-('20160204120512'),
 ('20160210200918'),
 ('20160210200919'),
 ('20170823145313'),
-('20170830100037'),
-('20170830105123'),
 ('20170901152707'),
 ('20170908074038'),
 ('20170922182052'),
@@ -23578,7 +30561,6 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20190612140618'),
 ('20190614162317'),
 ('20190624082535'),
-('20190625142421'),
 ('20190628131713'),
 ('20190709174613'),
 ('20190709174638'),
@@ -23588,622 +30570,52 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20190906172361'),
 ('20191115124723'),
 ('20191115124732'),
-('20200225115151'),
 ('20200313160640'),
 ('20200403172361'),
 ('20200611123849'),
-('20200720100000'),
-('20200720110000'),
-('20200720121356'),
-('20200720161000'),
-('20200720161100'),
-('20200723104100'),
 ('20200723153130'),
-('20200724153400'),
-('20200724181747'),
 ('20200727081305'),
 ('20200727081306'),
-('20200727100429'),
-('20200727100431'),
-('20200727100543'),
-('20200727111056'),
-('20200727111057'),
-('20200727111100'),
 ('20200727122116'),
 ('20200727122117'),
-('20200727162041'),
-('20200729193941'),
-('20200730124512'),
-('20200730130051'),
 ('20200731121100'),
 ('20200731121144'),
 ('20200731122147'),
 ('20200731124515'),
-('20200731124908'),
-('20200731130750'),
-('20200803161100'),
-('20200803162444'),
-('20200804125500'),
-('20200804125517'),
-('20200804144545'),
-('20200804145635'),
-('20200804145940'),
-('20200804150142'),
-('20200812130051'),
-('20200812175807'),
-('20200812180350'),
-('20200812180924'),
-('20200813162728'),
-('20200814092726'),
-('20200814092900'),
-('20200814103248'),
-('20200814104336'),
-('20200814105415'),
-('20200814114646'),
-('20200817152630'),
-('20200818090628'),
-('20200818105202'),
-('20200818105216'),
-('20200818124658'),
-('20200818125452'),
-('20200818132644'),
-('20200818135756'),
-('20200818140236'),
-('20200818143559'),
-('20200821114133'),
-('20200911123052'),
-('20200911123053'),
-('20200911123055'),
-('20200911123056'),
-('20200911131237'),
-('20200911131246'),
-('20200911131317'),
-('20200911131556'),
-('20200911131631'),
-('20200911131633'),
-('20200911131634'),
-('20200911131636'),
-('20200911131637'),
-('20200911131905'),
-('20200911132124'),
-('20200911132315'),
-('20200911132442'),
-('20200911132926'),
-('20200911133043'),
-('20200911133203'),
-('20200911133300'),
-('20200911133450'),
-('20200911133749'),
-('20200911134009'),
-('20200911134237'),
-('20200911134327'),
-('20200911134413'),
-('20200911134749'),
-('20200911135257'),
-('20200911135428'),
-('20200911135514'),
-('20200911135516'),
-('20200911135706'),
-('20200911140450'),
-('20200911140600'),
-('20200911142536'),
-('20200911143042'),
-('20200911143100'),
-('20200911144023'),
-('20200911145939'),
-('20200911165448'),
-('20200911172935'),
-('20200911173337'),
-('20200911174444'),
-('20200914095348'),
-('20200914101207'),
-('20200914101758'),
-('20200914102206'),
-('20200914102627'),
-('20200914143300'),
-('20200914163633'),
-('20200914163936'),
-('20200917113300'),
-('20200921110750'),
-('20200921172540'),
-('20200921173450'),
-('20200921184247'),
-('20200921184426'),
-('20200921185531'),
-('20200923103106'),
-('20200924100402'),
-('20200924121742'),
-('20200929163440'),
-('20200929165700'),
-('20201001120642'),
-('20201009113544'),
-('20201009113546'),
-('20201009113547'),
-('20201009113548'),
-('20201009113549'),
-('20201009113551'),
-('20201009113552'),
-('20201009113553'),
-('20201009113555'),
-('20201009113556'),
-('20201009123016'),
-('20201009152535'),
-('20201009165247'),
-('20201009170614'),
-('20201009170927'),
-('20201009171251'),
-('20201009171508'),
-('20201009172107'),
-('20201009172508'),
-('20201009172744'),
-('20201014172505'),
 ('20201109114833'),
-('20201109180117'),
-('20201109181444'),
-('20201109190307'),
 ('20201111160935'),
 ('20201111161035'),
-('20201112112019'),
-('20201112141132'),
+('20201111164800'),
+('20201111165107'),
+('20201111165109'),
+('20201111165110'),
 ('20201112163129'),
-('20201112190053'),
-('20201112190054'),
-('20201112190055'),
-('20201113114812'),
-('20201113122021'),
-('20201113131147'),
-('20201113134328'),
-('20201113134431'),
-('20201113150359'),
-('20201113153051'),
-('20201113153220'),
-('20201113153255'),
-('20201113153421'),
-('20201113153724'),
-('20201113153931'),
-('20201113154338'),
-('20201113160651'),
-('20201113165116'),
-('20201113165558'),
-('20201113165754'),
-('20201113165842'),
-('20201113165911'),
-('20201113165919'),
-('20201113165938'),
-('20201113165946'),
-('20201113171138'),
-('20201113171433'),
-('20201116160721'),
-('20201116165236'),
-('20201116165548'),
-('20201116165724'),
-('20201116165843'),
-('20201116181212'),
-('20201116184553'),
-('20201117165758'),
-('20201117172114'),
-('20201118162434'),
-('20201118164209'),
-('20201118164706'),
-('20201118165559'),
-('20201118170705'),
-('20201118171355'),
-('20201118171743'),
-('20201118171823'),
-('20201118180407'),
-('20201118182833'),
-('20201118182925'),
-('20201118183050'),
-('20201118183218'),
-('20201118183451'),
-('20201118184036'),
-('20201118184421'),
-('20201118184632'),
-('20201118185134'),
-('20201118185845'),
-('20201119102915'),
-('20201119103040'),
-('20201119103206'),
-('20201119103256'),
-('20201119103527'),
-('20201119103930'),
-('20201119104640'),
-('20201119104716'),
-('20201119105115'),
-('20201119105147'),
-('20201119105629'),
-('20201119110031'),
-('20201119110159'),
-('20201119111037'),
-('20201119111111'),
-('20201119111307'),
-('20201119111628'),
-('20201119112112'),
-('20201119112211'),
-('20201119113826'),
-('20201119114239'),
-('20201119114712'),
-('20201119115023'),
-('20201119120343'),
-('20201119120521'),
-('20201119120645'),
-('20201119121123'),
-('20201119121416'),
-('20201119121523'),
-('20201119122415'),
-('20201119125920'),
-('20201119131230'),
-('20201119134404'),
-('20201119134520'),
-('20201119134745'),
-('20201119135029'),
-('20201119135239'),
-('20201119140723'),
-('20201119141134'),
-('20201119141450'),
-('20201119204512'),
-('20201119204513'),
-('20201119204515'),
-('20201119204516'),
-('20201119204518'),
-('20201119204519'),
-('20201119205016'),
-('20201119205143'),
-('20201119205546'),
-('20201119210052'),
-('20201119210054'),
-('20201119210055'),
-('20201119210056'),
-('20201119210058'),
-('20201119210059'),
-('20201119210100'),
-('20201119210102'),
-('20201119210103'),
-('20201119210104'),
-('20201119211638'),
-('20201119211640'),
-('20201119211641'),
-('20201119211642'),
-('20201119211755'),
-('20201119212054'),
-('20201119212412'),
-('20201119213105'),
-('20201119213545'),
-('20201119213829'),
-('20201119213831'),
-('20201119213833'),
-('20201119213834'),
-('20201119213836'),
-('20201119213837'),
-('20201119213838'),
-('20201119213840'),
-('20201119213841'),
-('20201119213842'),
-('20201119213843'),
-('20201119213845'),
-('20201119213846'),
-('20201119213848'),
-('20201119213849'),
-('20201119213854'),
-('20201119213856'),
-('20201119213857'),
-('20201119214054'),
-('20201119214056'),
-('20201119214057'),
-('20201119214058'),
-('20201119214100'),
-('20201119214101'),
-('20201119214102'),
-('20201119214104'),
-('20201119214105'),
-('20201119214147'),
-('20201119214149'),
-('20201119214150'),
-('20201119214151'),
-('20201119214153'),
-('20201119214154'),
-('20201119214155'),
-('20201119214156'),
-('20201119214158'),
-('20201119214806'),
-('20201119214808'),
-('20201119214809'),
-('20201119214810'),
-('20201119214812'),
-('20201119214813'),
-('20201119214814'),
-('20201119214815'),
-('20201119214817'),
-('20201119215504'),
-('20201119215505'),
-('20201119215506'),
-('20201119215508'),
-('20201119215509'),
-('20201119215510'),
-('20201119215511'),
-('20201119215513'),
-('20201119215514'),
-('20201119215557'),
-('20201119215558'),
-('20201119215559'),
-('20201119215601'),
-('20201119215602'),
-('20201119215603'),
-('20201119215605'),
-('20201119215606'),
-('20201119215607'),
-('20201119221358'),
-('20201119231649'),
-('20201120000241'),
-('20201120001423'),
-('20201120001424'),
-('20201120001426'),
-('20201120001427'),
-('20201120001428'),
-('20201120001429'),
-('20201120001430'),
-('20201120001432'),
-('20201120001433'),
-('20201120002554'),
-('20201120002555'),
-('20201120002556'),
-('20201120002557'),
-('20201120002559'),
-('20201120002601'),
-('20201120002602'),
-('20201120002603'),
-('20201120002604'),
-('20201120002606'),
-('20201120002607'),
-('20201120002608'),
-('20201120002612'),
-('20201120002613'),
-('20201120002614'),
-('20201120002615'),
-('20201120002617'),
-('20201120002618'),
-('20201120002824'),
-('20201120003505'),
-('20201120003506'),
-('20201120003633'),
-('20201120004303'),
-('20201120004305'),
-('20201120004306'),
-('20201120004307'),
-('20201120004309'),
-('20201120004310'),
-('20201120004311'),
-('20201120004312'),
-('20201120004314'),
-('20201120004315'),
-('20201120004320'),
-('20201120004321'),
-('20201120004322'),
-('20201120004323'),
-('20201120004325'),
-('20201120004326'),
-('20201120004327'),
-('20201120004328'),
-('20201120004330'),
-('20201120004331'),
-('20201120004334'),
-('20201120004335'),
-('20201120004337'),
-('20201120004338'),
-('20201120004339'),
-('20201120004341'),
-('20201120004342'),
-('20201120004343'),
-('20201120004345'),
-('20201120004346'),
-('20201120004347'),
-('20201120004351'),
-('20201120004352'),
-('20201120004353'),
-('20201120004354'),
-('20201120004356'),
-('20201120004357'),
-('20201120004358'),
-('20201120004359'),
-('20201120004401'),
-('20201120004402'),
-('20201120004406'),
-('20201120004407'),
-('20201120004408'),
-('20201120004410'),
-('20201120004411'),
-('20201120004412'),
-('20201120004413'),
-('20201120004415'),
-('20201120004416'),
-('20201120004417'),
-('20201120004420'),
-('20201120004422'),
-('20201120004423'),
-('20201120004424'),
-('20201120004426'),
-('20201120004427'),
-('20201120004428'),
-('20201120004429'),
-('20201120004431'),
-('20201120004432'),
-('20201120004433'),
-('20201120004435'),
-('20201120004437'),
-('20201120004438'),
-('20201120004439'),
-('20201120004440'),
-('20201120004442'),
-('20201120004443'),
-('20201120004444'),
-('20201120004445'),
-('20201120004446'),
-('20201120004448'),
-('20201120004449'),
-('20201120004450'),
-('20201120004452'),
-('20201120004453'),
-('20201120004454'),
-('20201120004455'),
-('20201120004457'),
-('20201120004458'),
-('20201120004459'),
-('20201120004500'),
-('20201120004502'),
-('20201120004503'),
-('20201120004504'),
-('20201120004506'),
-('20201120004507'),
-('20201120004508'),
-('20201120004509'),
-('20201120004511'),
-('20201120004514'),
-('20201120004515'),
-('20201120004516'),
-('20201120004517'),
-('20201120004519'),
-('20201120004520'),
-('20201120004521'),
-('20201120004523'),
-('20201120004524'),
-('20201120004525'),
-('20201120005132'),
-('20201120005134'),
-('20201120005136'),
-('20201120005137'),
-('20201120005138'),
-('20201120005139'),
-('20201120005141'),
-('20201120005142'),
-('20201120005143'),
-('20201120005144'),
-('20201120005146'),
-('20201120005147'),
-('20201120005722'),
-('20201120005724'),
-('20201120005727'),
-('20201120005728'),
-('20201120010636'),
-('20201120113512'),
-('20201120113513'),
-('20201120113515'),
-('20201120113516'),
-('20201120113517'),
-('20201120113518'),
-('20201120113520'),
-('20201120113521'),
-('20201120113522'),
-('20201120113523'),
-('20201120113525'),
-('20201120113526'),
-('20201120113527'),
-('20201120113528'),
-('20201120113530'),
-('20201120113531'),
-('20201120113532'),
-('20201120113533'),
-('20201120113534'),
-('20201120113536'),
-('20201120113537'),
-('20201120113538'),
-('20201120113539'),
-('20201120113541'),
-('20201120113542'),
-('20201120113543'),
-('20201120113544'),
-('20201120113545'),
-('20201120113547'),
-('20201120113548'),
-('20201120113549'),
-('20201120113550'),
-('20201120113552'),
-('20201120113553'),
-('20201120113554'),
-('20201120113555'),
-('20201120113556'),
-('20201120113558'),
-('20201120113559'),
-('20201120113600'),
-('20201120113601'),
-('20201120113602'),
-('20201120113604'),
-('20201120113605'),
-('20201120113606'),
-('20201120113607'),
-('20201120113608'),
-('20201120113610'),
-('20201120113611'),
-('20201120113612'),
-('20201120113613'),
-('20201120113614'),
-('20201120113616'),
-('20201120113617'),
-('20201120113618'),
-('20201120113619'),
-('20201120113620'),
-('20201120113622'),
-('20201120113623'),
-('20201120113624'),
-('20201120113625'),
-('20201120113627'),
-('20201120113628'),
-('20201120113629'),
-('20201120113630'),
-('20201120113632'),
-('20201120113633'),
-('20201120171654'),
-('20201120171655'),
-('20201120171657'),
-('20201120172045'),
-('20201120172047'),
-('20201120172049'),
-('20201120172051'),
-('20201120172326'),
-('20201120172411'),
-('20201120172416'),
-('20201120172417'),
-('20201120172418'),
-('20201120172419'),
-('20201120172421'),
-('20201120172422'),
-('20201120172423'),
-('20201120172424'),
-('20201120172425'),
-('20201120172427'),
-('20201120172430'),
-('20201120172431'),
-('20201120172435'),
-('20201123132802'),
-('20201123133436'),
-('20201123164901'),
-('20201130145415'),
-('20201130151146'),
-('20201130155629'),
-('20201130164615'),
-('20201130171046'),
-('20201130181506'),
-('20201130181726'),
-('20201201123431'),
-('20201201135335'),
-('20201202152550'),
-('20201203173231'),
-('20201211173803'),
-('20201214120823'),
-('20210105153826'),
-('20210106115442'),
-('20210106120035'),
 ('20210108085826'),
-('20210111185241'),
-('20210111193126'),
-('20210111193757'),
-('20210111193758'),
-('20210111193953'),
-('20210112093953'),
-('20210112140918'),
-('20210113190726'),
-('20210118175201'),
-('20210118175202'),
-('20210122163753'),
+('20210110191022'),
+('20210110191023'),
+('20210110191024'),
+('20210110191026'),
+('20210110191028'),
+('20210110191029'),
+('20210110191030'),
+('20210110191031'),
+('20210110191033'),
+('20210124185731'),
+('20210124185733'),
+('20210124185959'),
+('20210124190000'),
+('20210124190034'),
+('20210124190035'),
+('20210124190150'),
+('20210124190152'),
+('20210124190153'),
+('20210124190155'),
+('20210124190905'),
+('20210124190907'),
+('20210124190908'),
+('20210124190909'),
+('20210124190911'),
+('20210124190912'),
 ('20210128180947'),
 ('20210129150044'),
 ('20210129154600'),
@@ -24214,321 +30626,66 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20210215153201'),
 ('20210216132458'),
 ('20210216133011'),
-('20210218115904'),
-('20210218155345'),
-('20210219102128'),
-('20210219110030'),
-('20210219110031'),
-('20210219115851'),
-('20210219154518'),
-('20210219164832'),
-('20210303114347'),
 ('20210303164631'),
 ('20210303164632'),
-('20210303185434'),
-('20210303185633'),
 ('20210305113828'),
 ('20210308143952'),
-('20210309121011'),
-('20210309121304'),
-('20210309130529'),
-('20210309132550'),
-('20210309134840'),
-('20210309141058'),
-('20210309145849'),
-('20210309175437'),
-('20210311173439'),
 ('20210312143952'),
-('20210312161907'),
 ('20210318150132'),
 ('20210318150446'),
 ('20210330085617'),
 ('20210406154800'),
-('20210407112018'),
-('20210408142308'),
-('20210408145914'),
-('20210408145937'),
-('20210408172909'),
-('20210408174528'),
-('20210408174853'),
-('20210408175134'),
-('20210408182740'),
-('20210408182932'),
-('20210408184456'),
-('20210408184517'),
-('20210408184539'),
-('20210408185512'),
-('20210408185527'),
-('20210408185624'),
-('20210408191723'),
-('20210409111740'),
-('20210409121129'),
-('20210409121215'),
-('20210409121417'),
-('20210409121507'),
-('20210409151142'),
-('20210409151227'),
-('20210409151245'),
-('20210409153002'),
-('20210409153403'),
-('20210409153417'),
-('20210409154247'),
-('20210409154754'),
-('20210414170005'),
-('20210414170935'),
-('20210414192034'),
-('20210414192103'),
-('20210414192323'),
-('20210415135520'),
-('20210415153255'),
-('20210415171455'),
-('20210416114628'),
-('20210416115129'),
-('20210416115820'),
-('20210416122418'),
-('20210416124230'),
-('20210416124846'),
-('20210419103623'),
-('20210419103700'),
-('20210419104252'),
-('20210419123853'),
-('20210426105226'),
-('20210426105227'),
-('20210426105229'),
-('20210426105230'),
-('20210426105231'),
-('20210426105232'),
-('20210426105809'),
-('20210426110029'),
-('20210426110031'),
-('20210426111529'),
-('20210426111533'),
-('20210426160502'),
-('20210426160527'),
 ('20210428102016'),
-('20210428191045'),
-('20210430150839'),
-('20210430161544'),
-('20210505141004'),
-('20210505151544'),
-('20210505152307'),
-('20210505153500'),
-('20210505154246'),
-('20210506093638'),
-('20210507140002'),
-('20210507140526'),
-('20210507141445'),
-('20210511154015'),
-('20210511154017'),
-('20210511154334'),
-('20210511155828'),
-('20210511155830'),
-('20210511155831'),
-('20210511160109'),
-('20210511160335'),
 ('20210526183942'),
 ('20210712152134'),
-('20210729115538'),
-('20210729120034'),
-('20210729121748'),
-('20210730094238'),
-('20210730094239'),
-('20210730094240'),
-('20210730094241'),
-('20210730094243'),
-('20210802112713'),
-('20210802113037'),
-('20210802113737'),
-('20210804111741'),
-('20210804113928'),
-('20210804114625'),
-('20210804114825'),
-('20210804115107'),
-('20210804115317'),
-('20210804122847'),
 ('20210809151207'),
-('20210810141801'),
 ('20210816170804'),
-('20210819112959'),
-('20210819121250'),
-('20210819142214'),
-('20210819145830'),
-('20210819162924'),
-('20210819172712'),
-('20210820111341'),
-('20210820111417'),
-('20210820111444'),
-('20210820111510'),
-('20210820111536'),
-('20210820111602'),
-('20210820112324'),
-('20210820112351'),
-('20210820112417'),
-('20210820112444'),
-('20210820112511'),
-('20210820112537'),
-('20210820115621'),
-('20210820115651'),
-('20210820115720'),
-('20210820115748'),
-('20210820115817'),
-('20210820115844'),
-('20210820120200'),
-('20210820120230'),
-('20210820120259'),
-('20210820120329'),
-('20210820120358'),
-('20210820120428'),
-('20210820120501'),
-('20210820162714'),
-('20210920154255'),
-('20210920154257'),
-('20210920154838'),
-('20210920154840'),
-('20210920154841'),
-('20210920154842'),
-('20210920154843'),
-('20210920165012'),
-('20211005100000'),
-('20211005161515'),
-('20211005161717'),
-('20211005162206'),
-('20211005162512'),
-('20211005162513'),
-('20211011122908'),
-('20211011123314'),
-('20211011123315'),
-('20211011123317'),
-('20211011123318'),
-('20211011123319'),
-('20211011130405'),
-('20211011130407'),
-('20211013192451'),
-('20211013192724'),
-('20211013193651'),
-('20211019142128'),
-('20211019142850'),
-('20211019144612'),
-('20211019145359'),
-('20211019153138'),
-('20211019154403'),
-('20211019154648'),
-('20211019154822'),
-('20211019160522'),
-('20211020121731'),
-('20211020121904'),
-('20211020122203'),
-('20211020122312'),
-('20211020122426'),
-('20211020172435'),
-('20211020175455'),
-('20211020180413'),
-('20211025124250'),
-('20211025130333'),
-('20211025130455'),
-('20211025131706'),
-('20211025142128'),
-('20211027184654'),
-('20211027190244'),
-('20211027191521'),
-('20211028160454'),
-('20211028160643'),
-('20211028161448'),
-('20211028180910'),
-('20211028181009'),
-('20211028181038'),
-('20211028181343'),
-('20211028182535'),
-('20211028182620'),
-('20211028183011'),
-('20211028183052'),
-('20211028183307'),
-('20211028183352'),
-('20211028183605'),
-('20211028183655'),
-('20211028184606'),
-('20211028184708'),
-('20211028185013'),
-('20211028185104'),
-('20211028190129'),
-('20211028195545'),
-('20211028195631'),
-('20211028195929'),
-('20211028200607'),
+('20211020183551'),
 ('20211031152538'),
+('20211031183210'),
+('20211031183429'),
 ('20211041105001'),
-('20211101164222'),
-('20211101165235'),
-('20211104105307'),
-('20211104105531'),
 ('20211115141001'),
-('20211115143116'),
-('20211115144103'),
-('20211115152200'),
-('20211117123100'),
-('20211117124809'),
-('20211117152250'),
 ('20211117180701'),
-('20211118082753'),
-('20211119145801'),
-('20211119145821'),
-('20211122130620'),
-('20211122131219'),
-('20211122151922'),
-('20211122154543'),
-('20211122154939'),
-('20211122162402'),
-('20211122162529'),
-('20211122184842'),
-('20211122190108'),
-('20211122190158'),
-('20211122202618'),
-('20211122204834'),
-('20211122210402'),
 ('20211124120038'),
-('20211124135213'),
-('20211124141512'),
-('20211124141547'),
-('20211124142532'),
-('20211124143306'),
-('20211124163246'),
 ('20211126152918'),
-('20211129152611'),
-('20211129174409'),
-('20211129174514'),
-('20211129183005'),
-('20211129184654'),
-('20211129184710'),
-('20211129185048'),
-('20211130165832'),
-('20211130170043'),
-('20211201153732'),
-('20211201154230'),
-('20211201155258'),
-('20211201155327'),
-('20211201155608'),
-('20211201155632'),
-('20211201155810'),
-('20211201155927'),
-('20211201160012'),
-('20211201162655'),
-('20211201162807'),
-('20211201162822'),
-('20211201162930'),
-('20211201175056'),
-('20211201191903'),
-('20211201193110'),
-('20211202094341'),
-('20211202103557'),
-('20211202104021'),
-('20211202104105'),
-('20211202104124'),
-('20211202104628'),
-('20211202104939'),
-('20211202165754'),
-('20211202172811'),
-('20211210161534'),
-('20211216181406'),
+('20211206102025'),
+('20211206102026'),
+('20211206102028'),
+('20211206102030'),
+('20211206102244'),
+('20211206102249'),
+('20211206160502'),
+('20211220122834'),
+('20211220122835'),
+('20211220122837'),
+('20211220122840'),
+('20211220123345'),
+('20211220123347'),
+('20211220123348'),
+('20211220123518'),
+('20211220123519'),
+('20211220124525'),
+('20211220124527'),
+('20211220124611'),
+('20211220124612'),
+('20211220125302'),
+('20211220125303'),
+('20211220125327'),
+('20211220125329'),
+('20211220125410'),
+('20211220125411'),
+('20211220125452'),
+('20211220125454'),
+('20211220125821'),
+('20211220125823'),
+('20211220130316'),
+('20211220130318'),
+('20211220130532'),
+('20211220130534'),
+('20211220130655'),
+('20211220130656'),
+('20211220130659'),
 ('20211222111016'),
 ('20211222111721'),
 ('20211222134557'),
@@ -24539,12 +30696,12 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20211222140019'),
 ('20211231113457'),
 ('20220121143719'),
-('20220128173739'),
 ('20220131111232'),
 ('20220131121830'),
 ('20220131121831'),
 ('20220131121833'),
 ('20220131121834'),
+('20220131121835'),
 ('20220131123017'),
 ('20220131123100'),
 ('20220131131244'),
@@ -24567,16 +30724,58 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20220131184511'),
 ('20220201102247'),
 ('20220201102549'),
+('20220201173928'),
+('20220201174829'),
 ('20220202175848'),
 ('20220202190849'),
 ('20220202190931'),
-('20220208182855'),
-('20220208182910'),
-('20220208183044'),
-('20220223154135'),
-('20220223154137'),
-('20220223154138'),
-('20220223154144'),
+('20220202193750'),
+('20220203193018'),
+('20220203201903'),
+('20220214120443'),
+('20220214122255'),
+('20220214124934'),
+('20220214125216'),
+('20220214125928'),
+('20220214130001'),
+('20220214140459'),
+('20220214154149'),
+('20220216145207'),
+('20220217092246'),
+('20220217144044'),
+('20220218171203'),
+('20220218171455'),
+('20220221101714'),
+('20220221102030'),
+('20220221113950'),
+('20220221120737'),
+('20220221123203'),
+('20220222112229'),
+('20220222112301'),
+('20220223113931'),
+('20220223113932'),
+('20220223113934'),
+('20220223114443'),
+('20220223114445'),
+('20220223114447'),
+('20220223114848'),
+('20220223114849'),
+('20220223114851'),
+('20220223114919'),
+('20220223114920'),
+('20220223114922'),
+('20220223115250'),
+('20220223115252'),
+('20220223115253'),
+('20220223120331'),
+('20220223120333'),
+('20220223120335'),
+('20220223121351'),
+('20220223121353'),
+('20220223121355'),
+('20220223121713'),
+('20220223121714'),
+('20220223121716'),
 ('20220224020931'),
 ('20220224023446'),
 ('20220224114432'),
@@ -24585,976 +30784,814 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20220224135635'),
 ('20220224141444'),
 ('20220224143222'),
+('20220225122155'),
+('20220301093010'),
+('20220301093041'),
+('20220301093304'),
+('20220301120158'),
+('20220301120734'),
+('20220301120755'),
 ('20220301201512'),
+('20220303112202'),
+('20220304115603'),
+('20220304115824'),
+('20220304115826'),
+('20220304115827'),
+('20220304115830'),
 ('20220304115836'),
+('20220304115838'),
+('20220304115839'),
+('20220304115841'),
+('20220304120359'),
+('20220304120401'),
+('20220304120404'),
+('20220304120557'),
+('20220304120558'),
+('20220304120600'),
+('20220304120602'),
+('20220304120604'),
+('20220304120605'),
+('20220307144639'),
+('20220307153310'),
 ('20220307154248'),
-('20220309140421'),
+('20220307162856'),
+('20220307162929'),
+('20220307163124'),
+('20220307164817'),
+('20220307164959'),
+('20220324133938'),
+('20220324133940'),
+('20220324133941'),
 ('20220324133943'),
-('20220420155110'),
-('20220420155546'),
-('20220420155719'),
-('20220420155752'),
-('20220420155825'),
-('20220420155908'),
+('20220324133945'),
+('20220324133946'),
+('20220324133948'),
+('20220324133949'),
+('20220324133951'),
+('20220324133952'),
+('20220324133953'),
+('20220328115603'),
+('20220329113632'),
+('20220329113634'),
+('20220329113635'),
+('20220329113637'),
+('20220329113640'),
+('20220329113641'),
+('20220329113642'),
+('20220329130557'),
+('20220329181503'),
+('20220330105313'),
+('20220330105858'),
+('20220331110656'),
+('20220331110717'),
+('20220331110820'),
+('20220421190539'),
 ('20220421190541'),
 ('20220421190542'),
+('20220421190544'),
+('20220421190545'),
+('20220421190547'),
 ('20220421190549'),
+('20220421190550'),
 ('20220421190552'),
+('20220421190553'),
+('20220421190555'),
+('20220421190556'),
+('20220421190557'),
+('20220421203328'),
+('20220422170048'),
+('20220422170050'),
+('20220422170051'),
+('20220422170418'),
+('20220422170420'),
+('20220422170421'),
+('20220422170446'),
+('20220422170448'),
+('20220422170449'),
+('20220422170830'),
+('20220422170832'),
+('20220422170833'),
+('20220422170919'),
+('20220422170920'),
+('20220422170922'),
+('20220422171039'),
+('20220422171041'),
+('20220422171042'),
+('20220422172000'),
+('20220422172002'),
+('20220422172003'),
+('20220422172155'),
+('20220422172157'),
+('20220422172158'),
+('20220422172305'),
+('20220422172307'),
+('20220422172308'),
+('20220422172839'),
+('20220422172841'),
+('20220422172842'),
+('20220422173038'),
+('20220422173040'),
+('20220422173041'),
+('20220422173147'),
+('20220422173149'),
+('20220422173150'),
+('20220422173153'),
+('20220422173710'),
+('20220422173712'),
+('20220422173713'),
+('20220422173857'),
+('20220422173859'),
+('20220422173900'),
+('20220422173902'),
+('20220422173904'),
+('20220422173905'),
+('20220422173907'),
+('20220422173908'),
+('20220422180358'),
+('20220422180430'),
+('20220422180453'),
+('20220422180936'),
+('20220422181037'),
+('20220426181659'),
+('20220427144604'),
+('20220427144732'),
+('20220429142550'),
+('20220429142651'),
+('20220503171647'),
+('20220503172002'),
+('20220503172112'),
+('20220503172331'),
+('20220503172418'),
+('20220503172607'),
+('20220503172620'),
+('20220503172651'),
+('20220503172714'),
 ('20220505095408'),
-('20220519170259'),
+('20220509163510'),
+('20220510103824'),
+('20220510104245'),
+('20220510104418'),
+('20220510104623'),
+('20220510104958'),
+('20220510105005'),
+('20220510105350'),
+('20220510105624'),
+('20220510105625'),
+('20220510111800'),
+('20220510111823'),
+('20220510115936'),
+('20220510120159'),
+('20220510120548'),
+('20220510134118'),
+('20220510134159'),
+('20220511181927'),
+('20220511182044'),
+('20220512131102'),
+('20220512143846'),
+('20220512143859'),
+('20220512144040'),
+('20220512144126'),
+('20220512144303'),
+('20220512144337'),
+('20220512145418'),
+('20220512145552'),
+('20220512145818'),
+('20220512145831'),
+('20220512150022'),
+('20220512150119'),
+('20220512150230'),
+('20220512184859'),
+('20220512185002'),
+('20220512191330'),
+('20220512191711'),
+('20220512192613'),
+('20220512192730'),
+('20220512192833'),
+('20220512193005'),
+('20220512193108'),
+('20220512193213'),
+('20220512193318'),
+('20220512194008'),
+('20220512194228'),
+('20220512194359'),
+('20220512194457'),
+('20220512194611'),
+('20220512194744'),
+('20220512194926'),
+('20220516092942'),
+('20220516100849'),
+('20220516113651'),
+('20220516113940'),
+('20220516122435'),
+('20220516122623'),
+('20220516122849'),
+('20220516123101'),
+('20220516123415'),
+('20220516123459'),
+('20220516123628'),
+('20220517122146'),
+('20220517122239'),
+('20220517142648'),
+('20220517142650'),
+('20220517142651'),
+('20220517142654'),
+('20220517142655'),
+('20220517142657'),
+('20220517142851'),
+('20220517142853'),
+('20220517142854'),
+('20220517142857'),
+('20220517142858'),
+('20220517142900'),
+('20220517142902'),
+('20220517142903'),
+('20220517142904'),
+('20220517143044'),
+('20220517143124'),
+('20220517144705'),
+('20220517150044'),
+('20220519170301'),
+('20220524105006'),
+('20220524105008'),
+('20220524105009'),
+('20220524105012'),
+('20220524105013'),
+('20220524105015'),
+('20220524105017'),
+('20220524105018'),
+('20220526172521'),
+('20220526172550'),
+('20220526173106'),
+('20220526173112'),
+('20220526173244'),
+('20220526181804'),
+('20220526182143'),
 ('20220531121546'),
-('20220602111344'),
-('20220602111347'),
-('20220602112346'),
-('20220602112348'),
-('20220602121405'),
-('20220602122558'),
-('20220602123829'),
-('20220602124037'),
-('20220602124145'),
-('20220602124201'),
-('20220602124203'),
-('20220602124205'),
-('20220602124206'),
-('20220602124208'),
-('20220602124746'),
-('20220607170739'),
-('20220607170741'),
-('20220607170743'),
-('20220607170744'),
-('20220607170746'),
-('20220607171012'),
-('20220607171102'),
-('20220607171104'),
-('20220607171105'),
-('20220607171140'),
-('20220607171141'),
-('20220607171143'),
-('20220607171856'),
-('20220607171857'),
-('20220607171859'),
-('20220607172136'),
-('20220607172410'),
-('20220607172657'),
-('20220607175510'),
-('20220613095531'),
-('20220613095532'),
-('20220613095534'),
-('20220613095535'),
-('20220613095536'),
-('20220613152055'),
-('20220613152056'),
-('20220613152058'),
+('20220601180701'),
+('20220621090729'),
+('20220621090731'),
+('20220621090732'),
+('20220621090734'),
+('20220621090737'),
+('20220621090739'),
+('20220621091859'),
+('20220621091900'),
+('20220621091902'),
+('20220621205650'),
+('20220621205651'),
+('20220621210030'),
+('20220621210031'),
+('20220621210654'),
+('20220621210656'),
+('20220621210923'),
+('20220621210924'),
+('20220621212005'),
+('20220621212007'),
+('20220621212454'),
+('20220621212456'),
 ('20220621212457'),
 ('20220621212459'),
 ('20220621212500'),
 ('20220621212502'),
 ('20220621212503'),
+('20220621212504'),
+('20220621212506'),
+('20220621212507'),
+('20220621212509'),
+('20220621212510'),
+('20220621212626'),
+('20220621212628'),
 ('20220621212630'),
 ('20220621212631'),
 ('20220621212632'),
 ('20220621212634'),
 ('20220621212635'),
+('20220621212636'),
+('20220621212638'),
+('20220621212639'),
+('20220621212641'),
+('20220621212642'),
+('20220621212644'),
+('20220621212645'),
+('20220621212646'),
+('20220621212648'),
+('20220621212650'),
+('20220621212747'),
+('20220621212749'),
 ('20220621212751'),
 ('20220621212752'),
 ('20220621212753'),
 ('20220621212755'),
 ('20220621212756'),
+('20220621212757'),
+('20220621212759'),
+('20220621212800'),
+('20220621212802'),
+('20220621212803'),
+('20220621212805'),
+('20220621212806'),
+('20220621212807'),
+('20220621212810'),
 ('20220621212811'),
+('20220621212812'),
+('20220621212814'),
+('20220622095513'),
+('20220622095644'),
 ('20220624132515'),
 ('20220624150128'),
 ('20220624150155'),
+('20220627154143'),
+('20220627154145'),
 ('20220627154146'),
 ('20220627154148'),
 ('20220627154149'),
 ('20220627154150'),
 ('20220627154152'),
+('20220627154153'),
+('20220627154155'),
+('20220627154156'),
+('20220627154158'),
+('20220627154159'),
+('20220627154200'),
+('20220627154202'),
+('20220627154203'),
+('20220627154206'),
+('20220627154207'),
+('20220627154327'),
+('20220627154329'),
 ('20220627154330'),
 ('20220627154331'),
 ('20220627154333'),
 ('20220627154334'),
 ('20220627154335'),
+('20220627154337'),
+('20220627154338'),
+('20220627154340'),
+('20220627154341'),
+('20220627154343'),
+('20220627154344'),
+('20220627154345'),
+('20220627154347'),
+('20220627154349'),
+('20220627154350'),
+('20220630082801'),
+('20220704183420'),
+('20220704183422'),
 ('20220704183424'),
 ('20220704183425'),
 ('20220704183426'),
 ('20220704183428'),
 ('20220704183429'),
-('20220902102732'),
-('20220902103000'),
-('20220902103048'),
-('20220902111938'),
+('20220704183430'),
+('20220704183432'),
+('20220704183433'),
+('20220704183435'),
+('20220704183436'),
+('20220704183437'),
+('20220704183439'),
+('20220704183440'),
+('20220704183443'),
+('20220704183444'),
+('20220824102025'),
+('20220824190346'),
+('20220915144411'),
+('20220915144413'),
 ('20220915144414'),
 ('20220915144415'),
 ('20220915144417'),
 ('20220915144418'),
 ('20220915144419'),
 ('20220915144421'),
+('20220915144422'),
+('20220915144424'),
+('20220915144426'),
+('20220915144428'),
+('20220915144429'),
+('20220915144430'),
+('20220915144432'),
+('20220915144434'),
+('20220915144436'),
+('20220915144444'),
+('20220915144445'),
+('20220916105116'),
+('20220916105118'),
 ('20220916105119'),
 ('20220916105121'),
 ('20220916105122'),
 ('20220916105123'),
 ('20220916105125'),
-('20221006110807'),
-('20221006111937'),
-('20221006112017'),
-('20221006115325'),
-('20221006115409'),
-('20221006115502'),
-('20221006115707'),
-('20221006115741'),
-('20221006120020'),
-('20221006120346'),
-('20221006120646'),
-('20221006120829'),
-('20221006142524'),
-('20221006143131'),
-('20221013111848'),
-('20221013111855'),
-('20221013111857'),
-('20221013111858'),
-('20221013111859'),
-('20221013111901'),
-('20221013111902'),
-('20221013111904'),
-('20221013111905'),
-('20221013111907'),
-('20221013111908'),
-('20221013111909'),
-('20221013111911'),
+('20220916105126'),
+('20220916105128'),
+('20220916105129'),
+('20220916105131'),
+('20220916105132'),
+('20220916105133'),
+('20220916105135'),
+('20220916105137'),
+('20220916105143'),
+('20220916105149'),
+('20220916105150'),
+('20221031174109'),
+('20221110101203'),
+('20221110101411'),
+('20221110101647'),
+('20221110102412'),
+('20221110102414'),
+('20221110102415'),
+('20221110102417'),
 ('20221110102419'),
-('20221130095444'),
-('20221130095445'),
-('20221130095449'),
-('20221130095450'),
-('20221130095916'),
-('20221130095920'),
-('20230103170542'),
-('20230103170544'),
-('20230103170545'),
-('20230103170546'),
-('20230103170548'),
-('20230103170549'),
-('20230103170551'),
-('20230104133255'),
+('20221110102421'),
+('20221110102422'),
+('20221110102424'),
+('20221110102426'),
+('20221110102437'),
+('20221110102438'),
+('20221110102439'),
+('20221110102441'),
+('20221110102442'),
+('20221110102443'),
+('20221110102445'),
+('20221110102446'),
+('20221110102447'),
+('20221110102819'),
+('20221110102820'),
+('20221110102822'),
+('20221110102823'),
+('20221110102826'),
+('20221110102827'),
+('20221110102830'),
+('20221110102833'),
+('20221110102834'),
+('20221110103050'),
+('20221110103052'),
+('20221110103054'),
+('20221110103055'),
+('20221110103058'),
+('20221110103059'),
+('20221110103101'),
 ('20230104133814'),
-('20230104141902'),
-('20230105145308'),
-('20230105145310'),
-('20230105145312'),
-('20230105145314'),
-('20230105145316'),
-('20230109155918'),
-('20230109160157'),
 ('20230117115913'),
-('20230117115915'),
-('20230117115916'),
-('20230117115918'),
-('20230117115919'),
-('20230117115921'),
-('20230117115922'),
-('20230117115924'),
-('20230117115926'),
 ('20230209153019'),
-('20230213184027'),
-('20230214164921'),
-('20230328165040'),
-('20230328165113'),
-('20230328170404'),
-('20230328172219'),
-('20230328173855'),
-('20230328174140'),
-('20230328175220'),
-('20230328175745'),
-('20230328175817'),
-('20230328175853'),
-('20230329110438'),
-('20230329111230'),
-('20230329122758'),
-('20230329123743'),
+('20230309104811'),
+('20230309104813'),
+('20230309104814'),
+('20230309104817'),
+('20230309104819'),
+('20230309104820'),
+('20230309104822'),
+('20230309104824'),
+('20230309104825'),
+('20230309104827'),
+('20230309104828'),
+('20230309104829'),
+('20230309104831'),
+('20230309104832'),
+('20230309105041'),
+('20230309105042'),
+('20230309105044'),
+('20230309105047'),
+('20230309105048'),
+('20230309105050'),
+('20230309105053'),
+('20230309105055'),
+('20230309105056'),
+('20230309105057'),
+('20230309105059'),
+('20230309105100'),
+('20230309105449'),
+('20230309105450'),
+('20230309105452'),
+('20230309105455'),
+('20230309105456'),
+('20230309105457'),
+('20230309105459'),
+('20230309105941'),
+('20230309105942'),
+('20230309105943'),
+('20230309105946'),
+('20230309105948'),
+('20230309105949'),
+('20230309110022'),
+('20230309110024'),
+('20230309110025'),
+('20230309110028'),
+('20230309110029'),
+('20230309110031'),
+('20230309110157'),
+('20230309110159'),
+('20230309110200'),
+('20230309110203'),
+('20230309110205'),
+('20230309110206'),
+('20230309110556'),
+('20230309110557'),
+('20230309110559'),
+('20230309110602'),
+('20230309110603'),
+('20230309110605'),
+('20230309110609'),
+('20230309110610'),
+('20230309110612'),
+('20230309111233'),
+('20230309111234'),
+('20230309111236'),
+('20230309111239'),
+('20230309111240'),
+('20230309111400'),
+('20230309111401'),
+('20230309111403'),
+('20230309111406'),
+('20230309111407'),
+('20230309111436'),
+('20230309111437'),
+('20230309111439'),
+('20230309111442'),
+('20230309111443'),
+('20230309111447'),
+('20230309111449'),
+('20230309111450'),
+('20230309111658'),
+('20230309111724'),
+('20230309111816'),
 ('20230420125603'),
 ('20230420125634'),
-('20230614140923'),
-('20230614141315'),
-('20230614142339'),
-('20230614142516'),
-('20230614143259'),
-('20230614143338'),
-('20230614144247'),
-('20230614144316'),
-('20230614144756'),
-('20230614145016'),
-('20230614151136'),
-('20230614151137'),
-('20230614154459'),
-('20230614154815'),
-('20230614154858'),
-('20230828113922'),
-('20230828113924'),
-('20230828120031'),
-('20230828120033'),
-('20230828120038'),
-('20230828120039'),
-('20230828120041'),
-('20230828120042'),
-('20230828120044'),
-('20230828120045'),
-('20230828120047'),
-('20230828120048'),
-('20230828120050'),
-('20230828120052'),
-('20230828120053'),
-('20230828120055'),
-('20230828120056'),
-('20230828120058'),
-('20230828120059'),
-('20230828120101'),
-('20230828120102'),
-('20230828120104'),
-('20230828120105'),
-('20230828120107'),
-('20230828120108'),
-('20230828120110'),
-('20230828120111'),
-('20230828120113'),
-('20230828120114'),
-('20230828120116'),
-('20230828120117'),
-('20230828120119'),
-('20230828120121'),
-('20230828120122'),
-('20230828120124'),
-('20230828120125'),
-('20230828120127'),
-('20230828120128'),
-('20230828120130'),
-('20230828120131'),
-('20230828120133'),
-('20230828120135'),
-('20230828120136'),
-('20230828120138'),
-('20230828120139'),
-('20230828120141'),
-('20230828120142'),
-('20230828133906'),
-('20230828133907'),
-('20230828134151'),
-('20230828134152'),
-('20230828134209'),
-('20230828134210'),
-('20230828134212'),
-('20230828134213'),
-('20230828134215'),
-('20230828134216'),
-('20230828134218'),
-('20230828134220'),
-('20230828134221'),
-('20230828134223'),
-('20230828134224'),
-('20230828134226'),
-('20230828134227'),
-('20230828134229'),
-('20230828134230'),
-('20230828134232'),
-('20230828134233'),
-('20230828134235'),
-('20230828134237'),
-('20230828134239'),
-('20230828134240'),
-('20230828134242'),
-('20230828134244'),
-('20230828134246'),
-('20230828134248'),
-('20230828134250'),
-('20230828134528'),
-('20230828134530'),
-('20230828134633'),
-('20230828134635'),
-('20230828135635'),
-('20230828135642'),
-('20230828135644'),
-('20230828135654'),
-('20230828135656'),
-('20230828135657'),
-('20230828135659'),
-('20230828135700'),
-('20230828135702'),
-('20230828135703'),
-('20230828135705'),
-('20230828135706'),
-('20230828135708'),
-('20230828135709'),
-('20230828140643'),
-('20230828140650'),
-('20230828140652'),
-('20230828140702'),
-('20230828140704'),
-('20230828140706'),
-('20230828140707'),
-('20230828140709'),
-('20230828140710'),
-('20230828140711'),
-('20230828140713'),
-('20230828140714'),
-('20230828142231'),
-('20230828142238'),
-('20230828142240'),
-('20230828142251'),
-('20230828142253'),
-('20230828142254'),
-('20230828142256'),
-('20230828142258'),
-('20230828142259'),
-('20230828142300'),
-('20230828142302'),
-('20230828142303'),
-('20230828142551'),
-('20230828142558'),
-('20230828142559'),
-('20230828142610'),
-('20230828142612'),
-('20230828142614'),
-('20230828142615'),
-('20230828142617'),
-('20230828142618'),
-('20230828142619'),
-('20230828142621'),
-('20230828142622'),
-('20230828142841'),
-('20230828142848'),
-('20230828142850'),
-('20230828142900'),
-('20230828142902'),
-('20230828142904'),
-('20230828142905'),
-('20230828142907'),
-('20230828142909'),
-('20230828142910'),
-('20230828142911'),
-('20230828142913'),
-('20230828145013'),
-('20230828145020'),
-('20230828145021'),
-('20230828145032'),
-('20230828145034'),
-('20230828145035'),
-('20230828145037'),
-('20230828145038'),
-('20230828145040'),
-('20230828145041'),
-('20230828145043'),
-('20230828145044'),
-('20230828163749'),
-('20230828163756'),
-('20230828163758'),
-('20230828163808'),
-('20230828163810'),
-('20230828163811'),
-('20230828163813'),
-('20230828163814'),
-('20230828163816'),
-('20230828163817'),
-('20230828163819'),
-('20230828163820'),
-('20230828163822'),
-('20230828164218'),
-('20230828164225'),
-('20230828164227'),
-('20230828164237'),
-('20230828164240'),
-('20230828164241'),
-('20230828164242'),
-('20230828164244'),
-('20230828164246'),
-('20230828164247'),
-('20230828164249'),
-('20230828164250'),
-('20230828164656'),
-('20230828164703'),
-('20230828164704'),
-('20230828164715'),
-('20230828164717'),
-('20230828164719'),
-('20230828164720'),
-('20230828164722'),
-('20230828164723'),
-('20230828164725'),
-('20230828164726'),
-('20230828164728'),
-('20230829181138'),
-('20230829181146'),
-('20230829181147'),
-('20230829181158'),
-('20230829181200'),
-('20230829181201'),
-('20230829181203'),
-('20230829181205'),
-('20230829181206'),
-('20230829181207'),
-('20230829181209'),
-('20230829181210'),
-('20230829185147'),
-('20230829185148'),
-('20230829185257'),
-('20230829185258'),
-('20230829185537'),
-('20230829185539'),
-('20230829185652'),
-('20230829185653'),
-('20230829185837'),
-('20230829185838'),
-('20230829185843'),
-('20230829185845'),
-('20230829185847'),
-('20230829185848'),
-('20230829185850'),
-('20230829185852'),
-('20230829185853'),
-('20230829185855'),
-('20230829185856'),
-('20230829185858'),
-('20230829185900'),
-('20230829185901'),
-('20230829185903'),
-('20230829185904'),
-('20230829185906'),
-('20230829185907'),
-('20230829185909'),
-('20230829185911'),
-('20230829185912'),
-('20230829185914'),
-('20230829185915'),
-('20230829185917'),
-('20230829185918'),
-('20230829185920'),
-('20230829185921'),
-('20230829185923'),
-('20230829185924'),
-('20230829185926'),
-('20230829185927'),
-('20230829185929'),
-('20230829185931'),
-('20230829185932'),
-('20230829185934'),
-('20230829185935'),
-('20230829185937'),
-('20230829185939'),
-('20230829185940'),
-('20230829185942'),
-('20230829185943'),
-('20230829185945'),
-('20230829185946'),
-('20230829185948'),
-('20230829185950'),
-('20230829185952'),
-('20230829185954'),
-('20230829185956'),
-('20230829185958'),
-('20230829190000'),
-('20230829190003'),
-('20230829190005'),
-('20230829190008'),
-('20230829194315'),
-('20230829194322'),
-('20230829194324'),
-('20230829194330'),
-('20230829194332'),
-('20230829194334'),
-('20230829194335'),
-('20230829194337'),
-('20230829194338'),
-('20230829194340'),
-('20230829195219'),
-('20230829195225'),
-('20230829195227'),
-('20230829195234'),
-('20230829195235'),
-('20230829195237'),
-('20230829195238'),
-('20230829195240'),
-('20230829195241'),
-('20230829195243'),
-('20230830130355'),
-('20230830130843'),
-('20230830131350'),
-('20230830132352'),
-('20230830132551'),
-('20230830135030'),
-('20230830135250'),
-('20230830140513'),
-('20230830140559'),
-('20230830140927'),
-('20230830140941'),
-('20230830141232'),
-('20230830141800'),
-('20230830145045'),
-('20230830145157'),
-('20230830145622'),
-('20230907102327'),
-('20230907102713'),
-('20230907102828'),
-('20230907102831'),
-('20230907102833'),
-('20230907103457'),
-('20230907103701'),
-('20230907104439'),
-('20230907104838'),
-('20230907105132'),
-('20230907105233'),
-('20230907105241'),
-('20230907105242'),
-('20230907105244'),
-('20230907105245'),
-('20230907105247'),
-('20230907105249'),
-('20230907105251'),
-('20230907105252'),
-('20230907105254'),
-('20230907105256'),
-('20230907105257'),
-('20230907105259'),
-('20230907105300'),
-('20230907105302'),
-('20230907105304'),
-('20230907175315'),
-('20230907175318'),
-('20230907175320'),
-('20230907175321'),
-('20230907175323'),
-('20230907175325'),
-('20230907175326'),
-('20230907175751'),
-('20230907180055'),
-('20230907181844'),
-('20230907181855'),
-('20230907181942'),
-('20230907181952'),
-('20230907182201'),
-('20230907182210'),
-('20230907184944'),
-('20230907184948'),
-('20230907184952'),
-('20230907184953'),
-('20230907184955'),
-('20230907185443'),
-('20230907185449'),
-('20230907185451'),
-('20230907185452'),
-('20230907185454'),
-('20230907185456'),
-('20230907185458'),
-('20230907185459'),
-('20230907185500'),
-('20230907185502'),
-('20230907185503'),
-('20230907185505'),
-('20230907185506'),
-('20230907185757'),
-('20230907185804'),
-('20230907185806'),
-('20230907185807'),
-('20230907185809'),
-('20230907185811'),
-('20230907185813'),
-('20230907185814'),
-('20230907185815'),
-('20230907185817'),
-('20230907190042'),
-('20230907190108'),
-('20230907194143'),
-('20230907194325'),
-('20230907194516'),
-('20230907194843'),
-('20230907194919'),
-('20230911134329'),
-('20230911134336'),
-('20230911134337'),
-('20230911134339'),
-('20230911135626'),
-('20230911135633'),
-('20230911135635'),
-('20230911135636'),
-('20230911135638'),
-('20230911135640'),
-('20230911140137'),
-('20230911140144'),
-('20230911140145'),
-('20230911140147'),
-('20230911140149'),
-('20230911142431'),
-('20230911142439'),
-('20230911142441'),
-('20230911142442'),
-('20230911142444'),
-('20230911142446'),
-('20230911142448'),
-('20230911142449'),
-('20230911142451'),
-('20230911142452'),
-('20230911142454'),
-('20230911144408'),
-('20230911144414'),
-('20230911144416'),
-('20230911144418'),
-('20230911144419'),
-('20230911144421'),
-('20230911144423'),
-('20230911144425'),
-('20230911144426'),
-('20230911144427'),
-('20230911144831'),
-('20230911144837'),
-('20230911144839'),
-('20230911144840'),
-('20230911144842'),
-('20230911144844'),
-('20230911144846'),
-('20230911144848'),
-('20230911144849'),
-('20230911144850'),
-('20230911144852'),
-('20230911151146'),
-('20230911151152'),
-('20230911151156'),
-('20230911151157'),
-('20230911151159'),
-('20230911151201'),
-('20230911152537'),
-('20230911152545'),
-('20230911152546'),
-('20230911152548'),
-('20230911152550'),
-('20230911152551'),
-('20230911152553'),
-('20230911152556'),
-('20230911152558'),
-('20230911152600'),
-('20230911152601'),
-('20230911152603'),
-('20230911152605'),
-('20230911152606'),
-('20230911152608'),
-('20230911152609'),
-('20230911152611'),
-('20230911152612'),
-('20230911152614'),
-('20230911153518'),
-('20230911153525'),
-('20230911153526'),
-('20230911153528'),
-('20230911153530'),
-('20230911153531'),
-('20230911153533'),
-('20230911154431'),
-('20230911154436'),
-('20230911154440'),
-('20230911154442'),
-('20230911154443'),
-('20230911154445'),
-('20230911154645'),
-('20230911154652'),
-('20230911154653'),
-('20230911154655'),
-('20230911154657'),
-('20230911154658'),
-('20230911154701'),
-('20230911154703'),
-('20230911154705'),
-('20230911155223'),
-('20230911155231'),
-('20230911155232'),
-('20230911155234'),
-('20230911155236'),
-('20230911155237'),
-('20230911155241'),
-('20230911155243'),
-('20230911155245'),
-('20230911155247'),
-('20230911155248'),
-('20230911155250'),
-('20230911155251'),
-('20230911155253'),
-('20230911155254'),
-('20230911155256'),
-('20230911155357'),
-('20230911155404'),
-('20230911155406'),
-('20230911155407'),
-('20230911155409'),
-('20230911155411'),
-('20230911155415'),
-('20230911155417'),
-('20230911155418'),
-('20230911155420'),
-('20230911155422'),
-('20230911155423'),
-('20230911155424'),
-('20230911160428'),
-('20230911160436'),
-('20230911160437'),
-('20230911160439'),
-('20230911160441'),
-('20230911160442'),
-('20230911160447'),
-('20230911160449'),
-('20230911160450'),
-('20230911160452'),
-('20230911160454'),
-('20230911160455'),
-('20230911160456'),
-('20230911160949'),
-('20230911160956'),
-('20230911160958'),
-('20230911160959'),
-('20230911161001'),
-('20230911161003'),
-('20230911161007'),
-('20230911161009'),
-('20230911161011'),
-('20230911161012'),
-('20230911161014'),
-('20230911161015'),
-('20230911161017'),
-('20230911161945'),
-('20230911162241'),
-('20230911162448'),
-('20230911162455'),
-('20230911162457'),
-('20230911162458'),
-('20230911162500'),
-('20230911162502'),
-('20230911162506'),
-('20230911162508'),
-('20230911162510'),
-('20230911162511'),
-('20230911162513'),
-('20230911162514'),
-('20230911162516'),
-('20230911171045'),
-('20230911171052'),
-('20230911171053'),
-('20230911171055'),
-('20230911171057'),
-('20230911171059'),
-('20230911171103'),
-('20230911171106'),
-('20230911171107'),
-('20230911171109'),
-('20230911171110'),
-('20230911171112'),
-('20230911171113'),
-('20230911173627'),
-('20230911173851'),
-('20230911173858'),
-('20230911173900'),
-('20230911173902'),
-('20230911173904'),
-('20230911173905'),
-('20230911173910'),
-('20230911173912'),
-('20230911173913'),
-('20230911173915'),
-('20230911173916'),
-('20230911173918'),
-('20230911173919'),
-('20230912180951'),
-('20230912181332'),
-('20230912181339'),
-('20230912181341'),
-('20230912181343'),
-('20230912181344'),
-('20230912181346'),
-('20230912181350'),
-('20230912181352'),
-('20230912181353'),
-('20230912181355'),
-('20230912181356'),
-('20230912181357'),
-('20230912181359'),
-('20230912181858'),
-('20230912181905'),
-('20230912181906'),
-('20230912181908'),
-('20230912181910'),
-('20230912181911'),
-('20230912181915'),
-('20230912181918'),
-('20230912181919'),
-('20230912181920'),
-('20230912181922'),
-('20230912181923'),
-('20230912181925'),
-('20230912182137'),
-('20230912182144'),
-('20230912182147'),
-('20230912182148'),
-('20230912182150'),
-('20230912182151'),
-('20230912182156'),
-('20230912182158'),
-('20230912182159'),
-('20230912182201'),
-('20230912182202'),
-('20230912182204'),
-('20230912182205'),
-('20230912184216'),
-('20230912184223'),
-('20230912184225'),
-('20230912184226'),
-('20230912184228'),
-('20230912184230'),
-('20230912184235'),
-('20230912184237'),
-('20230912184238'),
-('20230912184240'),
-('20230912184241'),
-('20230912184243'),
-('20230912184244'),
-('20230912184810'),
-('20230912184816'),
-('20230912184818'),
-('20230912184819'),
-('20230912184821'),
-('20230912184823'),
-('20230912184827'),
-('20230912184829'),
-('20230912184830'),
-('20230912184831'),
-('20230912184833'),
-('20230912184834'),
-('20230912184836'),
-('20230912185546'),
-('20230912185556'),
-('20230912185557'),
-('20230912185559'),
-('20230912185601'),
-('20230912185603'),
-('20230912185608'),
-('20230912185609'),
-('20230912185611'),
-('20230912185613'),
-('20230912185615'),
-('20230912185616'),
-('20230912185618'),
-('20230912185620'),
-('20230912185621'),
-('20230912190853'),
-('20230912190859'),
-('20230912190901'),
-('20230912190902'),
-('20230912190904'),
-('20230912190906'),
-('20230912190909'),
-('20230912190910'),
-('20230912190911'),
-('20230912190914'),
-('20230912190915'),
-('20230912190917'),
-('20230912190918'),
-('20230912190920'),
-('20230912190921'),
-('20230912200248'),
-('20230912200420'),
-('20230912200427'),
-('20230912200429'),
-('20230912200430'),
-('20230912200432'),
-('20230912200434'),
-('20230912200437'),
-('20230912200439'),
-('20230912200440'),
-('20230912200443'),
-('20230912200444'),
-('20230912200445'),
-('20230912200447'),
-('20230912200449'),
-('20230912200450'),
-('20230912200835'),
-('20230912200841'),
-('20230912200843'),
-('20230912200845'),
-('20230912200847'),
-('20230912200848'),
-('20230912200851'),
-('20230912200853'),
-('20230912200854'),
-('20230912200857'),
-('20230912200858'),
-('20230912200900'),
-('20230912200901'),
-('20230912200903'),
-('20230912200904'),
-('20230912201521'),
-('20230912202004'),
-('20230912202701'),
-('20230912202946'),
-('20230912203024'),
-('20230912203030'),
-('20230912203036'),
-('20230912203147'),
-('20230912203513'),
-('20230914111818'),
-('20230914111820'),
-('20230914111822'),
-('20230914111827'),
-('20230914111828'),
-('20230914111830'),
-('20230914111834'),
-('20230914111922'),
-('20230914111924'),
-('20230914111925'),
-('20230914144106'),
-('20230914144108'),
-('20230914144109'),
-('20230914150815'),
-('20230918162543'),
-('20230918162851'),
-('20230918163609'),
-('20230918163836'),
-('20230918163910'),
-('20230918164512'),
-('20230918164954'),
-('20230918165436'),
-('20230918171059'),
-('20230918171355'),
-('20230918171544'),
-('20230918171752'),
-('20230918171954'),
-('20230918172421'),
-('20230918172531'),
-('20230918172542'),
-('20230918172605'),
-('20230918172920'),
-('20230918173041'),
-('20230918173105'),
-('20230918173207'),
-('20230918173305'),
-('20230918173954'),
-('20230918174311'),
-('20230918174321'),
-('20230918181142'),
-('20230918182052'),
-('20230918184024'),
-('20230918184159'),
-('20230918184218'),
-('20230919104341'),
-('20230926150721'),
-('20230927110735'),
-('20231102191151'),
-('20231102191840'),
-('20231102192108'),
-('20231102192113'),
-('20231102192120'),
-('20231102192123'),
-('20231102192126'),
-('20231102192128'),
-('20231102192130'),
-('20231102192132'),
-('20231102192134'),
-('20231102192137'),
-('20231102192139'),
-('20231102192145'),
-('20231102192147'),
-('20231102192150'),
+('20230502172849'),
+('20230502180019'),
+('20230502180248'),
+('20230502180810'),
+('20230711165157'),
+('20230711165159'),
+('20230711165201'),
+('20230711165203'),
+('20230711165204'),
+('20230711165205'),
+('20230711165207'),
+('20230711165208'),
+('20230711165210'),
+('20230711165211'),
+('20230711165213'),
+('20230711165215'),
+('20230711165216'),
+('20230711165218'),
+('20230711165220'),
+('20230711165229'),
+('20230711165543'),
+('20230711165545'),
+('20230711165547'),
+('20230711165549'),
+('20230711165550'),
+('20230711165551'),
+('20230711165553'),
+('20230711165554'),
+('20230711165556'),
+('20230711165557'),
+('20230711165559'),
+('20230711165601'),
+('20230711165602'),
+('20230711165604'),
+('20230711165606'),
+('20230711170038'),
+('20230711170040'),
+('20230711170042'),
+('20230711170043'),
+('20230711170045'),
+('20230711170046'),
+('20230711170047'),
+('20230711170049'),
+('20230711170051'),
+('20230711170052'),
+('20230711170054'),
+('20230711170055'),
+('20230711170057'),
+('20230711170058'),
+('20230711170101'),
+('20230711170552'),
+('20230711170554'),
+('20230711170555'),
+('20230711170557'),
+('20230711170558'),
+('20230711170600'),
+('20230711170601'),
+('20230711170602'),
+('20230711170604'),
+('20230711170605'),
+('20230711170607'),
+('20230711170609'),
+('20230711170610'),
+('20230711170611'),
+('20230711170614'),
+('20230711170750'),
+('20230711170752'),
+('20230711170754'),
+('20230711170756'),
+('20230711170757'),
+('20230711170758'),
+('20230711170800'),
+('20230711170801'),
+('20230711170803'),
+('20230711170804'),
+('20230711170806'),
+('20230711170808'),
+('20230711170809'),
+('20230711170811'),
+('20230711170813'),
+('20230711170818'),
+('20230711170820'),
+('20230712111929'),
+('20230712111931'),
+('20230712111933'),
+('20230712111935'),
+('20230712111936'),
+('20230712111937'),
+('20230712111939'),
+('20230712111940'),
+('20230712111942'),
+('20230712111943'),
+('20230712111945'),
+('20230712111946'),
+('20230712111948'),
+('20230712111949'),
+('20230712111952'),
+('20230712111954'),
+('20230712111956'),
+('20230712112543'),
+('20230712112545'),
+('20230712112547'),
+('20230712112550'),
+('20230712112552'),
+('20230712112556'),
+('20230712112728'),
+('20230712112729'),
+('20230712112731'),
+('20230712112734'),
+('20230712112736'),
+('20230712112740'),
+('20230712112742'),
+('20230712132520'),
+('20230712132522'),
+('20230712132524'),
+('20230712132525'),
+('20230712132527'),
+('20230712132528'),
+('20230712132529'),
+('20230712132531'),
+('20230712132533'),
+('20230712132534'),
+('20230712132536'),
+('20230712132537'),
+('20230712132538'),
+('20230712132540'),
+('20230712132543'),
+('20230712132545'),
+('20230712132546'),
+('20230712133250'),
+('20230712133251'),
+('20230712133253'),
+('20230712133255'),
+('20230712133256'),
+('20230712133258'),
+('20230712133259'),
+('20230712133300'),
+('20230712133302'),
+('20230712133303'),
+('20230712133305'),
+('20230712133307'),
+('20230712133308'),
+('20230712133309'),
+('20230712133312'),
+('20230712133315'),
+('20230712133316'),
+('20230809093208'),
+('20230809093210'),
+('20230809093212'),
+('20230809093213'),
+('20230809093215'),
+('20230809093216'),
+('20230809093217'),
+('20230809093219'),
+('20230809093220'),
+('20230809093222'),
+('20230809093224'),
+('20230809093225'),
+('20230809093227'),
+('20230809093228'),
+('20230809093231'),
+('20230809093233'),
+('20230809093235'),
+('20230814082411'),
+('20230814082412'),
+('20230814082414'),
+('20230814082416'),
+('20230814082417'),
+('20230814082418'),
+('20230814082420'),
+('20230814082421'),
+('20230814082423'),
+('20230814082424'),
+('20230814082426'),
+('20230814082428'),
+('20230814082429'),
+('20230814082430'),
+('20230814082433'),
+('20230814082436'),
+('20230814082437'),
+('20230822183526'),
+('20230822183528'),
+('20230822183530'),
+('20230822183531'),
+('20230822183533'),
+('20230822183534'),
+('20230822183535'),
+('20230822183537'),
+('20230822183538'),
+('20230822183540'),
+('20230822183541'),
+('20230822183543'),
+('20230822183544'),
+('20230822183546'),
+('20230822183547'),
+('20230822183550'),
+('20230822183552'),
+('20230822183554'),
+('20230824095001'),
+('20230920154249'),
+('20230920154251'),
+('20230920154252'),
+('20230920154626'),
+('20230920154628'),
+('20230920154629'),
+('20230920154901'),
+('20230920154903'),
+('20230920154904'),
+('20230920155547'),
+('20230920155800'),
+('20230920155802'),
+('20230920155803'),
+('20230920160248'),
+('20230920160334'),
+('20230920160337'),
+('20230920160339'),
+('20230920160545'),
+('20230920160720'),
+('20230927111319'),
+('20230927123224'),
+('20230927125854'),
+('20231011135146'),
+('20231011135151'),
+('20231011135153'),
+('20231011135158'),
+('20231011135200'),
+('20231011135621'),
+('20231011135835'),
+('20231011140608'),
+('20231012130116'),
+('20231017100419'),
+('20231017100511'),
+('20231017100519'),
+('20231017100609'),
+('20231017163817'),
+('20231030175759'),
+('20231030175801'),
+('20231106102828'),
+('20231106102830'),
+('20231106102832'),
+('20231106102834'),
+('20231106102835'),
+('20231106102837'),
+('20231106102839'),
+('20231106102840'),
+('20231106120905'),
+('20231107155231'),
+('20231115100715'),
+('20231115100717'),
+('20231115100719'),
+('20231127083512'),
+('20231127083514'),
+('20231127083515'),
+('20231130164246'),
+('20231130164351'),
+('20231130164353'),
+('20231130164355'),
+('20231204090620'),
+('20231212093450'),
+('20231212093453'),
+('20231212093454'),
+('20231212093456'),
+('20231212093458'),
+('20240116090059'),
+('20240116090102'),
+('20240116090103'),
+('20240116090105'),
+('20240116090106'),
+('20240116090108'),
+('20240116090341'),
+('20240116090347'),
+('20240116090402'),
+('20240129184920'),
+('20240129184931'),
+('20240129184934'),
+('20240213103516'),
+('20240213104713'),
 ('20240506141400');
 
 
