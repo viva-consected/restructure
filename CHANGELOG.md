@@ -14,7 +14,47 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
-- [Build] latest
+### From Viva - PR 356
+
+- [Added] report handler for sidebar_hash_content_links to ensure these hashed links work correctly
+- [Added] protection against multiple report auto runs
+- [Added] caption before close button on embedded report modal when list item changed
+- [Changed] handling of email address lookups from settings to ensure lower case matching is used
+- [Added] configuration checks for admin and user email addresses set by environment variables
+- [Changed] the message to users on expiration of an account to avoid confusion if a user can reset their own password
+- [Changed] matching of email address for batch user to allow mixed case definition to match the lower case user email address
+- [Added] comment clarifying failure to set the OTP, MFA fields
+
+### From Viva - PR 355
+
+- [Added] report results count attribute to markup to allow better styling for no results
+- [Fixed] "loading..." message for empty report tree resultsets
+- [Changed] style of loading tree report
+- [Fixed] auto submission of reports on criteria changed by clarifying use of configuration
+
+### From Viva - PR 354
+
+- [Added] edit_as options to select_user_with fields - allows displayed label and value to be different from email
+
+### From Viva - PR 353
+
+- [Added] reCAPTCHA as an option to protect registration pages
+- [Fixed] an unhelpful error message when registering if an empty password was provided
+
+### From Viva - PR 352
+
+- [Changed] display of tree report loading
+- [Fixed] tree embedded report when there is a report in the underlying page (embedded in a placeholder for example)
+- [Added] report results handler to force all \<pre> elements to be fully expanded
+- [Fixed] mailto links breaking in sidebar when content is a portal page
+- [Fixed] editor html cleanup losing images and horizonal rule
+- [Fixed] tree expander implementations
+- [Fixed] report criteria drop down selector filters not loading when default criteria passed through URL
+
+### From Viva - PR 351
+
+- [Fixed] use of Etag headers for caching
+- [Changed] browser caching for common scenarios
 
 ## [8.6.1] - 2024-03-04
 
