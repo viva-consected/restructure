@@ -8,8 +8,8 @@ _fpa.loaded.reports = function () {
   if ($('#editable_data').length == 1 && $('.report-criteria-fields').length >= 1)
     $('input[type="submit"][value="table"]').click();
 
-
   // Substitute list_id param into links in the report criteria containing :list_id
+  // This only functions for full page reports, not embedded reports
   const $a_to_list = $criteria_form.find('a[href*=":list_id"]');
   const param_list_match = location.href.match(/\[list_id\]=(\d+)/);
   if ($a_to_list.length && param_list_match) {
@@ -276,7 +276,8 @@ _fpa.reports = {
         var name = act_config.field_name;
         var value = act_config.value;
         var checked = act_config.value.init_value ? 'checked="checked"' : ''
-        var h = `<input type="checkbox" class="report-file-selector" id="seicb-${cb_id}" name="${name}" ${checked}/>`;
+        var dis = act_config.disabled ? 'disabled="disabled"' : ''
+        var h = `<input type="checkbox" class="report-file-selector" id="seicb-${cb_id}" name="${name}" ${checked} ${dis}/>`;
         var $h = $(h);
         $h.val(JSON.stringify(value));
         var $eldiv = $('<div class="report-sel-item-ind"></div>').appendTo($el);
@@ -382,12 +383,17 @@ _fpa.reports = {
     // Add a default item that will allow all items to be removed if needed. Without this, there must always be at least one
     // result sent.
     var $el = $outer.find('#seicb-0').clone();
+    var jel = $el.val();
+    //  If no results were returned, or all the fields were blank, return
+    if (!jel) return;
+
     $el.prop('id', 'seicb-default');
-    var defval = JSON.parse($el.val());
+    var defval = JSON.parse(jel);
     defval.id = null;
     defval.init_value = true;
     $el.val(JSON.stringify(defval));
     $el.attr('checked', true)
+    $el.attr('disabled', null)
     $el.attr('class', 'report-file-selector-default')
     $el.hide();
     console.log($el);
@@ -408,6 +414,17 @@ _fpa.reports = {
     }
 
     $submit[0].click();
+
+    var $modal = $form.parents('.modal').first();
+    if ($modal.length) {
+
+      $modal.not('.has-mfcbb-clear').on('hidden.bs.modal', function () {
+        $modal.find('.modal-footer .modal-footer-caption-before-button').html('');
+      }).addClass('has-mfcbb-clear');
+
+      $modal.find('.modal-footer .modal-footer-caption-before-button').html('selected items automatically saved')
+    }
+
   },
 
   run_autos: function (sel) {

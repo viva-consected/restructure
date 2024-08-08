@@ -28,8 +28,7 @@ class User < ActiveRecord::Base
 
   belongs_to :app_type, class_name: 'Admin::AppType', optional: true
 
-  attr_accessor :terms_of_use
-  attr_accessor :client_localized
+  attr_accessor :terms_of_use, :client_localized
 
   default_scope -> { order email: :asc }
   scope :not_template, -> { where('email NOT LIKE ?', Settings::TemplateUserEmailPatternForSQL) }
@@ -87,16 +86,17 @@ class User < ActiveRecord::Base
   # The template user is assigned to newly created roles to ensure they are exported
   # in an app type export, even if there are no other matching users on the target server
   def self.template_user
-    res = find_by(email: Settings::TemplateUserEmail)
+    tue = Settings::TemplateUserEmail.downcase
+    res = find_by(email: tue)
 
-    Rails.logger.error "template_user #{Settings::TemplateUserEmail} does not exist" unless res
+    Rails.logger.error "template_user #{tue} does not exist" unless res
     res
   end
 
   # Get the admin that corresponds to this user
   # @return [Admin | nil]
   def matching_admin
-    Admin.active.where(email: email).first
+    Admin.active.where(email: email.downcase).first
   end
 
   #
@@ -104,7 +104,7 @@ class User < ActiveRecord::Base
   def self.batch_user
     e = Settings::BatchUserEmail
     # Use the admin email as the user - this assumes that the equivalent user has been set up for automated use
-    find_by(email: e)
+    find_by(email: e.downcase)
   end
 
   #

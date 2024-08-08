@@ -31,7 +31,7 @@ _fpa.postprocessors_reports = {
 
   embedded_report: function (block, data) {
     _fpa.report_criteria.reports_form(block, data);
-    block.find('[type="submit"].auto-run').click();
+    block.find('[type="submit"].auto-run').not('.was-auto-run-clicked').addClass('was-auto-run-clicked').click();
     // Change the id, so that embedded report links inside the embedded report will function
     $('#modal_results_block').prop('id', 'modal_results_block_1')
   },

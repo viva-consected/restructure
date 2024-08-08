@@ -60,7 +60,7 @@ _fpa.report_criteria = class {
       return false;
     }).addClass('attached-click-listener');
 
-    if (!show_fob) block.find('[type="submit"].auto-run').click();
+    if (!show_fob) block.find('[type="submit"].auto-run').not('.was-auto-run-clicked').addClass('was-auto-run-clicked').click();
 
   };
 
