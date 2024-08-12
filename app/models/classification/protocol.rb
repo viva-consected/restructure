@@ -15,24 +15,39 @@ class Classification::Protocol < ActiveRecord::Base
   has_many :sub_processes
 
   default_scope -> { order position: :asc }
-  scope :updates, -> { where 'name = ? AND (disabled IS NULL OR disabled = FALSE)', RecordUpdatesProtocolName }
+  scope :updates, -> { enabled.where(name: RecordUpdatesProtocolName) }
   scope :selectable, -> { enabled.where('name <> ?', RecordUpdatesProtocolName) }
 
   validates :name, presence: true
+  before_save :reset_memos
 
   def value
     id
   end
 
+  # Use #select so we don't have to requery for each request for this scope
   def self.find_by_name(name)
-    active.where(name: name).first
+    active.select { |r| r.name == name }.first
   end
 
-  # A simple method to cache the record that is used to indicate Tracker Updates
-  # so that we can quickly and repetitively user this
+  # A simple method to memoize the record that is used to indicate Tracker Updates
+  # so that we can quickly and repetitively use this
   def self.record_updates_protocol
-    Rails.cache.fetch 'record_updates_protocol' do
-      enabled.updates.take
-    end
+    @record_updates_protocol ||= enabled.updates.reload.take
+  end
+
+  def self.reset_record_updates_protocol!
+    @record_updates_protocol = nil
+  end
+
+  def reset_memos
+    self.class.reset_memos
+  end
+
+  def self.reset_memos
+    # @all_active = nil
+    Classification::SubProcess.reset_memos
+    Classification::ProtocolEvent.reset_memos
+    reset_record_updates_protocol!
   end
 end

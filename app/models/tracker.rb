@@ -70,7 +70,7 @@ class Tracker < UserBase
     # Get the existing tracker item for the master / protocol pair in the new record (self)
     # If it exists then we handle saving the new record and getting the appropriate response.
     # If it doesn't exist, we return nil
-    existing_tracker = master.trackers.where(protocol_id: protocol_id).take(1)
+    existing_tracker = master.trackers.where(protocol_id:).take(1)
     if existing_tracker.first
       logger.info 'An existing master / protocol pair exists when attempting to merge tracker entry'
 
@@ -80,7 +80,7 @@ class Tracker < UserBase
       if res
 
         # get the latest tracker item after saving to the database, based on triggered results
-        t1 = master.trackers.where(protocol_id: protocol_id).take(1)
+        t1 = master.trackers.where(protocol_id:).take(1)
         new_top_tracker = t1.first
 
         # Indicate that the result should be displayed as a merged item
@@ -230,8 +230,8 @@ class Tracker < UserBase
   # those changes in the tracker history.
   def self.add_record_update_entries(name, admin, update_type = 'record')
     begin
-      protocol = Classification::Protocol.updates.first
-      sp = protocol.sub_processes.find_by_name("#{update_type} updates")
+      protocol = Classification::Protocol.updates.reload.first
+      sp = protocol.sub_processes.active.reload.find_by_name("#{update_type} updates").reload
       values = []
 
       name = name.humanize.downcase
@@ -244,8 +244,8 @@ class Tracker < UserBase
     values << { name: "updated #{name.downcase}", sub_process_id: sp.id }
 
     values.each do |v|
-      res = sp.protocol_events.find_or_initialize_by(v)
-      if res.admin
+      res = sp.protocol_events.active.find_or_initialize_by(v)
+      if res.admin_id
         # logger.info "Did not add protocol event #{v} in #{protocol.id} / #{sp.id}"
       else
         res.update!(current_admin: admin)
@@ -255,18 +255,27 @@ class Tracker < UserBase
   end
 
   # Find the protocol_events record that matches the rec_type and set the protocol_event attribute in this tracker
-  def set_record_updates_event(record)
+  def set_record_updates_event(record, first_attempt: true)
     # Decide if this is a new or updated record. Check both id_changed? and save_change_to_id? since we can't be sure
     # if we'll be in an after_save or after_commit callback
     new_rec = record.id_changed? || record.saved_change_to_id?
     rec_type = "#{new_rec ? 'created' : 'updated'} #{ModelReference.record_type_to_ns_table_name(record.class).humanize.downcase}"
 
-    self.protocol_event = Rails.cache.fetch "record_updates_protocol_events_#{sub_process.id}_#{rec_type}" do
-      sub_process.protocol_events.where(name: rec_type).first
-    end
+    self.protocol_event = sub_process.protocol_events.find_by_name(rec_type)
 
     return if protocol_event
 
+    # Stop things breaking unnecessarily
+    if first_attempt
+      msg = 'Tracker needs to retry getting create/update protocol events'
+      logger.warn msg
+      puts msg if Rails.env.test?
+      Classification::Protocol.reset_memos
+      sub_process.reload.protocol_events.reload
+      return set_record_updates_event(record, first_attempt: false)
+    end
+
+    puts "Bad Protocol Event: #{rec_type}: #{record.attributes}" if Rails.env.test?
     raise "Bad protocol_event (#{rec_type}) for tracker #{record}. If you believe it should exist, "\
           'check double spacing is correct in the definition for namespaced classes.'
   end
@@ -275,9 +284,7 @@ class Tracker < UserBase
   # The sub_process attribute is set from the cache where possible to avoid unnecessary lookups
   # to find the Updates / flag or Updates / record subprocess to be assigned to a new tracker entry
   def set_record_updates_sub_process(type)
-    self.sub_process = Rails.cache.fetch "record_updates_sub_process_#{type}" do
-      Classification::Protocol.record_updates_protocol.sub_processes.where(name: "#{type} updates").first
-    end
+    self.sub_process = Classification::Protocol.record_updates_protocol.sub_processes.find_by_name("#{type} updates")
 
     raise "Bad sub_process for tracker (#{type})" unless sub_process
   end

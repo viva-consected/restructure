@@ -253,6 +253,7 @@ class ExternalIdentifier < ActiveRecord::Base
     return unless label && !disabled
 
     Tracker.add_record_update_entries name.singularize, current_admin, 'record'
+    Classification::Protocol.reset_memos
     # flag items are added when item flag names are added to the list
     # Tracker.add_record_update_entries self.name.singularize, current_admin, 'flag'
   end
@@ -312,9 +313,9 @@ class ExternalIdentifier < ActiveRecord::Base
   end
 
   def config_uniqueness
-    res = self.class.active.where(name: name.downcase).where.not(id: id)
+    res = self.class.active.where(name: name.downcase).where.not(id:)
     errors.add :name, 'must be unique' if !disabled && !res.empty?
-    res = self.class.active.where(external_id_attribute: external_id_attribute.downcase).where.not(id: id)
+    res = self.class.active.where(external_id_attribute: external_id_attribute.downcase).where.not(id:)
     errors.add :external_id_attribute, 'must be unique' if !disabled && !res.empty?
   end
 
@@ -334,7 +335,7 @@ class ExternalIdentifier < ActiveRecord::Base
                      searchable: false,
                      current_admin: admin,
                      position: 100,
-                     sql: sql
+                     sql:
     end
 
     r = usage_report('Search', ReportItemSearchType)
@@ -358,7 +359,7 @@ class ExternalIdentifier < ActiveRecord::Base
                      searchable: true,
                      current_admin: admin,
                      position: 100,
-                     sql: sql,
+                     sql:,
                      search_attrs: sa
     end
 
@@ -378,6 +379,6 @@ class ExternalIdentifier < ActiveRecord::Base
                    searchable: false,
                    current_admin: admin,
                    position: 100,
-                   sql: sql
+                   sql:
   end
 end

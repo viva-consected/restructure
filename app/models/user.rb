@@ -204,6 +204,28 @@ class User < ActiveRecord::Base
     Admin::AppType.all_available_to(self)
   end
 
+  #
+  # Get the role names for the user in the current app type, or if
+  # conditions specifies :app_type_id, use that instead
+  # @param [<Type>] conditions <description>
+  # @option conditions [<Type>] :<key> <description>
+  # @option conditions [<Type>] :<key> <description>
+  # @option conditions [<Type>] :<key> <description>
+  # @return [<Type>] <description>
+  def app_type_role_names(conditions = {})
+    @app_type_role_names = {} if user_roles_updated? || user_access_controls_updated?
+    @app_type_role_names ||= {}
+
+    alt_app_type_id = conditions[:app_type_id] || app_type_id
+
+    got = @app_type_role_names[conditions]
+    return got if got
+
+    @app_type_role_names[conditions] = Admin::UserRole.active_app_roles(self, app_type: [alt_app_type_id, nil])
+                                                      .select('app_type_id, role_name').distinct.order(app_type_id: :asc)
+                                                      .pluck(:app_type_id, :role_name)
+  end
+
   # Send user confirmation email if self registering
   # method provided by devise confirmable module; Override so job notifications can be executed
   def send_on_create_confirmation_instructions
@@ -216,6 +238,11 @@ class User < ActiveRecord::Base
   # method provided by devise recoverable module; Override so job notifications can be executed
   def send_reset_password_instructions
     return if a_template_or_batch_user? || !allow_users_to_register?
+
+    if disabled
+      raise FphsGeneralError,
+            'User profile does not exist or was disabled - contact an administrator to reset the password'
+    end
 
     if do_not_email
       raise FphsGeneralError,

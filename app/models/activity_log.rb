@@ -69,7 +69,7 @@ class ActivityLog < ActiveRecord::Base
   def self.all_valid_item_and_rec_types
     Classification::GeneralSelection
       .selector_collection(['item_type like ?', '%_type'])
-      .map { |i| [i[:item_type].sub(/(_rec)?_type$/, '').singularize, i.value].join('_') } +
+      .map { |i| [i[:item_type].sub(/(_rec)?_type$/, '').singularize, i[:value]].join('_') } +
       use_with_class_names
   end
 
@@ -390,7 +390,7 @@ class ActivityLog < ActiveRecord::Base
   def self.routes_load
     mn = nil
     begin
-      m = enabled
+      m = active
       return if m.empty?
 
       Rails.application.routes.draw do
@@ -490,6 +490,9 @@ class ActivityLog < ActiveRecord::Base
         logger.info "Adding a new Activity protocol event #{pe.id}"
       end
     end
+
+    Classification::Protocol.reset_memos
+
     true
   end
 
@@ -603,7 +606,7 @@ class ActivityLog < ActiveRecord::Base
 
         res = klass.const_set(model_class_name, a_new_class)
         # Do the include after naming, to ensure the correct names are used during initialization
-        res.include TrackerHandler
+        # res.include TrackerHandler
         res.include WorksWithItem
         res.include UserHandler
         res.include Dynamic::ActivityLogImplementer
@@ -732,6 +735,15 @@ class ActivityLog < ActiveRecord::Base
   # Hyphenated name, typically used in HTML markup for referencing target blocks and panels
   def hyphenated_name
     full_item_type_name.ns_hyphenate
+  end
+
+  def default_embed_table_name(extra_log_type)
+    sname = process_name || [item_type, rec_type].compact.join('_')
+    [category, sname, extra_log_type, 'recs'].compact.join('_')
+  end
+
+  def default_embed_resource_name(extra_log_type)
+    "dynamic_model__#{default_embed_table_name(extra_log_type)}"
   end
 
   # Override to enable extra log types to also be added to Resouces::Models

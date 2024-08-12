@@ -128,11 +128,19 @@
         NOTE this is set in the form fields UI only if the item has been created and the current value is blank.
         It is not set before building the instances, so will not be available for data conditions.
       preset_value: |
-        default value | now() | today() 
+        default value | now() | today() | \{\{substitutions\}\}
         
         NOTE this is set when building the instances and may be used to drive logic like an embed_resource_name field
+      blank_preset_value: |
+        default value | now() | today() | \{\{substitutions\}\}
+        
+        NOTE this is set only if the attribute is blank when building the instances 
+        and may be used to drive logic like an embed_resource_name field
+
       no_downcase: true - to prevent downcasing of the attribute when stored to the database
       view_original_case: true - to prevent the UI capitalizing downcased fields
+      view_with_formats: |
+        list of formatters to apply to a string field when being viewed
       format: plain | markdown - for free text editor fields such as notes and description
       config:
         _comment: additional configurations for editor fields
@@ -204,7 +212,11 @@
         
       on_create:                  
       on_update:
-  embed:
+
+  # embed can be defined in one of two styles:
+  embed: default_embed_resource # simply embeds the dynamic model matching the default_embed_resource_name for this activity
+
+  embed(form 2):
     resource_name: resource name for the item to embed
     resource_id: |
       (optional) literal integer or a named attribute on the resource to use as an id of the embedded item
@@ -278,35 +290,49 @@
 
   save_trigger:
     on_create: &trigger_tasks
-      add_tracker: 
+      # Each trigger definition is run in order within the list
+      # simpler definitions may not use a list, and just specify a hash of key value pairs, run in order
+      # noting that this only allows a single configuration of each type of trigger
+
+      - add_tracker: 
 #!defs(save_triggers_add_tracker_options_defs.yaml)
 
-      create_master: 
+      - create_master: 
 #!defs(save_triggers_create_master_options_defs.yaml)
 
-      create_reference: 
+      - create_reference: 
 #!defs(save_triggers_create_reference_options_defs.yaml)
 
-      change_user_roles:
+      - change_user_roles:
 #!defs(save_triggers_change_user_roles_options_defs.yaml)
 
-      create_filestore_container: 
+      - create_filestore_container: 
 #!defs(save_triggers_create_filestore_container_options_defs.yaml)
 
-      notify: 
+      - notify: 
 #!defs(save_triggers_notify_options_defs.yaml)
 
-      pull_external_data: 
+      - pull_external_data: 
 #!defs(save_triggers_pull_external_data_options_defs.yaml)
 
-      set_item_flags:
+      - set_item_flags:
 #!defs(save_triggers_set_item_flags_options_defs.yaml)
 
-      update_reference: 
+      - update_reference: 
 #!defs(save_triggers_update_reference_options_defs.yaml)
 
-      update_this: 
+      - update_this: 
 #!defs(save_triggers_update_this_options_defs.yaml)
+
+      - each:
+          value: # list of literal values, triple curly substitution returning a list, or hash conditional result returning a list
+          do:
+            - <trigger 1> # a trigger configuration such as update_this:
+            - <trigger 2>
+          if: # optionally specify a condition to skip a whole iteration. Individual trigger ifs are still available.
+          # The iterator index and value can be accessed inside the triggers with:
+          # - {{save_trigger_results.iterator_index}}
+          # - {{save_trigger_results.iterator_value}}
 
     on_update: {}
     
@@ -330,4 +356,7 @@
       <<: *trigger_tasks
 
 
- 
+  config_trigger:
+    on_define:
+      # Add default configurations and extra detailed configurations when a dynamic definition configuration is saved or updated
+#!defs(config_trigger_options_defs.yaml)

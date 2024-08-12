@@ -47,6 +47,7 @@ RSpec.describe SaveTriggers::CreateReference, type: :model do
 
     # Prevent user from being able to create player contact records
     uac = @user.has_access_to? :access, :table, :player_contacts
+    uac = Admin::UserAccessControl.find(uac.id)
     uac.update! current_admin: @admin, user: @user, access: nil,
                 resource_type: :table, resource_name: :player_contacts
 
@@ -149,5 +150,89 @@ RSpec.describe SaveTriggers::CreateReference, type: :model do
     expect(mr.to_record_id).to eq pc.id
     expect(mr.to_record_master_id).to eq pc.master_id
     expect(mr.from_record_master_id).to eq pc.master_id
+  end
+
+  it 'creates a reference in a specific record' do
+    pn = random_phone_number
+
+    config = {
+      if: { always: true }
+    }
+
+    al_alt = create_item master: @master
+
+    config = {
+      player_contact: {
+        in: {
+          specific_record: {
+            activity_log__player_contact_phones: {
+              id: al_alt.id,
+              return: 'return_result'
+            }
+          }
+        },
+        with: { data: pn, rec_type: :phone, rank: 5 }
+      }
+    }
+    @trigger = SaveTriggers::CreateReference.new(config, @al)
+    @trigger.perform
+
+    pc = PlayerContact.find_by(data: pn)
+    expect(pc).not_to be nil
+    expect(pc.master_id).to eq @al.master.id
+
+    mr = ModelReference.last&.reload
+    expect(mr.to_record_id).to eq pc.id
+    expect(mr.to_record_master_id).to eq pc.master_id
+    expect(mr.from_record_master_id).to eq pc.master_id
+    expect(mr.from_record_id).to eq al_alt.id
+  end
+
+  it 'creates a reference in a specific record with other item attributes' do
+    pn = @player_contact.data
+
+    config = {
+      if: { always: true }
+    }
+
+    al_alt = create_item master: @master
+
+    config = {
+      player_contact: {
+        in: {
+          specific_record: {
+            activity_log__player_contact_phones: {
+              id: al_alt.id,
+              return: 'return_result'
+            }
+          }
+        },
+        with_result: {
+          from: {
+            player_contacts: {
+              id: @player_contact.id,
+              return: 'return_result'
+            }
+          },
+          attributes: {
+            data: '{{data}} new',
+            rec_type: 'rec_type'
+          }
+        },
+        with: { rank: 5 }
+      }
+    }
+    @trigger = SaveTriggers::CreateReference.new(config, @al)
+    @trigger.perform
+
+    pc = PlayerContact.find_by(data: "#{pn} new", rank: 5, rec_type: 'phone')
+    expect(pc).not_to be nil
+    expect(pc.master_id).to eq @al.master.id
+
+    mr = ModelReference.last&.reload
+    expect(mr.to_record_id).to eq pc.id
+    expect(mr.to_record_master_id).to eq pc.master_id
+    expect(mr.from_record_master_id).to eq pc.master_id
+    expect(mr.from_record_id).to eq al_alt.id
   end
 end

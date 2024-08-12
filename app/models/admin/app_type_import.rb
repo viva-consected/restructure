@@ -15,7 +15,7 @@ class Admin
     # @param [String] config_text - YAML or JSON text
     # @param [Admin] admin - admin profile performing import
     # @param [String] name - optionally override the name of the app type at import
-    # @param [Symbol] format - :json (default) or :yaml
+    # @param [Symbol] format - :json (default), :yaml, :raw (a hash)
     # @param [:force|:changed|nil] force_update - optionally force updated configuration items to current timestamp
     #                                  allowing previously failed imports to be overwritten
     #                                  or set to :changed to update changes, regardless of updated_at timestamp
@@ -86,6 +86,7 @@ class Admin
       # If it wasn't present, the result was nil and we should skip this, since it
       # indicates we don't want to make any changes
       clean_user_access_controls if import_results['user_access_controls']
+      Admin::AppType.reset_memo_associated_items!
       app_type&.reload
 
       [app_type, results]
@@ -183,6 +184,8 @@ class Admin
         config = JSON.parse(config_text)
       elsif format == :yaml
         config = YAML.safe_load(config_text)
+      elsif format == :raw
+        config = config_text.deep_stringify_keys
       else
         raise FphsException, 'specify app type import format as one of :json or :yaml'
       end
@@ -254,10 +257,11 @@ class Admin
         begin
           app_type_item, item_changes = create_or_update(app_type_item, new_vals)
         rescue StandardError, FphsException => e
-          raise unless skip_fail
-
           fres = identifier_hash(app_type_item, found_with_conditions)
           fres['exception!'] = self.class.clean_exception(e)
+          Rails.logger.warn fres
+          raise unless skip_fail
+
           failures << fres
         end
 

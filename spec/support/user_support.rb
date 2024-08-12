@@ -60,7 +60,7 @@ module UserSupport
     raise 'No active app type!' unless app_type
 
     unless opt[:no_app_type_setup]
-      Admin::UserAccessControl.create! user: user, app_type: app_type, access: :read, resource_type: :general,
+      Admin::UserAccessControl.create! user:, app_type:, access: :read, resource_type: :general,
                                        resource_name: :app_type, current_admin: admin
     end
 
@@ -71,8 +71,8 @@ module UserSupport
     end
 
     if opt[:create_master]
-      Admin::UserAccessControl.create! app_type: app_type, access: :read, resource_type: :general,
-                                       resource_name: :create_master, current_admin: @admin, user: user
+      Admin::UserAccessControl.create! app_type:, access: :read, resource_type: :general,
+                                       resource_name: :create_master, current_admin: @admin, user:
     end
     @user = user
     let_user_create :player_contacts
@@ -87,8 +87,8 @@ module UserSupport
     app_type = app_type || user&.app_type || Admin::AppType.active.first
     raise 'No app type set' unless app_type
 
-    Admin::UserAccessControl.create app_type: app_type, access: :read, resource_type: :general,
-                                    resource_name: :app_type, current_admin: @admin, user: user
+    Admin::UserAccessControl.create app_type:, access: :read, resource_type: :general,
+                                    resource_name: :app_type, current_admin: @admin, user:
   end
 
   def self.create_admin(part = nil)
@@ -123,7 +123,7 @@ module UserSupport
   def create_user_role(role_name, user: nil, app_type: nil)
     user ||= @user
     app_type ||= user.app_type
-    Admin::UserRole.create! current_admin: @admin, app_type: app_type, role_name: role_name, user: user
+    Admin::UserRole.create! current_admin: @admin, app_type:, role_name:, user:
   end
 
   def gen_username(part)
@@ -148,7 +148,7 @@ module UserSupport
     res = user.has_access_to?(:access, :general, :app_type, alt_app_type_id: app_type.id)
     return res if res
 
-    res = setup_access :app_type, resource_type: :general, access: :read, user: user, app_type: app_type
+    res = setup_access(:app_type, resource_type: :general, access: :read, user:, app_type:)
     expect(user.has_access_to?(:access, :general, :app_type, alt_app_type_id: app_type.id))
     res
   end
@@ -160,8 +160,8 @@ module UserSupport
 
     app_type ||= @user.app_type
 
-    uac = Admin::UserAccessControl.where(app_type: app_type, resource_type: resource_type, resource_name: resource_name)
-    uac = uac.where(user: user) if user
+    uac = Admin::UserAccessControl.where(app_type:, resource_type:, resource_name:)
+    uac = uac.where(user:) if user
 
     uac.active.update_all(disabled: true) if uac.active.length > 1
     uac = uac.active.first || uac.first
@@ -171,8 +171,8 @@ module UserSupport
       uac.current_admin = auto_admin
       uac.save!
     else
-      uac = Admin::UserAccessControl.create! app_type: app_type, access: access, resource_type: resource_type,
-                                             resource_name: resource_name, user: user, current_admin: auto_admin
+      uac = Admin::UserAccessControl.create! app_type:, access:, resource_type:,
+                                             resource_name:, user:, current_admin: auto_admin
     end
 
     if user && access && resource_name != :app_type
@@ -183,8 +183,9 @@ module UserSupport
     end
 
     uac
-  rescue StandardError
+  rescue StandardError => e
     Rails.logger.debug "Failed to create access for #{resource_name}"
+    Rails.logger.debug "#{e}\n#{e.backtrace.join("\n")}"
   end
 
   def add_user_to_role(role_name, for_user: nil)
@@ -208,17 +209,19 @@ module UserSupport
   end
 
   def let_user_create_player_infos(in_app_type: nil)
-    let_user_create :player_infos, in_app_type: in_app_type
+    let_user_create :player_infos, in_app_type:
   end
 
   def let_user_create_player_contacts(in_app_type: nil)
-    let_user_create :player_contacts, in_app_type: in_app_type
+    let_user_create :player_contacts, in_app_type:
   end
 
   def let_user_create(resource_name, in_app_type: nil, alt_user: nil)
     user = alt_user || @user
     res = user.has_access_to? :access, :table, resource_name
     if res && res.user_id == user.id
+      # Find it, as the object is not actually a database record
+      res = Admin::UserAccessControl.find(res.id)
       res.disabled = true
       res.current_admin = @admin
       res.save!
@@ -227,8 +230,8 @@ module UserSupport
     in_app_type ||= user.app_type
     return unless in_app_type
 
-    Admin::UserAccessControl.create! current_admin: @admin, app_type: in_app_type, user: user, access: :create,
-                                     resource_type: :table, resource_name: resource_name
+    Admin::UserAccessControl.create! current_admin: @admin, app_type: in_app_type, user:, access: :create,
+                                     resource_type: :table, resource_name:
 
     # expect(user.has_access_to?(:create, :table, resource_name)).to be_truthy
   end
@@ -237,6 +240,7 @@ module UserSupport
     user = alt_user || @user
     in_app_type ||= user.app_type
     res = user.has_access_to? :access, :table, resource_name, alt_app_type_id: in_app_type
+    res = Admin::UserAccessControl.find(res.id)
     return unless res && res.user_id == user.id
 
     res.disabled = true
@@ -249,6 +253,14 @@ module UserSupport
     expect(user).to be_a User
     expect(user.id).to equal @user.id
     validate_scantron_setup
+    validate_update_protocol_setup
+  end
+
+  def validate_update_protocol_setup
+    expect(Classification::ProtocolEvent.active.reload.find_by(name: 'created player info')).not_to be nil
+    expect(Classification::ProtocolEvent.active.reload.find_by(name: 'updated player info')).not_to be nil
+    expect(Classification::ProtocolEvent.active.reload.find_by(name: 'created player contact')).not_to be nil
+    expect(Classification::ProtocolEvent.active.reload.find_by(name: 'updated player contact')).not_to be nil
   end
 
   def validate_scantron_setup
