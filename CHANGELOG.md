@@ -14,7 +14,7 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
-### From FPHS - [8.8.4] - 2024-08-28
+### From FPHS - [8.8.5] - 2024-08-28
 
 - [Added] new check in Redcap project to ensure user has access to the associated external id table, if specified
 - [Added] ability for report edit table name and fields to be specified as {{table_name}} and {{table_fields}} to allow editing of arbitrary tables in the generic report
