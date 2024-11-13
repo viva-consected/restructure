@@ -7,7 +7,7 @@ module Dynamic
     included do
       after_save :force_option_config_parse
       after_save :handle_batch_schedule
-      attr_accessor :configurations, :data_dictionary, :options_constants
+      attr_accessor :configurations, :data_dictionary, :options_constants, :foreign_key_through_external_id
     end
 
     class_methods do
@@ -280,14 +280,16 @@ module Dynamic
       # Look up user based on a snippet of the configuration
       def user_for_conf_snippet(config)
         user = config[:user]
-        if user.to_i > 0
-          user = User.active.find(user)
-        elsif user.is_a? String
-          user = User.active.find_by_email(user)
+        app_type = config[:app_type]
+        app_type = Admin::AppType.find_active_by_name_or_id(app_type) if app_type
+        if user
+          user = User.find_active_by_email_or_id(user)
+          user.app_type = app_type if app_type
+          user.save
+        elsif app_type
+          user = User.use_batch_user(app_type)
         end
 
-        app_type = config[:app_type]
-        user = User.use_batch_user(app_type) if user.nil? && app_type
         user
       end
       # End of class_methods
@@ -300,6 +302,12 @@ module Dynamic
       # Parse option configs if necessary
       option_configs
       @secondary_key = configurations && configurations[:secondary_key]
+    end
+
+    #
+    # name for generating the basic activity log create / update records
+    def tracker_name
+      table_name.singularize
     end
 
     def use_current_version
@@ -470,6 +478,11 @@ module Dynamic
       full_implementation_class_name.pluralize.ns_underscore.to_sym
     end
 
+    # Association name where for a parent has one of this type
+    def one_of_this_association_name
+      model_association_name.to_s.singularize.to_sym
+    end
+
     # Full namespaced item type name, underscored with double underscores
     # If there is no prefix then this matches the simple model name
     def full_item_type_name
@@ -532,6 +545,14 @@ module Dynamic
       return :table if Admin::MigrationGenerator.table_exists? table_name
 
       :view
+    end
+
+    #
+    # Get the schema name for the current table_name
+    # Particularly useful if the schema_name is not set
+    # @return [String|nil]
+    def schema_name_in_db
+      Admin::MigrationGenerator.table_schema_hash[table_name]
     end
 
     #

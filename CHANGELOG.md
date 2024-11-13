@@ -12,9 +12,43 @@ Note that not every tagged version may be suitable for production use. A Github 
 
 Since [version 8.4.0](#840---2024-01-10) the convention is that releases made within forked repositories should be up-versioned with a patch release, *x.y.z+1*. When changes are incorporated back into the primary repo [consected/restructure](https://github.com/consected/restructure) a new minor release will be created, *x.y+1,0*.
 
-## [8.8.1] - 2024-08-12
+## Unreleased
 
-### From FPHS - PR 363
+### From FPHS - [8.8.5] - 2024-08-28
+
+- [Added] new check in Redcap project to ensure user has access to the associated external id table, if specified
+- [Added] ability for report edit table name and fields to be specified as {{table_name}} and {{table_fields}} to allow editing of arbitrary tables in the generic report
+- [Added] RedcapJobUserEmail setting to be viewed in server info
+- [Fixed] user creating an external identifier with additional fields loses their value - fixes #307
+- [Changed] external identifier details panel to add "search data" link - especially helpful if the user can edit the results for example to add other field entries to external id records
+- [Changed] specification of Redcap project run_jobs_in_app_type to only use the current user's app type if the configuration is not specified (it previously ignored a specified app not being found)
+- [Added] exceptions to make it clear if a master id was not found through an external id for various reasons
+- [Fixed] incorrect error message
+
+### From FPHS - [8.8.4] - 2024-08-27
+
+- [Added] save trigger create_reference, update_reference and update_this to accept embedded_item hash to create or update the appropriate item automatically
+
+### From FPHS - [8.8.3] - 2024-08-22
+
+- [Fixed] viewing a master record with category of redcap dynamic models (which show in a default panel) loads all entries in the database - fixes #370
+- [Added] redcap project option set_master_id_using_association, which adds a master_id to the underlying table and sets it automatically from the external id association - closes #369
+- [Added] ability for redcap project associate_master_through_external_identifer to match on external identifiers with integer external ids, by adding an integer redcap_survey_identifier_id field to the dynamic model
+- [Added] better information around missing fields and mismatched in the redcap project
+- [Added] the ability to retrieve the latest redcap configuration within the redcap project, so field configurations can be correctly validated
+- [Added] redcap project run_jobs_as_user and run_jobs_as_app_type options to ensure background jobs run consistently
+- [Fixed] dynamic models with foreign keys breaking the admin sample form view
+- [Fixed] Redcap project reconfigures dynamic model with new one if the category of the DM has changed - fixes #365
+- [Added] redcap project admin option associate_master_through_external_identifer: [external identifier] to automatically allow connection of redcap_survey_identifier to a master record through a matching external id - closes #369
+- [Added] estimated record count and new config checks to redcap project admin details panel
+- [Added] checking of tracker protocol updates in dynamic definitions details panels
+- [Added] _configurations.foreign_key_through_external_id to associate a dynamic model back to a master record through an external id field, rather than master_id or crosswalk attribute.
+
+### From FPHS - [8.8.2] - 2024-08-12
+
+- [Build] FPHS version
+
+### From FPHS [8.8.1] - PR 363
 
 - [Added] new options and date reporting to script
 

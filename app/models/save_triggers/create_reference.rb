@@ -37,19 +37,10 @@ class SaveTriggers::CreateReference < SaveTriggers::SaveTriggersBase
           end
         end
 
-        in_master = @master
+        self.in_master = @master
 
         handle_with_result with_result, vals
-
-        create_with&.each do |fn, def_val|
-          res = FieldDefaults.calculate_default @item, def_val
-          vals[fn] = res
-
-          if fn.to_sym == :master_id
-            in_master = Master.find(res)
-            in_master.current_user = @item.current_user
-          end
-        end
+        handle_with_attributes create_with, vals
 
         @item.transaction do
           new_type = in_master.assoc_named(model_name.to_s.pluralize)
@@ -66,7 +57,17 @@ class SaveTriggers::CreateReference < SaveTriggers::SaveTriggersBase
               new_item.send(:force_write_user)
               new_item.force_save!
             end
+            if vals[:embedded_item]
+              # Ensure the embedded item has its attributes set before the
+              # new item starts to save, to avoid any issues. Save triggers
+              # within the new item may reference the embedded item, and will
+              # need the real information in place early in the process.
+              new_item.prep_embedded_item(vals[:embedded_item],
+                                          force_create:,
+                                          force_not_valid:)
+            end
             new_item.save!
+
           end
 
           res =
