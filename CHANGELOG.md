@@ -14,6 +14,10 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
+### From FPHS - 2024-11-14
+
+[Fixed] failing versions list when creating a new dynamic model
+
 ### From FPHS - PR #413 - 2024-11-13
 
 [Fixed] issues from merging recent PRs
