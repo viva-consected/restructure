@@ -12,150 +12,339 @@ Note that not every tagged version may be suitable for production use. A Github 
 
 Since [version 8.4.0](#840---2024-01-10) the convention is that releases made within forked repositories should be up-versioned with a patch release, *x.y.z+1*. When changes are incorporated back into the primary repo [consected/restructure](https://github.com/consected/restructure) a new minor release will be created, *x.y+1,0*.
 
-## [8.6.19] - 2024-07-01
+## [8.9.1] - 2024-11-14
+
+### From FPHS - 2024-11-14
+
+- [Fixed] failing versions list when creating a new dynamic model
+
+### From FPHS - PR #413 - 2024-11-13
+
+- [Fixed] issues from merging recent PRs
+
+### From FPHS - PR #412 - 2024-11-04
+
+- [Fixed] CVE-2024-8796 for 2FA secret lengths and updated Devise to latest version
+- [Updated] brakeman whitelist for Rails
+- [Updated] gems to resolve security alerts in bundle-audit scan
+
+### From FPHS - PR #411 - 2024-10-31
+
+- [Fixed] spec based on schema name validation
+- [Fixed] error setting redcap schema name intermittently
+
+### From FPHS - PR #410 - 2024-10-17
+
+- [Added] use of "chosen" drop down for admin forms to aid faster configurations
+- [Added] ignore_no_recipients as an option to notify sms
+- [Changed] presentation of fixed_... fields to avoid them being accidentally selected
+- [Added] admin filter on server url for Redcap projects
+- [Added] information to help with debugging common create_reference configuration error
+- [Added] config_trigger.on_define.embed options to allow_reconfiguration (default no) and prefix_config_libraries
+- [Added] format check for dialog_before configurations and check message template exists
+- [Added] a page layout view option for default_expander to present activity log blocks as "shrunk" by default
+
+### From FPHS - PR #409 - 2024-10-31
+
+- [Fixed] issue with presets and current admin sample
+- [Changed] handling of admin sample form to show dialog names, field names, form names of embedded forms
+
+### From FPHS - PR #408 - 2024-10-29
+
+- [Fixed] specs for browser testing
+- [Fixed] specs for redcap model generation
+- [Fixed] UI issues related to templates loading
+- [Fixed] spec to use correct item
+- [Fixed] test if embedded item in config setup
+- [Fixed] documentation of and_latest_matches
+- [Added] feedback of client errors in dev/test
+- [Fixed] styling of tracker new and edit forms
+- [Fixed] display of filestore block in edit forms
+- [Fixed] handling of UI template loading to ensure blocks load correctly or report an error if not
+- [Fixed] failing specs due to missing attribute on standard models
+- [Fixed] overflowing display of filter selectors in activity log panels
+- [Fixed] time fields don't accept default - fixes #391
+- [Fixed] broken markup in dialogs
+- [Changed] small admin presentation issues
+- [Changed] css and typo
+- [Fixed] issue with app_type import failing where underlying tables don't exist or aren't created because the app or models are disabled
+- [Fixed] handling of force_not_valid feeding through to embedded_item
+- [Fixed] unnecessary exception
+- [Fixed] markdown notes fields in esignatures
+- [Fixed] bad setup of dev filestore
+- [Fixed] handling of create_default.user_access_control to avoid breaking setup if the control already exists with a different access
+- [Fixed] showing new index when copying an admin item
+
+### From FPHS - PR #407 - 2024-10-10
+
+- [Updated] Ruby to 3.2.5 and updated gems
+
+### From FPHS - PR #406 - 2024-10-17
+
+- [Added] versions list to dynamic model admin panel
+- [Added] a check on saving a new version of an admin configuration, to ensure saved changes in another tab aren't overwritten - closes #387
+
+### From FPHS - PR #405 - 2024-10-23
+
+- [Changed] display of components to avoid duplication
+- [Changed] presentation of admin panel component selection panel to group by category
+- [Changed] formatting of admin panel component list
+
+### From FPHS - PR #404 - 2024-10-17
+
+- [Added] new "calculate" options for count_not_null and mean
+- [Added] and_latest_matches to if conditions to check if one value is the latest of a possible set
+
+### From FPHS - PR #403 - 2024-10-17
+
+- [Fixed] occasional error due to presets being loaded unnecessarily
+- [Added] ability for create/update reference and preset_fields to use with_results multiple times (array) to pull from different sources
+- [Added] preset_fields option to preset values to a mass of fields on initialization of new items, or before creating a reference.
+- [Fixed] issue with preset_value being set within a referenced item
+
+### From FPHS - PR #402 - 2024-10-21
+
+- [Fixed] label resizing for show_if changes
+- [Fixed] current_mode not being passed to embedded_item for show_if
+- [Fixed] issue with show_if checking time field conditions. Changes are now triggered.
+- [Fixed] issue with conditionally showing dialog placeholders in admin view
+- [Added] substitution comparisons in show_if rules
+- [Fixed] broken show_if
+
+### From FPHS - PR #401 - 2024-10-24
+
+- [Changed] handling of #is and #if substitutions to make it less sensitive to extra spaces
+- [Fixed] matching of {{#is...}} operators
+- [Fixed] substitutions in {{#is}} to handle integers correctly
+- [Added] comparison operators to {{#is}} substitutions
+- [Added] {{else if}} and {{else is}} to substitutions
+- [Added] `{{else if}}` to substitutions
+- [Added] age to subject handler and allow it to be substituted with `{{player_info.subject_age}}` or through generated JSON
+- [Added] tag value retrieval on right hand side of {{#is...}} comparisons
+- [Added] {{#is ...}} handling to dialogs and captions in show mode
+- [Fixed] #is #else handling
+
+### From FPHS - PR #400 - 2024-10-28
+
+[Changed] loading of routes to load only a single time after regenerating a model
+[Fixed] issue preventing routes being regenerated
+
+### From FPHS - [8.8.11] - PR #399 - 2024-09-12
+
+- [Changed] sorting of external identifier columns in master panel
+- [Added] logger info when an item is not creatable
+- [Fixed] broken chart size
+- [Added] CONTENTS_LIST capability to help sidebar. Specify a link `[CONTENTS_LIST](h2)` to list h2 tags in place of the link
+- [Fixed] content type for create shortlink in substitutions
+- [Fixed] dynamic definition option `embed: <string>` doesn't work - fixes #388
+
+### From FPHS - [8.8.10] - PR #398 - 2024-09-11
+
+- [Fixed] message notifications sending SMS messages with HTML markup
+- [Added] {{#is ...}} to substitutions - closes #222
+- [Fixed] handling of report editing when creating a new row when using {{table_name}} substitution
+- [Fixed] sidebar viewing of info pages
+- [Fixed] delayed_job startup to avoid breaking memcached IO
+- [Added] sidebar viewing and standalone page viewing of info-pages
+- [Added] admin panel drop down components list
+- [Added] better information about save trigger current user missing
+- [Added] "# @library" within config libraries to allow import of config libraries that rely on others
+- [Added] extra information to help debug iterator issues in save trigger
+- [Fixed] formatting issue in dynamic model details panel
+
+### From FPHS - [8.8.9] - 2024-09-04
+
+- [Changed] handling of create_reference with embedded_item to ensure save triggers can reference the new embedded item
+- [Fixed] error message
+- [Fixed] to ensure calculations get the correct type of embedded item
+- [Fixed] batch_trigger user and app_type settings to use app_type if specified
+
+### From FPHS - [8.8.8] - 2024-09-03
+
+- [Changed] logging to use short backtrace
+- [Fixed] redcap storage issue with blank survey identifiers
+
+### From FPHS - [8.8.7] - 2024-09-03
+
+- [Added] skip_store_if_no_survey_identifier option to redcap projects
+- [Changed] handling of report record editing to correctly handle columns not editable or not configured to edit
+- [Fixed] editing a report table item (external identifier model) and adding a master id fails - fixes #376
+- [Fixed] Dynamic::ImplementationHandler#force_preset_values should only operate on model attributes, not every preset_value definition - fixes #380
+- [Fixed] pattern documentation
+- [Fixed] show if comparisons for Redcap when the condition is based on a boolean field - fixes #381
+
+### From FPHS - [8.8.6] - 2024-08-29
+
+- [Added] checks for blank and incorrect schemas, and associated automatic initialization of the value
+- [Fixed] issues with local variables not existing
+
+### From FPHS - [8.8.5] - 2024-08-28
+
+- [Added] new check in Redcap project to ensure user has access to the associated external id table, if specified
+- [Added] ability for report edit table name and fields to be specified as {{table_name}} and {{table_fields}} to allow editing of arbitrary tables in the generic report
+- [Added] RedcapJobUserEmail setting to be viewed in server info
+- [Fixed] user creating an external identifier with additional fields loses their value - fixes #307
+- [Changed] external identifier details panel to add "search data" link - especially helpful if the user can edit the results for example to add other field entries to external id records
+- [Changed] specification of Redcap project run_jobs_in_app_type to only use the current user's app type if the configuration is not specified (it previously ignored a specified app not being found)
+- [Added] exceptions to make it clear if a master id was not found through an external id for various reasons
+- [Fixed] incorrect error message
+
+### From FPHS - [8.8.4] - 2024-08-27
+
+- [Added] save trigger create_reference, update_reference and update_this to accept embedded_item hash to create or update the appropriate item automatically
+
+### From FPHS - [8.8.3] - 2024-08-22
+
+- [Fixed] viewing a master record with category of redcap dynamic models (which show in a default panel) loads all entries in the database - fixes #370
+- [Added] redcap project option set_master_id_using_association, which adds a master_id to the underlying table and sets it automatically from the external id association - closes #369
+- [Added] ability for redcap project associate_master_through_external_identifer to match on external identifiers with integer external ids, by adding an integer redcap_survey_identifier_id field to the dynamic model
+- [Added] better information around missing fields and mismatched in the redcap project
+- [Added] the ability to retrieve the latest redcap configuration within the redcap project, so field configurations can be correctly validated
+- [Added] redcap project run_jobs_as_user and run_jobs_as_app_type options to ensure background jobs run consistently
+- [Fixed] dynamic models with foreign keys breaking the admin sample form view
+- [Fixed] Redcap project reconfigures dynamic model with new one if the category of the DM has changed - fixes #365
+- [Added] redcap project admin option associate_master_through_external_identifer: [external identifier] to automatically allow connection of redcap_survey_identifier to a master record through a matching external id - closes #369
+- [Added] estimated record count and new config checks to redcap project admin details panel
+- [Added] checking of tracker protocol updates in dynamic definitions details panels
+- [Added] _configurations.foreign_key_through_external_id to associate a dynamic model back to a master record through an external id field, rather than master_id or crosswalk attribute.
+
+### From FPHS - [8.8.2] - 2024-08-12
+
+- [Build] FPHS version
+
+### From FPHS [8.8.1] - PR 363
+
+- [Added] new options and date reporting to script
+
+### From FPHS - PR 362
+
+- [Added] ability to only show listed tabs using `<uri>?only_tabs[<resource_name>]=true&...` or `?only_tabs[categories]=true&...`
+- [Added] master panel options to page layouts to allow filtering of resource items by configured filter, or by page URL query params
+- [Added] master panel options to "show for single master only" and "show for multi master only" so different panels can be shown for different UI states
+- [Fixed] caching of apps available to users
+- [Fixed] masters index history being pushed if the aim is to not prevent a reload
+- [Fixed] available app type lookup for a user - role names where only being checked in the current app, not for the app being tested
+- [Added] cache to admin index page to speed things up
+- [Fixed] admin email lookup in admin info icons
+
+### From FPHS - PR 361
+
+- [Changed] loading of associated model definitions, improving performance and presentation
+- [Added] definition_resources as an alias resource name for consistent substitutions and conditions
+- [Added] config_trigger.create_configs option to create related configurations using app import format
+- [Added] config_trigger option to make building activity log processes easier
+- [Added] calculated condition to calculate using a function such as sum, min, max - closes #308
+- [Added] estimated record count to dynamic definitions - closes #265
+- [Added] with_result to create/update... save triggers
+- [Added] embedded_item option to conditional calculations
+- [Added] ids_referencing condition and ability to get return_all_results from a condition
+- [Fixed] condition negate and add include? condition
+- [Fixed] incorrect handling of save trigger on_save option as an array when on_create is a hash (or vice versa)
+- [Added] ability for extra_log_type to be used in creatable_if condition
+- [Added] handling of invalid_error_message at top of an all/any/not... block to prevent invididual errors being recorded, allowing them all to roll up to a single result
+- [Fixed] tag element array index retrieval
+- [Fixed] handling of implementation class setup to avoid preset value definitions breaking the implementation
+- [Added] view_with_formats to field_options, allowing a series of tag formatters to be applied when viewing the field
+- [Fixed] embedded items not setting preset_value
+- [Fixed] address view handler with no country field
+- [Added] save trigger results for created and updated results
+- [Fixed] use of view_options.header caption configuration in external id definitions
+- [Added] embed definitions into the activity log details panel - fixes #19
+- [Added] "in?" to the simple conditions that can be tested in non-query conditions
+- [Added] non-query condition elements to specify last as well as first in the traversal of the dot separated list
+- [Added] "if:" option to save trigger "each:" to avoid having to check the same "if" for every trigger
+- [Added] ability to define external id configurations for uniqueness_fields, can_change_master and fix saving from a add item report
+- [Changed] calling #enabled to #active for consistency
+- [Fixed] curly substitutions to allow .last to appear on the end of a requested element
+
+### From FPHS - PR 360
+
+- [Added] iteration through save triggers based on an array of values - closes #348
+- [Added] save triggers definition as a list of triggers instead of a hash - closes #347
+- [Added] updated_items element to save_trigger_results for update_reference trigger - fixes #345
+- [Added] save trigger create_reference in a specific record - fixes #346
+
+### From FPHS - PR 359
+
+- [Added] significant cache and user access lookup changes to improve performance
+- [Added] preloading to reduce n+1 lookups
+- [Added] eager loading of various models to improve performance and reduce database hits
+- [Changed] cache keys
+- [Changed] handling and reporting of adding tracker update protocol events
+- [Fixed] broken scope for lookups by name
+- [Fixed] specs to avoid common issues
+- [Fixed] seed to handle disabled items
+- [Fixed] parsing of date times for user preferences
+- [Fixed] issue importing new app type
+- [Fixed] bad memoization of associated items in app type
+- [Fixed] caching of user access controls to avoid storing an ActiveRecord instance
+- [Removed] unnecessary TrackerHandler
+
+### From FPHS - PR 358
+
+- [Fixed] password self-reset fails with exception if user is disabled - fixes #342
+- [Added] field option for blank_preset_value and allow substitutions in preset_value - fixes #220
+- [Fixed] issue in selector cache, where callers were sensitive to attributes with symbol or string keys
+- [Changed] parallel tests to ask for sudo early in the process if needed
+- [Added] spec for getting master id using MSID in conditions
+- [Fixed] dashboard error not being to load report resources
+- [Added] definition for multiple save buttons, with show_if control
+- [Changed] settings to ensure proper nil results for empty environment variables
+- [Added] edit_as options to select_user_with fields
+- [Fixed] issue where table comments with apostrophes break the migration with a syntax error. Fixes #331 and #332
+- [Changed] logging of job failure notification
+- [Fixed] error reporting failed job
+- [Changed] cache invalidation to avoid unnecessary requests to clear the cache
+- [Fixed] spec to clear cache between requests
+
+### From FPHS - PR 357
+
+- [Added] the http content response to a Redcap job error to aid debugging issues
+
+## [8.7.1] - 2023-09-05
+
+### From Viva - PR 356
 
 - [Added] report handler for sidebar_hash_content_links to ensure these hashed links work correctly
-- [Added] app specific code to Javascript source from UI templates
-
-## [8.6.18] - 2024-06-18
-
 - [Added] protection against multiple report auto runs
 - [Added] caption before close button on embedded report modal when list item changed
-
-## [8.6.17] - 2024-06-17
-
 - [Changed] handling of email address lookups from settings to ensure lower case matching is used
 - [Added] configuration checks for admin and user email addresses set by environment variables
-
-## [8.6.16] - 2024-06-13
-
 - [Changed] the message to users on expiration of an account to avoid confusion if a user can reset their own password
 - [Changed] matching of email address for batch user to allow mixed case definition to match the lower case user email address
 - [Added] comment clarifying failure to set the OTP, MFA fields
 
-## [8.6.15] - 2024-06-11
-
-- [Added] definition for multiple save buttons, with show_if control
-
-## [8.6.14] - 2024-06-10
+### From Viva - PR 355
 
 - [Added] report results count attribute to markup to allow better styling for no results
 - [Fixed] "loading..." message for empty report tree resultsets
-
-## [8.6.13] - 2024-06-10
-
 - [Changed] style of loading tree report
-
-## [8.6.12] - 2024-06-10
-
 - [Fixed] auto submission of reports on criteria changed by clarifying use of configuration
-- [Added] edit_as options to select_user_with fields
 
-## [8.6.11] - 2024-06-05
+### From Viva - PR 354
 
-- [Fixed] passing score comparison
-- [Added] view of reCAPTURE settings to server info
+- [Added] edit_as options to select_user_with fields - allows displayed label and value to be different from email
 
-## [8.6.10] - 2024-06-05
+### From Viva - PR 353
 
 - [Added] reCAPTCHA as an option to protect registration pages
 - [Fixed] an unhelpful error message when registering if an empty password was provided
 
-## [8.6.9] - 2024-05-23
+### From Viva - PR 352
 
 - [Changed] display of tree report loading
 - [Fixed] tree embedded report when there is a report in the underlying page (embedded in a placeholder for example)
-- [Added] report results handler to force all <pre> elements to be fully expanded
-
-## [8.6.8] - 2024-05-23
+- [Added] report results handler to force all \<pre> elements to be fully expanded
 
 - [Fixed] mailto links breaking in sidebar when content is a portal page
 - [Fixed] editor html cleanup losing images and horizonal rule
 - [Fixed] tree expander implementations
 - [Fixed] report criteria drop down selector filters not loading when default criteria passed through URL
 
-## [8.6.7] - 2024-05-09
+### From Viva - PR 351
 
 - [Fixed] use of Etag headers for caching
-
-## [8.6.6] - 2024-05-09
-
 - [Changed] browser caching for common scenarios
-
-### Merge pull request #320 from hmsrc/hms-perf
-
-- [Added] exception information to failure mailer
-- [Updated] gems
-- [Fixed] specs
-- [Changed] logging of dynamic definition setup
-- [Changed] handling of info and help pages to show a not found for missing library or not authorized access
-- [Changed] handling of item flags for new selector caching
-- [Changed] handling of selector cache handling and application version to log when changes will affect performance
-- [Added] index to tracker_history to improve performance
-
-## [8.6.5] - 2024-05-02
-
-- [Updated] gems
-- [Fixed] logging of sensitive params
-- [Added] report search field options with the first option implemented for "select from model" drop downs being order: attr: asc|desc
-- [Added] action_position option to extra options references configurations to set a creatable reference action button to appear at the top or bottom of the form
-- [Added] a report results handler implementation to provide "expand all" link to tree view
-- [Changed] form fields to cancel previous request when clicking on a "chosen" select field
-- [Fixed] UI error if no match on date time string when converting to locale
-
-### Merge pull request #315 from hmsrc/gen-enhancements
-
-- [Added] set_item_flag options to add_flags and remove_flags
-- [Fixed] failure to show Redcap project if it is in the process of being
-
-### Merge pull request #314 from hmsrc/clean-log
-
-- [Changed] job error message to be clearer
-
-### Merge pull request #311 from hmsrc/change-save-trigger
-
-- [Added] set_item_flags save trigger to allow flags to be set against an item
-- [Added]  return of created masters, items and references from save triggers, so they can be used later
-- [Added] logging to show more information when failing to generate real show_if from Redcap definition
-- [Changed] external identifiers to allow update from save trigger if currently unassigned
-
-### Merge pull request #310 from hmsrc/fix-job-error
-
-- [Fixed] job failure notifications
-
-### Merge pull request #309 from hmsrc/app-import-errors
-
-- [Fixed] reporting of changes for app imports
-- [Changed] handling of user access control configurations to force blank fields to null
-- [Changed] app import error backtrace to include only essentials
-- [Fixed] reporting of error in app import
-- [Changed] reporting of updated configs in app type import when only updated_at timestamp changed
-- [Fixed] sidebar help to prevent it breaking simple hash hrefs
-
-## [8.6.4] - 2024-04-03
-
-- [Added] automatically select user date/time preferences based on user browser locale at registration - from pull request #284, issue #135
-- [Added] superscript and subscript support to the editor
-- [Fixed] editor bugs
-- [Fixed] strikethrough support in the editor
-- [Fixed] pasting from documents when certain <img> or <a> attributes are missing
-- [Added] auto creation of signature document when activity created through create_reference save trigger
-- [Changed] styles for e-sign and general forms
-- [Changed] e-signatures to allow a plain document to be created for signature - fixes #299
-- [Fixed] report not able to show tags in results correctly
-- [Fixed] bug trying to singularize configuration keys in e_sign setup
-
-## [8.6.3] - 2024-03-07
-
-- [Fixed] incorrect matching dynamic models on name. Use table_name instead.
-
-## [8.6.2] - 2024-03-06
-
-- [Fixed] parallel tests and specs
-- [Fixed] various rspec issues
-- [Changed] the naming of Redcap project dynamic models to be more human - fixes #276
-- [Fixed] to raise an exception if a nfs store container directory already exists
-- [Fixed] Redcap pull updating all records if there are empty `<vars>_chosen_array` fields - fixes #289
 
 ## [8.6.1] - 2024-03-04
 

@@ -66,6 +66,11 @@ module AppExceptionHandler
     show_error 'The request failed to validate', 422
   end
 
+  def update_out_of_date(prev_at, submitted_at)
+    dates = "stored record: #{prev_at} <> submitted record #{submitted_at}"
+    show_error "The submitted record doesn't match the latest one - will not update (#{dates})", 422
+  end
+
   def unexpected_error(msg)
     show_error 'An error occurred', 400, text: msg
   end
@@ -153,7 +158,7 @@ module AppExceptionHandler
       if Rails.env.production?
         Admin::ExceptionLog.create message: msg || 'error',
                                    main: error.inspect,
-                                   backtrace: error.backtrace.join("\n"),
+                                   backtrace: error.short_string_backtrace,
                                    user_id:,
                                    admin_id:
       end

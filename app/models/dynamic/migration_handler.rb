@@ -37,7 +37,7 @@ module Dynamic
       attr_writer :allow_migrations
 
       before_validation :init_schema_name
-
+      validate :schema_name_ok
       after_create :generate_create_migration, if: -> { !disabled }
 
       after_save :generate_migration, if: -> { !disabled }
@@ -135,7 +135,7 @@ module Dynamic
 
       mode = 'update'
       gs = migration_generator.generator_script(self.class, mode)
-      fn = migration_generator.write_db_migration gs, table_name, migration_generator.migration_version, mode: mode
+      fn = migration_generator.write_db_migration(gs, table_name, migration_generator.migration_version, mode:)
       @do_migration = fn
     end
 
@@ -150,7 +150,7 @@ module Dynamic
       mg.app_type_name = app_type_name
       mode = 'create_or_update'
       gs = mg.generator_script(self.class, mode)
-      mg.write_db_migration(gs, table_name, mg.migration_version, mode: mode, export_type: export_type)
+      mg.write_db_migration(gs, table_name, mg.migration_version, mode:, export_type:)
     end
 
     #
@@ -169,7 +169,7 @@ module Dynamic
 
       current_user_app_type = current_admin.matching_user_app_type
       dsn = current_user_app_type&.default_schema_name
-      return dsn if dsn
+      return dsn if dsn.present?
 
       res = category.split('-').first if category.present?
       res ||= Settings::DefaultMigrationSchema
@@ -211,11 +211,11 @@ module Dynamic
       @migration_generator =
         Admin::MigrationGenerator.new(
           db_migration_schema,
-          table_name: table_name,
+          table_name:,
           class_name: full_implementation_class_name,
           dynamic_def: self,
           all_implementation_fields: all_implementation_fields(ignore_errors: false),
-          table_comments: table_comments,
+          table_comments:,
           no_master_association: implementation_no_master_association,
           prev_table_name: table_name_before_last_save,
           belongs_to_model: btm,
@@ -224,7 +224,7 @@ module Dynamic
           view_sql_changed: view_sql_changed?,
           all_referenced_tables: art,
           resource_type: self.class.name.underscore.to_sym,
-          allow_migrations: allow_migrations
+          allow_migrations:
         )
     end
 
@@ -235,7 +235,18 @@ module Dynamic
     def init_schema_name
       return if disabled?
 
-      self.schema_name = db_migration_schema
+      self.schema_name = if persisted?
+                           schema_name_in_db
+                         else
+                           db_migration_schema
+                         end
+    end
+
+    def schema_name_ok
+      return true if disabled? || Admin::MigrationGenerator.current_search_paths.include?(schema_name)
+
+      errors.add :schema_name, "not in current search_path (#{schema_name}) - " \
+                           "#{Admin::MigrationGenerator.current_search_paths}"
     end
   end
 end

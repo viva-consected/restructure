@@ -110,9 +110,13 @@ module AdminHandler
   end
 
   def admin_name
-    return unless admin
+    return unless admin_id
 
-    admin.email
+    Admin.emails_by_id[admin_id]
+  end
+
+  def admin_email
+    admin_name
   end
 
   def admin=(_new_admin)
@@ -158,7 +162,9 @@ module AdminHandler
 
   # user email to allow simplified exports
   def user_email
-    user.email if respond_to?(:user) && user
+    return unless respond_to?(:user_id) && user_id
+
+    User.emails_by_id[user_id]
   end
 
   def _class_name
@@ -233,7 +239,7 @@ module AdminHandler
   # Invalidate the cache and latest update value
   # @return [<Type>] <description>
   def invalidate_cache
-    logger.info "User Access Control added or updated (#{self.class.name}). Invalidating cache."
+    logger.info "Admin record added or updated (#{self.class.name}). Invalidating cache"
 
     # Allows caching in other classes to reset
     self.class.reset_latest_update

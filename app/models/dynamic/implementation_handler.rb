@@ -4,6 +4,7 @@ module Dynamic
     extend ActiveSupport::Concern
 
     included do
+      after_initialize :preset_fields, unless: :persisted?
       after_initialize :force_preset_values, unless: :persisted?
 
       before_save :handle_before_save_triggers
@@ -26,7 +27,7 @@ module Dynamic
       def trigger_batch(limit: nil, alt_user: nil, alt_app_type: nil)
         Rails.logger.info "trigger batch job for #{self} - " \
                           "limit: #{limit}, alt_user: #{alt_user}, alt_app_type: #{alt_app_type}"
-        HandleBatchJob.perform_later(to_s, limit: limit, user: alt_user, app_type: alt_app_type)
+        HandleBatchJob.perform_later(to_s, limit:, user: alt_user, app_type: alt_app_type)
       end
 
       #
@@ -59,7 +60,7 @@ module Dynamic
         end
 
         batch.map do |obj|
-          obj.handle_record_batch_trigger alt_user: alt_user
+          obj.handle_record_batch_trigger(alt_user:)
           obj.id
         end
       end
@@ -224,22 +225,55 @@ module Dynamic
     def handle_record_batch_trigger(alt_user: nil)
       as_user = alt_user || user
       self.current_user = as_user
+      self.save_trigger_results ||= {}
       option_type_config&.calc_batch_trigger self
+    end
+
+    def skip_presets_for(method_name)
+      return skip_presets unless skip_presets.is_a?(String)
+
+      skip_presets.split(',').include?(method_name.to_s)
+    end
+
+    def preset_fields
+      return if skip_presets_for(:preset_fields) || !current_user
+
+      config = option_type_config&.preset_fields
+      return unless config&.present?
+
+      st = SaveTriggers::PresetFields.new(config, self)
+      st.perform
     end
 
     #
     # Force fields to be preset before initialization has been completed.
     # This uses the option config {field_options: <field_name>: preset_value:}
     # rather than default: (which only sets the value in the initial form).
+    # preset_value: sets the value regardless of what was previously set, so will override values in #create! methods
+    # blank_preset_value: only sets the value if it was previously blank, so won't override values in #create! methods
     # By setting ahead of time, things like embed_resource_name can operate.
     def force_preset_values
+      return if skip_presets_for(:force_preset_values)
+
       fo = option_type_config&.field_options
       return unless fo
 
       fo.each do |name, config|
-        next unless config.key? :preset_value
+        next unless config.key?(:preset_value) || config.key?(:blank_preset_value)
 
-        send "#{name}=", config[:preset_value]
+        next unless attribute_names.include?(name.to_s)
+
+        init_value = config[:preset_value]
+        if init_value
+          res = FieldDefaults.calculate_default self, init_value, ignore_missing: current_admin_sample
+          send "#{name}=", res
+        end
+
+        init_value = config[:blank_preset_value]
+        if init_value
+          res = FieldDefaults.calculate_default self, init_value, ignore_missing: current_admin_sample
+          send "#{name}=", res if attributes[name.to_s].blank?
+        end
       end
     end
   end

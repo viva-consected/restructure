@@ -31,7 +31,8 @@ module NfsStore
 
           raise FsException::NoAccess,
                 'user does not have access to this container ' \
-                "(master #{container.master&.id} - parent #{cp.class} id: #{cp&.id} master: #{cpm})"
+                "(user #{container&.current_user&.email} - master #{container.master&.id} - #{container.class} " \
+                "- parent #{cp.class} id: #{cp&.id} master: #{cpm})"
         end
 
         container
@@ -43,7 +44,7 @@ module NfsStore
     end
 
     def current_user
-      master.current_user
+      master&.current_user
     end
 
     def master_id=(master_id)

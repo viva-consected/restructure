@@ -46,35 +46,58 @@ class Master < ActiveRecord::Base
   def self.set_associations_for_subject_searches
     # inverse_of required to ensure the current_user propagates between associated models correctly
     has_many Settings::DefaultSubjectInfoTableName.to_sym,
-             -> { order(Master.subject_info_rank_order_clause) },
+             lambda {
+               eager_load(:user)
+                 .order(Master.subject_info_rank_order_clause)
+             },
              inverse_of: :master
 
     has_one Settings::DefaultSubjectInfoTableName.singularize.to_sym,
-            -> { order(Master.subject_info_rank_order_clause) },
+            lambda {
+              eager_load(:user)
+                .order(Master.subject_info_rank_order_clause)
+            },
             inverse_of: :master
 
     has_many Settings::DefaultSecondaryInfoTableName.to_sym,
+             -> { eager_load(:user) },
              inverse_of: :master
 
     has_many Settings::DefaultContactInfoTableName.to_sym,
-             -> { order(RankNotNullClause) },
+             lambda {
+               eager_load(:user)
+                 .order(RankNotNullClause)
+             },
              inverse_of: :master
 
     has_many Settings::DefaultAddressInfoTableName.to_sym,
-             -> { order(RankNotNullClause) },
+             lambda {
+               eager_load(:user)
+                 .order(RankNotNullClause)
+             },
              inverse_of: :master
 
     # Associations to allow advanced searches for NOT
     has_many :not_tracker_histories,
-             -> { order(TrackerHistoryEventOrderClause) },
+             lambda {
+               eager_load(:user)
+                 .order(TrackerHistoryEventOrderClause)
+             },
              class_name: 'TrackerHistory'
 
     has_many :not_trackers,
-             -> { order(TrackerEventOrderClause) },
+             lambda {
+               eager_load(:user)
+                 .order(TrackerEventOrderClause)
+             },
              class_name: 'Tracker'
 
     # This association is provided to allow 'simple' search on names in player_infos OR pro_infos
     has_many :general_infos,
+             lambda {
+               eager_load(:user)
+                 .order(Master.subject_info_rank_order_clause)
+             },
              class_name: Settings::DefaultSubjectInfoTableName.singularize.camelize
   end
 
@@ -96,14 +119,14 @@ class Master < ActiveRecord::Base
   has_many :trackers,
            lambda {
              includes(:protocol)
-               .preload(:protocol, :sub_process, :protocol_event, :user)
+               .eager_load(:protocol, :sub_process, :protocol_event, user: [:user_preference])
                .order(TrackerEventOrderClause)
            },
            inverse_of: :master
 
   has_many :tracker_histories,
            lambda {
-             preload(:protocol, :sub_process, :protocol_event, :user)
+             eager_load(:protocol, :sub_process, :protocol_event, user: [:user_preference])
                .order(TrackerHistoryEventOrderClause)
            },
            inverse_of: :master
@@ -111,13 +134,16 @@ class Master < ActiveRecord::Base
   # Allow calc actions and substitutions to work correctly
   has_many :tracker_history,
            lambda {
-             preload(:protocol, :sub_process, :protocol_event, :user)
+             eager_load(:protocol, :sub_process, :protocol_event, user: [:user_preference])
                .order(TrackerHistoryEventOrderClause)
            },
            inverse_of: :master
 
   has_many :latest_tracker_history,
-           -> { order(id: :desc).limit(1) },
+           lambda {
+             eager_load(:protocol, :sub_process, :protocol_event, user: [:user_preference])
+               .order(id: :desc).limit(1)
+           },
            class_name: 'TrackerHistory',
            inverse_of: :master
 
@@ -159,6 +185,14 @@ class Master < ActiveRecord::Base
   # The main set of has_many associations that represents the primary data objects that can belong to a master record
   PrimaryAssociations = get_all_associations
 
+  # ExternalIdentifier associations take the form:
+  #    master.scantrons
+  # i.e. the underscored pluralized name
+  # This is placed here, since there is a dependency on MasterSearchHandler
+  # It also precedes the DynamicModel activation, since "has may through" associations made later
+  # may rely on the ExternalIdentifier associations.
+  ExternalIdentifier.enable_active_configurations
+
   # DynamicModel associations take the form:
   #     master.player_contact_histories
   # i.e. the pluralized table name
@@ -172,12 +206,6 @@ class Master < ActiveRecord::Base
   #   master.activity_log__player_contact_phones
   # Notice the double underscore which represents the Module::Class delimiter
   ActivityLog.enable_active_configurations
-
-  # ExternalIdentifier associations take the form:
-  #    master.scantrons
-  # i.e. the underscored pluralized name
-  # This is placed here, since there is a dependency on MasterSearchHandler
-  ExternalIdentifier.enable_active_configurations
 
   if attribute_names.include? 'created_by_user_id'
     # NOTE: a belongs_to association can't include a scope definition and be used in a join
@@ -217,11 +245,11 @@ class Master < ActiveRecord::Base
   def self.find_with(params, access_by: nil)
     req_type = params[:type]
 
-    if req_type && crosswalk_attr?(req_type, access_by: access_by) && params[:id]
+    if req_type && crosswalk_attr?(req_type, access_by:) && params[:id]
       # The requested type is a master crosswalk attribute.
       # Find the master and retrieve the value
       Master.send("find_by_#{req_type}", params[:id])
-    elsif req_type && alternative_id?(req_type, access_by: access_by) && params[:id]
+    elsif req_type && alternative_id?(req_type, access_by:) && params[:id]
       # The requested type is a master crosswalk attribute.
       # Find the master and retrieve the value
       Master.find_with_alternative_id(req_type, params[:id], access_by)
@@ -311,6 +339,8 @@ class Master < ActiveRecord::Base
       @current_user = user
     elsif user.is_a?(Integer)
       @current_user = User.find(user)
+    elsif user.nil?
+      raise 'Setting current_user to nil is not allowed'
     else
       raise 'Attempting to set current_user with non user: ' \
              "#{user} #{user.class.name} #{user.class.__id__} #{User.__id__}"

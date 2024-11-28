@@ -24,7 +24,7 @@ RSpec.describe Classification::SelectionOptionsHandler, type: :model do
     config0 = Classification::SelectionOptionsHandler.selector_with_config_overrides
 
     ::ActivityLog.define_models
-    @activity_log = al = ActivityLog.enabled.first
+    @activity_log = al = ActivityLog.active.first
 
     cleanup_matching_activity_logs(al.item_type, al.rec_type, al.process_name, excluding_id: al.id)
 
@@ -274,6 +274,7 @@ RSpec.describe Classification::SelectionOptionsHandler, type: :model do
     setup_access :activity_log__player_contact_elt__step_3, resource_type: :activity_log_type, user: @user
 
     expect(player_contact.current_user).to eq @user
+    expect(player_contact.current_user.has_access_to?(:create, :activity_log_type, :activity_log__player_contact_elt__step_3))
     sleep 2
     al = player_contact.activity_log__player_contact_elts.create!(select_call_direction: 'one',
                                                                   select_who: 'user',

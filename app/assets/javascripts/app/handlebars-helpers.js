@@ -72,6 +72,11 @@
     var re = new RegExp(right);
     return left.search(right) !== -1;
   });
+  eR.add('!includes', function (left, right) {
+    if (!left) return;
+    var re = new RegExp(right);
+    return left.search(right) === -1;
+  });
   eR.add('typeof', function (left, right) {
     if (!right) return;
     if (right == 'object') {
@@ -638,6 +643,45 @@
     }
     return res;
   });
+
+  Handlebars.registerHelper('length', function (val) {
+    if (!val) return;
+
+    return Object.keys(val).length;
+  });
+
+  Handlebars.registerHelper('params', function (key1, key2, key3) {
+    if (key2 && key2.hash) key2 = null;
+    if (key3 && key3.hash) key3 = null;
+
+    if (key1 && !key2) {
+      var data = _fpa.utils.get_params(key1);
+
+      return data;
+    }
+    if (key2 && !key3) {
+      var data = _fpa.utils.get_params(key1);
+      return data && data[key2];
+    }
+    else if (key3) {
+      var data = _fpa.utils.get_params(key1, key2);
+      return data && data[key3];
+    }
+  });
+
+  Handlebars.registerHelper('params_to_hash', function (key1, key2) {
+    if (key2 && key2.hash) key2 = null;
+    return _fpa.utils.get_params(key1, key2);
+  });
+
+  Handlebars.registerHelper('params_to_query', function (key1, key2) {
+    if (key2 && key2.hash) key2 = null;
+    const data = _fpa.utils.get_params(key1, key2, true);
+    if (!data) return;
+
+    return $.param(data);
+  });
+
 
   Handlebars.registerHelper('in', function (context, key, items, options) {
 

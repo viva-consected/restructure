@@ -17,7 +17,7 @@ module OptionConfigs
         name label config_obj caption_before show_if resource_name resource_item_name save_action view_options
         field_options dialog_before creatable_if editable_if showable_if add_reference_if valid_if
         filestore labels fields button_label orig_config db_configs save_trigger embed references
-        show_if_condition_strings batch_trigger
+        show_if_condition_strings batch_trigger config_trigger preset_fields
       ]
     end
 
@@ -73,9 +73,12 @@ module OptionConfigs
       clean_filestore_def
       clean_fields_def
       clean_field_options_def
+      clean_embed_def
       clean_references_def
       clean_save_triggers
       clean_batch_triggers
+      clean_config_triggers
+      clean_preset_fields
     end
 
     # Defintion label
@@ -111,6 +114,23 @@ module OptionConfigs
     def clean_dialog_before_def
       self.dialog_before ||= {}
       self.dialog_before = self.dialog_before.symbolize_keys
+
+      dialog_before.each do |k, v|
+        unless v.is_a? Hash
+          failed_config :dialog_before,
+                        "dialog_before must be a Hash: #{k}",
+                        level: :error
+          next
+        end
+
+        name = v[:name]
+        mt = Admin::MessageTemplate.active.find_by(name:)
+        next if mt
+
+        failed_config :dialog_before,
+                      "dialog_before specifies a named message template that doesn't exist: #{name}",
+                      level: :warn
+      end
     end
 
     # Field labels definitions
@@ -221,6 +241,32 @@ module OptionConfigs
       self.valid_if[:on_create] = os.merge(oc)
     end
 
+    def clean_embed_def
+      return unless embed
+
+      if embed == 'default_embed_resource'
+        rn = config_obj.default_embed_resource_name(name)
+        self.embed = { resource_name: rn }
+      elsif embed.is_a?(String)
+        rn = embed
+        self.embed = { resource_name: rn }
+      else
+        rn = embed[:resource_name]
+      end
+
+      resource = Resources::Models.find_by(resource_name: rn)
+      embed[:resource_model_def] = resource
+
+      return if resource && resource[:model]
+
+      Rails.logger.warn "embed for #{rn} does not exist as a class in #{name} / #{config_obj.name}"
+      # Log this as a warning, not an error, since we are not able to control the order of items being created
+      # in an app import, and many references to underlying definitions will not yet have been created
+      failed_config :embed,
+                    "embed for #{rn} does not exist as a class in #{name} / #{config_obj.name}",
+                    level: :warn
+    end
+
     def clean_references_def
       return unless references
 
@@ -274,6 +320,13 @@ module OptionConfigs
         self.bad_ref_items = []
         refitem.each do |mn, conf|
           to_class = ModelReference.to_record_class_for_type(mn)
+
+          # Avoid breaking app type imports if the resource being pointed to in the reference
+          # hasn't been set up yet.
+          if to_class.nil? || to_class.respond_to?(:definition) && !to_class.definition
+            Rails.logger.warn "Definition for class #{to_class} is not set - skipping reference setup for #{mn}"
+            break
+          end
 
           if to_class
             elt = conf[:add_with] && conf[:add_with][:extra_log_type]
@@ -342,10 +395,17 @@ module OptionConfigs
       # Make save_trigger.on_save the default for on_create and on_update
       os = self.save_trigger[:on_save]
       if os
-        ou = self.save_trigger[:on_update] || {}
-        oc = self.save_trigger[:on_create] || {}
-        self.save_trigger[:on_update] = os.merge(ou)
-        self.save_trigger[:on_create] = os.merge(oc)
+        os = [os] if os.is_a?(Hash)
+
+        ou = self.save_trigger[:on_update]
+        oc = self.save_trigger[:on_create]
+        ou = [ou] if ou.is_a?(Hash)
+        oc = [oc] if oc.is_a?(Hash)
+
+        ou ||= []
+        oc ||= []
+        self.save_trigger[:on_update] = os + ou
+        self.save_trigger[:on_create] = os + oc
       end
 
       self.save_trigger[:on_upload] ||= {}
@@ -356,6 +416,18 @@ module OptionConfigs
       self.batch_trigger ||= {}
       self.batch_trigger = self.batch_trigger.symbolize_keys
       self.batch_trigger[:on_record] ||= {}
+    end
+
+    def clean_config_triggers
+      self.config_trigger ||= {}
+      self.config_trigger = self.config_trigger.symbolize_keys
+      self.config_trigger = self.config_trigger.symbolize_keys
+      self.config_trigger[:on_define] ||= {}
+    end
+
+    def clean_preset_fields
+      self.preset_fields ||= {}
+      self.preset_fields = self.preset_fields.symbolize_keys
     end
 
     # Check if any of the configs were bad
@@ -427,7 +499,7 @@ module OptionConfigs
         # If defined, use the optional _default entry as the basis for all individual options,
         # allowing for a definable set of default values
 
-        value = opt_default.merge(value) if opt_default
+        value = opt_default.merge(value) if opt_default && !name.in?(%i[primary blank_log])
 
         i = new name, value, config_obj
         configs << i

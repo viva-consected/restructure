@@ -31,6 +31,7 @@ Rails.application.routes.draw do
     resources :dynamic_models, except: %i[show destroy] do
       member do
         post :update_config_from_table
+        get :versions
       end
     end
     resources :user_access_controls, except: %i[show destroy]
@@ -107,6 +108,7 @@ Rails.application.routes.draw do
   namespace :redcap do
     resources :project_admins, except: %i[show destroy] do
       member do
+        post :request_latest_rc_configs
         post :request_records
         post :request_archive
         post :request_users
