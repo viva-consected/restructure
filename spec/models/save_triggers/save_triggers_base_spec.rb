@@ -48,12 +48,99 @@ RSpec.describe SaveTriggers::SaveTriggersBase, type: :model do
             - select_call_direction
             - extra_text
 
+          field_options:
+            select_who:
+              blank_preset_value: 'from preset value - {{select_call_direction}}'
+
           save_trigger:
             on_update:
               update_this:
                 one:
                   with:
                     select_who: 'updated value2'
+
+        save_trigger_test_3:
+          label: Save Trigger Test 3
+          fields:
+            - select_call_direction
+            - notes
+
+          field_options:
+            select_who:
+              blank_preset_value: 'from preset value - {{select_call_direction}}'
+
+          save_trigger:
+            on_update:
+              - update_this:
+                  one:
+                    with:
+                      select_who: 'updated value2'
+              - create_reference:
+                  player_contact:
+                    in: master
+                    with:
+                      rank: 10
+                      rec_type: email
+                      data: test@test.tst
+              - update_this:
+                  one:
+                    with:
+                      notes: 'this was updated with player contact {{player_contact_emails.first.data}}'
+              - create_reference:
+                  player_contact:
+                    in: master
+                    with:
+                      rank: 10
+                      rec_type: phone
+                      data: (617) 794 2300
+
+              - update_this:
+                  one:
+                    with:
+                      notes: |
+                        - {{notes}}
+                        - this was updated with player contact phone {{player_contact_phones.first.data}}
+
+        save_trigger_test_4:
+          label: Save Trigger Test 4
+          fields:
+            - select_call_direction
+            - extra_text
+
+          field_options:
+            select_who:
+              blank_preset_value: 'a,b,c'
+            bad_field_name_test_preset_value:
+              blank_preset_value: 'should not break'
+
+          save_trigger:
+            on_update:
+              - update_this:
+                  one:
+                    with:
+                      notes: |-
+                        List of results
+              - each:
+                  value: '{{{select_who::split_csv}}}'
+                  if:
+                    not_any:
+                      this:
+                        save_trigger_results:
+                          element: iterator_value
+                          value:
+                            - ''
+                            - null
+                  do:
+                    - update_this:
+                        one:
+                          with:
+                            notes: |-
+                              {{notes}}
+                              - {{save_trigger_results.iterator_index}} => {{save_trigger_results.iterator_value}}
+                    - update_this:
+                        one:
+                          with:
+                            select_who: 'an iterator'
 
       ENDDEF
 
@@ -76,6 +163,8 @@ RSpec.describe SaveTriggers::SaveTriggersBase, type: :model do
       setup_access :activity_log__player_contact_phone__primary, resource_type: :activity_log_type, access: :create, user: @user
       setup_access :activity_log__player_contact_phone__save_trigger_test_1, resource_type: :activity_log_type, access: :create, user: @user
       setup_access :activity_log__player_contact_phone__save_trigger_test_2, resource_type: :activity_log_type, access: :create, user: @user
+      setup_access :activity_log__player_contact_phone__save_trigger_test_3, resource_type: :activity_log_type, access: :create, user: @user
+      setup_access :activity_log__player_contact_phone__save_trigger_test_4, resource_type: :activity_log_type, access: :create, user: @user
       expect(@user.has_access_to?(:create, :activity_log_type, :activity_log__player_contact_phone__save_trigger_test_1)).to be_truthy
       al_def.add_master_association
 
@@ -87,6 +176,7 @@ RSpec.describe SaveTriggers::SaveTriggersBase, type: :model do
                                                                        select_who: 'user',
                                                                        extra_log_type: 'save_trigger_test_2')
       expect(al.select_who).to eq 'user'
+      expect(al.select_call_direction).to eq 'from player'
     end
 
     it 'runs the on_create trigger when an instance is created' do
@@ -116,6 +206,46 @@ RSpec.describe SaveTriggers::SaveTriggersBase, type: :model do
       al.current_user = @master.current_user
       al.update!(select_call_direction: 'to player')
       expect(al.select_who).to eq 'updated value'
+    end
+
+    it 'sets a preset value, which can be overridden in the on_update trigger' do
+      al = @player_contact.activity_log__player_contact_phones.create!(select_call_direction: 'from player',
+                                                                       extra_log_type: 'save_trigger_test_2')
+      expect(al.select_who).to eq 'from preset value - from player'
+      al.skip_save_trigger = false
+      al.update!(select_call_direction: 'make update')
+      expect(al.select_who).to eq 'updated value2'
+    end
+
+    it 'runs a list of triggers in the desired order' do
+      al = @player_contact.activity_log__player_contact_phones.create!(select_call_direction: 'from player',
+                                                                       select_who: 'user',
+                                                                       extra_log_type: 'save_trigger_test_3')
+      expect(al.select_who).to eq 'user'
+      al.skip_save_trigger = false
+      al.update!(select_call_direction: 'to player')
+      expect(al.select_who).to eq 'updated value2'
+      expect(al.notes).to eq <<~END_TEXT
+        - this was updated with player contact test@test.tst
+        - this was updated with player contact phone (617)794-2300
+      END_TEXT
+    end
+
+    it 'runs a list of triggers for each value specified' do
+      al = @player_contact.activity_log__player_contact_phones.create!(select_call_direction: 'from player',
+                                                                       select_who: '"",a,b,,c,',
+                                                                       extra_log_type: 'save_trigger_test_4')
+      expect(al.select_who).to eq '"",a,b,,c,'
+      al.skip_save_trigger = false
+      al.update!(select_call_direction: 'to player')
+      expect(al.select_who).to eq 'an iterator'
+      expect(al.notes).to eq <<~END_TEXT
+        List of results
+        - 1 => a
+        - 2 => b
+        - 4 => c
+      END_TEXT
+        .strip
     end
   end
 
@@ -173,6 +303,40 @@ RSpec.describe SaveTriggers::SaveTriggersBase, type: :model do
                   with:
                     select_who: 'batch updated value 2'
 
+        batch_trigger_test_3:
+          label: Batch Trigger Test 3
+          fields:
+            - select_call_direction
+            - select_who
+          save_trigger:
+            on_create:
+              update_this:
+                one:
+                  with:
+                    select_who: 'created value'
+
+          batch_trigger:
+            on_record:
+              - update_this:
+                  one:
+                    force_not_editable_save: true
+                    with:
+                      select_who: 'batch updated value 3'
+              - create_reference:
+                  player_contact:
+                    in: master
+                    with:
+                      rec_type: email
+                      rank: 5
+                      data: test2@test.tst
+              - update_this:
+                  one:
+                    force_not_editable_save: true
+                    with:
+                      select_who: |
+                        - {{select_who}}
+                        - added {{player_contact_emails.first.data}}
+
       ENDDEF
 
       al_def.extra_log_types = config
@@ -194,6 +358,7 @@ RSpec.describe SaveTriggers::SaveTriggersBase, type: :model do
       setup_access :activity_log__player_contact_phone__primary, resource_type: :activity_log_type, access: :create, user: @user
       setup_access :activity_log__player_contact_phone__batch_trigger_test_1, resource_type: :activity_log_type, access: :create, user: @user
       setup_access :activity_log__player_contact_phone__batch_trigger_test_2, resource_type: :activity_log_type, access: :create, user: @user
+      setup_access :activity_log__player_contact_phone__batch_trigger_test_3, resource_type: :activity_log_type, access: :create, user: @user
       expect(@user.has_access_to?(:create, :activity_log_type, :activity_log__player_contact_phone__batch_trigger_test_1)).to be_truthy
       al_def.add_master_association
 
@@ -246,6 +411,38 @@ RSpec.describe SaveTriggers::SaveTriggersBase, type: :model do
       al2.reload
       expect(al.select_who).to eq 'batch updated value'
       expect(al2.select_who).to eq 'batch updated value 2'
+    end
+
+    it 'runs the the triggers in a list' do
+      al = @player_contact.activity_log__player_contact_phones.create!(select_call_direction: 'from player',
+                                                                       select_who: 'user',
+                                                                       extra_log_type: 'batch_trigger_test_3')
+      al2 = @player_contact.activity_log__player_contact_phones.create!(select_call_direction: 'from player',
+                                                                        select_who: 'user',
+                                                                        extra_log_type: 'batch_trigger_test_2')
+
+      expect(al.select_who).to eq 'created value'
+      expect(al2.select_who).to eq 'user'
+      all_recs = al.class.all.pluck(:id)
+
+      al.reload
+      al.skip_save_trigger = false
+      al.current_user = @master.current_user
+
+      al2.reload
+      al2.skip_save_trigger = false
+      al2.current_user = @master.current_user
+
+      res = al.class.trigger_batch_now
+      expect(res).to eq all_recs
+
+      al.reload
+      al2.reload
+      expect(al2.select_who).to eq 'batch updated value 2'
+      expect(al.select_who).to eq <<~END_TEXT
+        - batch updated value 3
+        - added test2@test.tst
+      END_TEXT
     end
   end
 

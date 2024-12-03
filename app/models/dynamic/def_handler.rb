@@ -7,7 +7,7 @@ module Dynamic
     included do
       after_save :force_option_config_parse
       after_save :handle_batch_schedule
-      attr_accessor :configurations, :data_dictionary, :options_constants
+      attr_accessor :configurations, :data_dictionary, :options_constants, :foreign_key_through_external_id
     end
 
     class_methods do
@@ -68,10 +68,14 @@ module Dynamic
       # This is typically used to improve load times and ensure we only generate
       # templates for models that will actually be used.
       # @return [ActiveRecord::Relation] scoped results
-      def active_model_configurations
-        # return @active_model_configurations if @active_model_configurations
+      def active_model_configurations(force_update: nil)
+        @active_model_configurations ||= {}
+        ckey = "active_model_configurations--#{name}-#{table_name}"
+        got = @active_model_configurations[ckey]
+        force_update ||= Admin::AppType.active_app_types_changed?
+        return got if got && !force_update
 
-        olat = Admin::AppType.active_app_types
+        olat = Admin::AppType.active_app_types force: force_update
 
         # List of names that the associated_* items have already returned
         # to avoid building huge lists of repetitive joined queries
@@ -84,13 +88,14 @@ module Dynamic
             # Compare against string class names, to avoid autoload errors
             case name
             when 'ActivityLog'
-              res = app_type.associated_activity_logs(not_resource_names: got_names)
+              res = app_type.associated_activity_logs(not_resource_names: got_names, force_update:)
               resnames = app_type.associated_activity_log_names
             when 'DynamicModel'
-              res = app_type.associated_dynamic_models(valid_resources_only: false, not_resource_names: got_names)
+              res = app_type.associated_dynamic_models(valid_resources_only: false, not_resource_names: got_names,
+                                                       force_update:)
               resnames = app_type.associated_dynamic_model_names
             when 'ExternalIdentifier'
-              res = app_type.associated_external_identifiers(not_resource_names: got_names)
+              res = app_type.associated_external_identifiers(not_resource_names: got_names, force_update:)
               resnames = app_type.associated_external_identifier_names
             end
             if resnames.present? && (resnames - got_names).present?
@@ -115,11 +120,7 @@ module Dynamic
           dma = dma.where(schema_name: schemas) if has_schema_name
         end
 
-        @active_model_configurations = dma
-      end
-
-      def reset_active_model_configurations!
-        @active_model_configurations = nil
+        @active_model_configurations[ckey] = dma
       end
 
       # Get all the resource names for options configs in all active dynamic definitions
@@ -232,8 +233,9 @@ module Dynamic
       #
       # Get the timestamp for the latest definition stored in the DB.
       # @return [DateTime]
-      def latest_stored_update
-        active_model_configurations
+      def latest_stored_update(using: nil)
+        using ||= active_model_configurations
+        using
           .select(:updated_at)
           .reorder('')
           .order('updated_at desc nulls last')
@@ -278,14 +280,16 @@ module Dynamic
       # Look up user based on a snippet of the configuration
       def user_for_conf_snippet(config)
         user = config[:user]
-        if user.to_i > 0
-          user = User.active.find(user)
-        elsif user.is_a? String
-          user = User.active.find_by_email(user)
+        app_type = config[:app_type]
+        app_type = Admin::AppType.find_active_by_name_or_id(app_type) if app_type
+        if user
+          user = User.find_active_by_email_or_id(user)
+          user.app_type = app_type if app_type
+          user.save
+        elsif app_type
+          user = User.use_batch_user(app_type)
         end
 
-        app_type = config[:app_type]
-        user = User.use_batch_user(app_type) if user.nil? && app_type
         user
       end
       # End of class_methods
@@ -298,6 +302,12 @@ module Dynamic
       # Parse option configs if necessary
       option_configs
       @secondary_key = configurations && configurations[:secondary_key]
+    end
+
+    #
+    # name for generating the basic activity log create / update records
+    def tracker_name
+      table_name.singularize
     end
 
     def use_current_version
@@ -468,6 +478,11 @@ module Dynamic
       full_implementation_class_name.pluralize.ns_underscore.to_sym
     end
 
+    # Association name where for a parent has one of this type
+    def one_of_this_association_name
+      model_association_name.to_s.singularize.to_sym
+    end
+
     # Full namespaced item type name, underscored with double underscores
     # If there is no prefix then this matches the simple model name
     def full_item_type_name
@@ -530,6 +545,28 @@ module Dynamic
       return :table if Admin::MigrationGenerator.table_exists? table_name
 
       :view
+    end
+
+    #
+    # Get the schema name for the current table_name
+    # Particularly useful if the schema_name is not set
+    # @return [String|nil]
+    def schema_name_in_db
+      Admin::MigrationGenerator.tables_and_views_reset!
+      Admin::MigrationGenerator.table_schema_hash[table_name]
+    end
+
+    #
+    # Get an estimated count of records in the table. Cached for 15 minutes
+    # @return [Integer]
+    def estimated_record_count
+      ckey = "estimated_record_count--#{self.class.name}-#{id}-#{created_at}-#{updated_at}"
+      Rails.cache.fetch(ckey, expires_in: 15.minutes) do
+        implementation_class.count
+      rescue StandardError => e
+        Rails.logger.warn "Failed to get estimated record count for #{name}"
+        nil
+      end
     end
   end
 end

@@ -103,7 +103,7 @@ module EditFields
       unless got
 
         @gs_exists ||= {}
-        ckey = "#{form_object_instance.class.name}--#{curr_field_name_sym}"
+        ckey = "edit_form_field--#{form_object_instance.class.name}--#{curr_field_name_sym}"
         if @gs_exists[ckey].nil?
           @gs_exists[ckey] =
             !!Classification::GeneralSelection.exists_for?(form_object_instance, curr_field_name_sym)
@@ -139,6 +139,10 @@ module EditFields
       end
 
       got ||= render partial: 'common_templates/edit_fields/default', locals: local_vars[:locals]
+
+      if is_current_admin_sample?
+        got = "<div class=\"admin-sample-field-info\"><span>#{field_name}</span></div>#{got}".html_safe
+      end
 
       if opt[:calculate_with]
         cw = opt[:calculate_with]

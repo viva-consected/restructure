@@ -11,13 +11,26 @@ module Formatter
     # - true text
     # - truthy if there is an {{else}}
     # - else text
-    IfBlockRegEx = %r{({{#if (#{TagnameRegExString})}}(.+?)({{else}}(.+?))?{{/if}})}m
+    IfBlockRegEx = %r{({{#if +(#{TagnameRegExString})}}(.+?)({{else if +(#{TagnameRegExString})}}(.+?))?({{else}}(.+?))?{{/if}})}m
 
+    StartQuote = '["\'‘“]'
+    EndQuote = '["\'’”]'
+    NotEndQuote = '[^"\'’”]'
+    IsOperator = '(.+?)'
+    MaxElseIfs = 2
+    IsConditions = "([0-9a-zA-Z_.:-]+) +#{StartQuote}#{IsOperator}#{EndQuote} +(#{StartQuote}?.+?#{EndQuote}?)"
+    IsBlockRegEx = %r{({{#is +#{IsConditions}}}(.+?)?({{else is +#{IsConditions}}}(.+?))?({{else is +#{IsConditions}}}(.+?))?({{else}}(.+?))?{{/is}})}m
     OverrideTags = /^(embedded_report_|add_item_button_|glyphicon_|template_block_)/
 
     FunctionalDirectives = %w[shortlink].freeze
     FunctionalDirectiveRegEx = /\[\[[^\]]+\]\]/
 
+    # Set the methods from certain resources that should be accessible for substitution
+    # as if they were real attributes
+    ValidMethodsAsAttributes = { player_infos: %i[subject_age rank_name] }
+
+    NoAutoTitleizeTags = %w[resource_name item_type_name default_embed_resource_name
+                            definition_resource_name definition_item_type_name].freeze
     #
     # Perform substitutions on the text, using either a Hash of data or an object item.
     # Provide a tag substitution to be used to enclose the substituted items
@@ -59,18 +72,75 @@ module Formatter
         block_container = if_block[0]
         tag = if_block[1]
         tag_value = value_for_tag(tag, sub_data, tag_subs: nil, ignore_missing: true)
-        if tag_value.present?
-          all_content.sub!(block_container, if_block[2] || '')
-        else
-          all_content.sub!(block_container, if_block[4] || '')
+        else_if_block = if_block[3]
+        else_if_tag = if_block[4]
+
+        # Handle {{if}}
+        sub_text = if_block[2] || '' if tag_value.present?
+
+        if !sub_text && else_if_block
+          else_if_tag_value = value_for_tag(else_if_tag, sub_data, tag_subs: nil, ignore_missing: true)
+          sub_text = if_block[5] || '' if else_if_tag_value.present?
         end
+
+        # Handle {{else}}
+        sub_text ||= if_block[7] || ''
+
+        all_content.sub!(block_container, sub_text)
+      end
+
+      # Replace each if block {{#is ...}}...(optional {{else}}...){{/is}}
+      is_blocks = all_content.scan(IsBlockRegEx)
+      is_blocks.each do |is_block|
+        block_container = is_block[0]
+        tag = is_block[1]
+        tag_value = value_for_tag(tag, sub_data, tag_subs: nil, ignore_missing: true)
+        op = is_block[2]
+        exp = is_block[3]
+        comp = eval_is_comp(op, tag_value, exp, sub_data, is_block:)
+        start_pos = 0
+        # Handle {{is}}
+        sub_text = is_block[4] || '' if comp
+
+        iters = 1
+        start_pos = iters * 5
+        else_is_block = is_block[start_pos]
+        while !sub_text && else_is_block
+          else_is_tag = is_block[start_pos + 1]
+          else_is_op = is_block[start_pos + 2]
+          else_is_exp = is_block[start_pos + 3]
+          else_is_tag_value = value_for_tag(else_is_tag, sub_data, tag_subs: nil, ignore_missing: true)
+          comp = eval_is_comp(else_is_op, else_is_tag_value, else_is_exp, sub_data, is_block:)
+
+          if comp
+            sub_text = is_block[start_pos + 4] || ''
+            break
+          end
+
+          iters += 1
+          break if iters > MaxElseIfs
+
+          start_pos = iters * 5
+          else_is_block = is_block[start_pos]
+        end
+
+        # Handle {{else}}
+        sub_text ||= is_block[16] || ''
+
+        all_content.sub!(block_container, sub_text)
       end
 
       # Replace each tag {{tag}}
       tags = all_content.scan(/{{#{TagnameRegExString}}}/).uniq
       tags.each do |tag_container|
         tag = tag_container[2..-3]
-        tag_value = value_for_tag(tag, sub_data, tag_subs: tag_subs, ignore_missing: ignore_missing)
+        begin
+          tag_value = value_for_tag(tag, sub_data, tag_subs:, ignore_missing:)
+        rescue FphsException => e
+          all_content.gsub!(tag_container, "{{FAILED: #{tag}}}")
+          Rails.logger.warn "Failed to get tag for simple substitution: #{tag}\n#{all_content}"
+          raise
+        end
 
         # Finally, substitute the results into the original text
         all_content.gsub!(tag_container, tag_value)
@@ -79,6 +149,7 @@ module Formatter
       # Unless we have requested to show missing tags, check for {{tag}} left in the text,
       # indicating something was not replaced
       if ignore_missing != :show_tag && ignore_missing != true && all_content.scan(/{{.*}}/).present?
+        Rails.logger.warn "Not all the tags were replaced. This suggests there was an error in the markup. #{all_content.scan(/{{.*}}/)}"
         raise FphsException, 'Not all the tags were replaced. This suggests there was an error in the markup.'
       end
 
@@ -91,7 +162,7 @@ module Formatter
         # Replace each tag [[tag]], representing functional directives, such as shortlink production
         tags.each do |tag_container|
           tag = tag_container[2..-3]
-          tag_value = functional_directive(tag, sub_data, ignore_missing: ignore_missing)
+          tag_value = functional_directive(tag, sub_data, ignore_missing:)
 
           # Make the replacement
           all_content.gsub!(tag_container, tag_value) if tag_value
@@ -140,16 +211,21 @@ module Formatter
       end
 
       d = d.first if d.respond_to? :where
+      orig_item = d
       d = d.attributes if d.respond_to? :attributes
+      d[:original_item] ||= orig_item if d.is_a?(Hash)
 
       # Handle formatting directives, following the ::
       tag_split = tag.split('::')
       tag_name = tag_split.first
       first_format_directive = tag_split[1]
       this_ignore_missing = :show_blank if first_format_directive == 'ignore_missing'
+      setup_methods_as_attributes(d)
 
-      unless d.is_a?(Hash) && (d&.key?(tag_name.to_s) || d&.key?(tag_name.to_sym)) ||
-             tag.index(OverrideTags) || d.is_a?(Enumerable) && (tag_name.to_s == tag_name.to_s.to_i.to_s)
+      unless d.is_a?(Hash) && (d&.key?(tag_name.to_s) ||
+              d&.key?(tag_name.to_sym)) ||
+             tag.index(OverrideTags) ||
+             d.is_a?(Enumerable) && (tag_name.to_s == tag_name.to_s.to_i.to_s || tag_name.in?(['first', 'last']))
         unless ignore_missing || this_ignore_missing
           raise FphsException,
                 "Data (#{d.class.name}) does not contain the tag '#{tag_name}' " \
@@ -236,13 +312,14 @@ module Formatter
         data = {}
       end
 
+      setup_resource_info(data)
       setup_common_constants_tags(data)
       setup_data_for_referenced_item(data, item)
       setup_data_created_by(data, item)
       setup_data_for_master(data, master)
       setup_data_for_item_user(data, item)
       setup_data_for_current_user(data, master, item)
-
+      setup_methods_as_attributes(data)
       data
     end
 
@@ -320,6 +397,23 @@ module Formatter
     end
 
     #
+    # Certain methods in resources should be accessible as attributes for substitution
+    # Set these up
+    def self.setup_methods_as_attributes(data)
+      return unless data.is_a?(Hash)
+
+      orig_obj = data[:original_item]
+      rn = data[:resource_name]
+      rn ||= orig_obj.resource_name if orig_obj.respond_to?(:resource_name)
+      rn = rn&.to_sym
+      return unless rn && ValidMethodsAsAttributes[rn]
+
+      ValidMethodsAsAttributes[rn].each do |tag_name|
+        data[tag_name] = orig_obj.send(tag_name) if orig_obj.respond_to?(tag_name)
+      end
+    end
+
+    #
     # Get the current tag value from the data, and format it
     # Any number of :: separated formatting operators will be applied in the order the appear
     #
@@ -331,7 +425,12 @@ module Formatter
       tagp = tag_and_operator.split('::')
       tag = tagp.first
 
-      if data.is_a?(Enumerable) && tag.to_i.to_s == tag
+      if data.is_a?(Enumerable) && (tag.to_i.to_s == tag || tag.in?(['first', 'last']))
+        tag = case tag
+              when 'first' then '0'
+              when 'last' then '-1'
+              else tag
+              end
         orig_val = data[tag.to_i]
       else
         current_user = data[:current_user_instance] || data[:current_user]
@@ -346,12 +445,17 @@ module Formatter
 
       res = orig_val || ''
 
-      res = Formatter::Formatters.formatter_do(res.class, res, current_user: current_user)
+      res = Formatter::Formatters.formatter_do(res.class, res, current_user:)
 
       return if res.nil? && tagp[1] != 'ignore_missing'
 
-      # Automatically titleize names
-      tagp << 'titleize' if tagp.length == 1 && (tag == 'name' || tag.end_with?('_name'))
+      # Automatically titleize names (only if the returned value is a string)
+      if res.is_a?(String) &&
+         tagp.length == 1 &&
+         (tag == 'name' || tag.end_with?('_name')) &&
+         !tag.in?(NoAutoTitleizeTags)
+        tagp << 'titleize'
+      end
       tagp[1..].each do |op|
         res = TagFormatter.format_with(op, res, orig_val, current_user, tag, data)
       end
@@ -376,7 +480,7 @@ module Formatter
 
     def self.template_block(tag, data)
       block_name = tag.sub('template_block_', '').gsub('_', ' ')
-      ApplicationController.helpers.template_block(block_name, data: data)
+      ApplicationController.helpers.template_block(block_name, data:)
     end
 
     def self.glyphicon(tag, _data)
@@ -441,7 +545,7 @@ module Formatter
         item_reference = false
         ref_parts.each do |name|
           # Get the associated item, based on the current part of the substitution name
-          res_data = get_associated_item(master, name, res_data, item_reference: item_reference)
+          res_data = get_associated_item(master, name, res_data, item_reference:)
 
           break unless res_data.present?
 
@@ -623,6 +727,107 @@ module Formatter
       data[:allow_admins_to_manage_admins] = Settings::AllowAdminsToManageAdmins
       data[:invitation_code] = Settings::InvitationCode
       data[:default_logo] = Settings::DefaultLogo
+    end
+
+    def self.setup_resource_info(data)
+      item = data[:original_item]
+      data[:resource_name] = item.resource_name if item.respond_to?(:resource_name)
+      data[:table_name] = item.class.table_name if item.class.respond_to?(:table_name)
+      data[:item_type_name] = item.full_item_type_name if item.respond_to?(:full_item_type_name)
+
+      idef = item.class.definition if item.class.respond_to? :definition
+      return unless idef.is_a?(ActivityLog)
+
+      data[:definition_resource_name] = idef.resource_name
+      data[:definition_item_type_name] = idef.item_type_name
+
+      if idef.respond_to?(:default_embed_resource_name)
+        data[:default_embed_resource_name] = idef.default_embed_resource_name(item.extra_log_type)
+      end
+
+      nil
+    end
+
+    def self.eval_is_comp(op, tag_value, exp, sub_data, is_block: nil)
+      if exp
+        exp = if exp.length > 1 && exp.first.match(/#{StartQuote}/) && exp.last.match(/#{EndQuote}/)
+                exp[1..-2]
+              elsif exp.to_i.to_s == exp
+                exp.to_i
+              elsif exp.downcase == 'null'
+                nil
+              elsif exp.blank?
+                raise FphsException,
+                      "Can't eval expected value when it is blank (with no surrounding quotes): #{is_block && is_block[0]}"
+              else
+                value_for_tag(exp, sub_data, tag_subs: nil, ignore_missing: true, original_type: true)
+              end
+      end
+
+      if exp.is_a?(Integer)
+        if tag_value.blank?
+          tag_value = nil
+        elsif tag_value.to_i.to_s == tag_value
+          tag_value = tag_value.to_i
+        end
+      end
+
+      no_operator = nil
+
+      res = case op
+            when '==='
+              tag_value.blank? && exp.blank? || tag_value == exp
+            when '!=='
+              !(tag_value.blank? && exp.blank? || tag_value == exp)
+            when '!='
+              !(tag_value.blank? && exp.blank? || tag_value == exp)
+            when '=='
+              tag_value.blank? && exp.blank? || tag_value == exp
+            when 'in'
+              tag_value.in?(exp)
+            when '!in'
+              !tag_value.in?(exp)
+            when 'includes'
+              tag_value.include?(exp)
+            when '!includes'
+              !tag_value.include?(exp)
+            else
+              no_operator = true unless tag_value.blank? || exp.nil?
+              nil
+            end
+
+      unless tag_value.is_a?(Integer)
+        raise FphsException, "Unknown comparison operator for {{\#is}}: #{op}" if no_operator
+
+        return res
+      end
+
+      no_operator = nil
+
+      res = case op
+            when '>='
+              tag_value >= exp
+            when '<='
+              tag_value <= exp
+            when '>'
+              tag_value > exp
+            when '<'
+              tag_value < exp
+            when '&gt;='
+              tag_value >= exp
+            when '&lt;='
+              tag_value <= exp
+            when '&gt;'
+              tag_value > exp
+            when '&lt;'
+              tag_value < exp
+            else
+              no_operator = true
+              nil
+            end
+      raise FphsException, "Unknown comparison operator for integer {{\#is}}: #{op}" if no_operator
+
+      res
     end
   end
 end

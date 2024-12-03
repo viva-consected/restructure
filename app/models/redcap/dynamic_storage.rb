@@ -7,6 +7,11 @@ module Redcap
   class DynamicStorage
     include Dynamic::ModelGenerator
 
+    ExtraFieldTypes = {
+      disabled: 'boolean',
+      master_id: 'integer'
+    }.freeze
+
     attr_accessor :project_admin, :qualified_table_name, :category
 
     def self.default_category
@@ -14,7 +19,9 @@ module Redcap
     end
 
     def self.default_schema_name
-      'redcap'
+      return 'redcap' if Rails.env.production?
+
+      'redcap_test'
     end
 
     def initialize(project_admin, qualified_table_name)
@@ -54,11 +61,7 @@ module Redcap
 
       extra_fields&.each do |ef|
         ef = ef.to_sym
-        ft = if ef == :disabled
-               'boolean'
-             else
-               'string'
-             end
+        ft = ExtraFieldTypes[ef] || 'string'
         @field_types[ef] = ft.to_s
       end
 
@@ -66,7 +69,7 @@ module Redcap
     end
 
     #
-    # Return a hash of all fields, with a value true if they are to berepresented as an array
+    # Return a hash of all fields, with a value true if they are to be represented as an array
     # in the database. Used alongside #field_types a full definition of the field can be made
     # for migrations.
     # @return [Hash]
@@ -80,7 +83,8 @@ module Redcap
 
       extra_fields&.each do |ef|
         ef = ef.to_sym
-        ft = (ef != :disabled)
+        # Assume it is an array if it isn't one of the predefined extra fields
+        ft = !ExtraFieldTypes.keys.include?(ef)
         @array_fields[ef] = ft
       end
 
@@ -237,6 +241,7 @@ module Redcap
 
       @extra_fields = []
       @extra_fields << 'disabled' if project_admin.disable_deleted_records?
+      @extra_fields << 'master_id' if project_admin.data_options.set_master_id_using_association
 
       return @extra_fields unless project_admin.data_options.add_multi_choice_summary_fields
 
@@ -316,12 +321,32 @@ module Redcap
     end
 
     #
+    # Specifies the external identifier resource name from associate_master_through_external_identifer
+    def associate_master_through_external_id_resource_name
+      project_admin.associate_master_through_external_id_resource_name
+    end
+
+    #
+    # Specifies the foreign key name from associate_master_through_external_identifer
+    def associate_master_through_external_id_fkey_name
+      project_admin.associate_master_through_external_id_fkey_name
+    end
+
+    #
     # Add default user access control for the current admin
     # matching user
     def add_user_access_control
       admin = project_admin.current_admin
-      return unless admin&.matching_user && dynamic_model
-      return if admin.matching_user.has_access_to? :create, :table, dynamic_model.resource_name
+
+      unless admin&.matching_user && dynamic_model
+        Rails.logger.warn "Not adding user access control to dynamic model for project #{project_admin.id}: #{admin&.matching_user} && #{dynamic_model}"
+        return
+      end
+
+      if admin.matching_user.has_access_to? :create, :table, dynamic_model.resource_name
+        Rails.logger.warn "Not adding user access control to dynamic model for project #{project_admin.id} - no access to #{dynamic_model.resource_name}"
+        return
+      end
 
       Admin::UserAccessControl.create!(app_type_id: admin.matching_user.app_type_id,
                                        resource_type: :table,
