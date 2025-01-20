@@ -62,155 +62,6 @@ create schema ref_data
 ;
 
 
-set
-  default_tablespace = ''
-;
-
-
-set
-  default_table_access_method = heap
-;
-
-
---
--- Name: addresses; Type: TABLE; Schema: ml_app; Owner: -
---
-create table
-  ml_app.addresses (
-    id integer not null,
-    master_id integer,
-    street character varying,
-    street2 character varying,
-    street3 character varying,
-    city character varying,
-    state character varying,
-    zip character varying,
-    source character varying,
-    rank integer,
-    rec_type character varying,
-    user_id integer,
-    created_at timestamp without time zone not null,
-    updated_at timestamp without time zone default '2017-09-25 15:43:35.929228'::timestamp without time zone,
-    country character varying(3),
-    postal_code character varying,
-    region character varying
-  )
-;
-
-
---
--- Name: player_contacts; Type: TABLE; Schema: ml_app; Owner: -
---
-create table
-  ml_app.player_contacts (
-    id integer not null,
-    master_id integer,
-    rec_type character varying,
-    data character varying,
-    source character varying,
-    rank integer,
-    user_id integer,
-    created_at timestamp without time zone not null,
-    updated_at timestamp without time zone default '2017-09-25 15:43:36.922871'::timestamp without time zone
-  )
-;
-
-
---
--- Name: player_infos; Type: TABLE; Schema: ml_app; Owner: -
---
-create table
-  ml_app.player_infos (
-    id integer not null,
-    master_id integer,
-    first_name character varying,
-    last_name character varying,
-    middle_name character varying,
-    nick_name character varying,
-    birth_date date,
-    death_date date,
-    user_id integer,
-    created_at timestamp without time zone not null,
-    updated_at timestamp without time zone default '2017-09-25 15:43:37.094626'::timestamp without time zone,
-    contact_pref character varying,
-    start_year integer,
-    rank integer,
-    notes character varying,
-    contact_id integer,
-    college character varying,
-    end_year integer,
-    source character varying
-  )
-;
-
-
---
--- Name: TABLE player_infos; Type: COMMENT; Schema: ml_app; Owner: -
---
-comment on table ml_app.player_infos is 'Player biographical information'
-;
-
-
---
--- Name: COLUMN player_infos.first_name; Type: COMMENT; Schema: ml_app; Owner: -
---
-comment on column ml_app.player_infos.first_name is 'First Name'
-;
-
-
---
--- Name: nfs_store_archived_files; Type: TABLE; Schema: ml_app; Owner: -
---
-create table
-  ml_app.nfs_store_archived_files (
-    id integer not null,
-    file_hash character varying,
-    file_name character varying not null,
-    content_type character varying not null,
-    archive_file character varying not null,
-    path character varying not null,
-    file_size bigint not null,
-    file_updated_at timestamp without time zone,
-    created_at timestamp without time zone not null,
-    updated_at timestamp without time zone not null,
-    nfs_store_container_id integer,
-    user_id integer,
-    title character varying,
-    description character varying,
-    nfs_store_stored_file_id integer,
-    file_metadata jsonb,
-    embed_resource_name character varying,
-    embed_resource_id bigint
-  )
-;
-
-
---
--- Name: nfs_store_stored_files; Type: TABLE; Schema: ml_app; Owner: -
---
-create table
-  ml_app.nfs_store_stored_files (
-    id integer not null,
-    file_hash character varying not null,
-    file_name character varying not null,
-    content_type character varying not null,
-    file_size bigint not null,
-    path character varying,
-    file_updated_at timestamp without time zone,
-    user_id integer,
-    nfs_store_container_id integer,
-    created_at timestamp without time zone,
-    updated_at timestamp without time zone,
-    title character varying,
-    description character varying,
-    last_process_name_run character varying,
-    file_metadata jsonb,
-    embed_resource_name character varying,
-    embed_resource_id bigint
-  )
-;
-
-
 --
 -- Name: add_study_update_entry(integer, character varying, character varying, date, character varying, integer, integer, character varying); Type: FUNCTION; Schema: ml_app; Owner: -
 --
@@ -590,7 +441,7 @@ create function ml_app.current_user_id () returns integer language plpgsql as $$
 --
 create function ml_app.datadic_choice_history_upd () returns trigger language plpgsql as $$
 BEGIN
-  INSERT INTO datadic_choice_history (
+  INSERT INTO ref_data.datadic_choice_history (
     source_name, source_type, form_name, field_name, value, label, redcap_data_dictionary_id,
     disabled,
     admin_id,
@@ -642,6 +493,59 @@ set
 
 set
   default_table_access_method = heap
+;
+
+
+--
+-- Name: nfs_store_archived_files; Type: TABLE; Schema: ml_app; Owner: -
+--
+create table
+  ml_app.nfs_store_archived_files (
+    id integer not null,
+    file_hash character varying,
+    file_name character varying not null,
+    content_type character varying not null,
+    archive_file character varying not null,
+    path character varying not null,
+    file_size bigint not null,
+    file_updated_at timestamp without time zone,
+    created_at timestamp without time zone not null,
+    updated_at timestamp without time zone not null,
+    nfs_store_container_id integer,
+    user_id integer,
+    title character varying,
+    description character varying,
+    nfs_store_stored_file_id integer,
+    file_metadata jsonb,
+    embed_resource_name character varying,
+    embed_resource_id bigint
+  )
+;
+
+
+--
+-- Name: nfs_store_stored_files; Type: TABLE; Schema: ml_app; Owner: -
+--
+create table
+  ml_app.nfs_store_stored_files (
+    id integer not null,
+    file_hash character varying not null,
+    file_name character varying not null,
+    content_type character varying not null,
+    file_size bigint not null,
+    path character varying,
+    file_updated_at timestamp without time zone,
+    user_id integer,
+    nfs_store_container_id integer,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone,
+    title character varying,
+    description character varying,
+    last_process_name_run character varying,
+    file_metadata jsonb,
+    embed_resource_name character varying,
+    embed_resource_id bigint
+  )
 ;
 
 
@@ -3074,56 +2978,6 @@ $_$
 
 
 --
--- Name: log_data_variable_package_vars_update(); Type: FUNCTION; Schema: ref_data; Owner: -
---
-create function ref_data.log_data_variable_package_vars_update () returns trigger language plpgsql as $$
-BEGIN
-  INSERT INTO data_variable_package_var_history (
-    
-    data_variable_package_id, domain, record_id, variable_name, record_type, disabled,
-    user_id,
-    created_at,
-    updated_at,
-    data_variable_package_var_id)
-  SELECT
-    
-    NEW.data_variable_package_id, NEW.domain, NEW.record_id, NEW.variable_name, NEW.record_type, NEW.disabled,
-    NEW.user_id,
-    NEW.created_at,
-    NEW.updated_at,
-    NEW.id;
-  RETURN NEW;
-END;
-$$
-;
-
-
---
--- Name: log_data_variable_packages_update(); Type: FUNCTION; Schema: ref_data; Owner: -
---
-create function ref_data.log_data_variable_packages_update () returns trigger language plpgsql as $$
-BEGIN
-  INSERT INTO data_variable_package_history (
-    
-    name, tag_select_health_categories, package_type, storage_type, db_or_fs, schema_or_path, table_or_file, is_static, sourced_from_packages, n_for_timepoints, contact_email, key_fields, description, info_url, disabled,
-    user_id,
-    created_at,
-    updated_at,
-    data_variable_package_id)
-  SELECT
-    
-    NEW.name, NEW.tag_select_health_categories, NEW.package_type, NEW.storage_type, NEW.db_or_fs, NEW.schema_or_path, NEW.table_or_file, NEW.is_static, NEW.sourced_from_packages, NEW.n_for_timepoints, NEW.contact_email, NEW.key_fields, NEW.description, NEW.info_url, NEW.disabled,
-    NEW.user_id,
-    NEW.created_at,
-    NEW.updated_at,
-    NEW.id;
-  RETURN NEW;
-END;
-$$
-;
-
-
---
 -- Name: log_datadic_variables_update(); Type: FUNCTION; Schema: ref_data; Owner: -
 --
 create function ref_data.log_datadic_variables_update () returns trigger language plpgsql as $$
@@ -3195,6 +3049,44 @@ BEGIN
   RETURN NEW;
 END;
 $$
+;
+
+
+--
+-- Name: model_references; Type: TABLE; Schema: ml_app; Owner: -
+--
+create table
+  ml_app.model_references (
+    id integer not null,
+    from_record_type character varying,
+    from_record_id integer,
+    from_record_master_id integer,
+    to_record_type character varying,
+    to_record_id integer,
+    to_record_master_id integer,
+    user_id integer,
+    created_at timestamp without time zone not null,
+    updated_at timestamp without time zone not null,
+    disabled boolean
+  )
+;
+
+
+--
+-- Name: nfs_store_containers; Type: TABLE; Schema: ml_app; Owner: -
+--
+create table
+  ml_app.nfs_store_containers (
+    id integer not null,
+    name character varying,
+    user_id integer,
+    app_type_id integer,
+    nfs_store_container_id integer,
+    master_id integer,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone,
+    created_by_user_id bigint
+  )
 ;
 
 
@@ -4742,26 +4634,6 @@ alter sequence ml_app.message_templates_id_seq owned by ml_app.message_templates
 
 
 --
--- Name: model_references; Type: TABLE; Schema: ml_app; Owner: -
---
-create table
-  ml_app.model_references (
-    id integer not null,
-    from_record_type character varying,
-    from_record_id integer,
-    from_record_master_id integer,
-    to_record_type character varying,
-    to_record_id integer,
-    to_record_master_id integer,
-    user_id integer,
-    created_at timestamp without time zone not null,
-    updated_at timestamp without time zone not null,
-    disabled boolean
-  )
-;
-
-
---
 -- Name: model_references_id_seq; Type: SEQUENCE; Schema: ml_app; Owner: -
 --
 create sequence ml_app.model_references_id_seq start
@@ -5651,43 +5523,6 @@ with
 -- Name: protocols_id_seq; Type: SEQUENCE OWNED BY; Schema: ml_app; Owner: -
 --
 alter sequence ml_app.protocols_id_seq owned by ml_app.protocols.id
-;
-
-
---
--- Name: q1_rc_links; Type: VIEW; Schema: ml_app; Owner: -
---
-create view
-  ml_app.q1_rc_links as
-select
-  rc_links.id,
-  rc_links.master_id,
-  rc_links.link as q1_rc_link_ext_id,
-  null::timestamp without time zone as created_at,
-  null::timestamp without time zone as updated_at,
-  null::integer as user_id
-from
-  q1.rc_links
-;
-
-
---
--- Name: q2_rc_links; Type: VIEW; Schema: ml_app; Owner: -
---
-create view
-  ml_app.q2_rc_links as
-select
-  rc.id,
-  masters.id as master_id,
-  split_part((rc.link)::text, '='::text, 2) as q2_rc_link_ext_id,
-  null::timestamp without time zone as created_at,
-  null::timestamp without time zone as updated_at,
-  null::integer as user_id
-from
-  (
-    q2.rc_links rc
-    join ml_app.masters on ((masters.msid = rc.msid))
-  )
 ;
 
 
@@ -6680,7 +6515,8 @@ create table
     confirmed_at timestamp without time zone,
     confirmation_sent_at timestamp without time zone,
     country_code character varying,
-    terms_of_use_accepted character varying
+    terms_of_use_accepted character varying,
+    otp_secret character varying
   )
 ;
 
@@ -7208,10 +7044,7 @@ with
       var.sub_section_id,
       var.title,
       var.storage_varname,
-      var.user_id,
-      var.contributor_type,
-      var.n_for_timepoints,
-      var.notes
+      var.user_id
     from
       ref_data.datadic_variables var
     where
@@ -7366,8 +7199,8 @@ create table
     sub_section_id integer,
     title character varying,
     storage_varname character varying,
-    contributor_type character varying,
     user_id bigint,
+    contributor_type character varying,
     n_for_timepoints jsonb,
     notes character varying
   )
@@ -7412,7 +7245,7 @@ comment on column ref_data.datadic_variable_history.form_name is 'Form name (if 
 --
 -- Name: COLUMN datadic_variable_history.variable_name; Type: COMMENT; Schema: ref_data; Owner: -
 --
-comment on column ref_data.datadic_variable_history.variable_name is 'Variable name (as stored)'
+comment on column ref_data.datadic_variable_history.variable_name is 'Variable name'
 ;
 
 
@@ -7680,150 +7513,159 @@ alter sequence ref_data.datadic_variables_id_seq owned by ref_data.datadic_varia
 
 
 --
--- Name: domain_mapping_history; Type: TABLE; Schema: ref_data; Owner: -
+-- Name: mv_datadic_stats; Type: MATERIALIZED VIEW; Schema: ref_data; Owner: -
 --
-create table
-  ref_data.domain_mapping_history (
-    id bigint not null,
-    domain character varying,
-    domain_title character varying,
-    tag_select_health_categories character varying[],
-    notes character varying,
-    hide_from_datadic boolean,
-    disabled boolean default false,
-    user_id bigint,
-    created_at timestamp without time zone not null,
-    updated_at timestamp without time zone not null,
-    domain_mapping_id bigint
-  )
-;
-
-
---
--- Name: COLUMN domain_mapping_history.domain; Type: COMMENT; Schema: ref_data; Owner: -
---
-comment on column ref_data.domain_mapping_history.domain is 'Domain'
-;
-
-
---
--- Name: COLUMN domain_mapping_history.domain_title; Type: COMMENT; Schema: ref_data; Owner: -
---
-comment on column ref_data.domain_mapping_history.domain_title is 'Title'
-;
-
-
---
--- Name: COLUMN domain_mapping_history.tag_select_health_categories; Type: COMMENT; Schema: ref_data; Owner: -
---
-comment on column ref_data.domain_mapping_history.tag_select_health_categories is 'Health Categories'
-;
-
-
---
--- Name: COLUMN domain_mapping_history.notes; Type: COMMENT; Schema: ref_data; Owner: -
---
-comment on column ref_data.domain_mapping_history.notes is 'Notes'
-;
-
-
---
--- Name: COLUMN domain_mapping_history.hide_from_datadic; Type: COMMENT; Schema: ref_data; Owner: -
---
-comment on column ref_data.domain_mapping_history.hide_from_datadic is 'Hide from Data Dictionary'
-;
-
-
---
--- Name: domain_mapping_history_id_seq; Type: SEQUENCE; Schema: ref_data; Owner: -
---
-create sequence ref_data.domain_mapping_history_id_seq start
+create materialized view
+  ref_data.mv_datadic_stats as
 with
-  1 increment by 1 no minvalue no maxvalue cache 1
-;
-
-
---
--- Name: domain_mapping_history_id_seq; Type: SEQUENCE OWNED BY; Schema: ref_data; Owner: -
---
-alter sequence ref_data.domain_mapping_history_id_seq owned by ref_data.domain_mapping_history.id
-;
-
-
---
--- Name: domain_mappings; Type: TABLE; Schema: ref_data; Owner: -
---
-create table
-  ref_data.domain_mappings (
-    id bigint not null,
-    domain character varying,
-    domain_title character varying,
-    tag_select_health_categories character varying[],
-    notes character varying,
-    hide_from_datadic boolean,
-    disabled boolean default false,
-    user_id bigint,
-    created_at timestamp without time zone not null,
-    updated_at timestamp without time zone not null
+  vars as (
+    select
+      var.id,
+      var.study,
+      var.source_name,
+      var.source_type,
+      var.domain,
+      var.form_name,
+      var.variable_name,
+      var.variable_type,
+      var.presentation_type,
+      var.label,
+      var.label_note,
+      var.annotation,
+      var.is_required,
+      var.valid_type,
+      var.valid_min,
+      var.valid_max,
+      var.multi_valid_choices,
+      var.is_identifier,
+      var.is_derived_var,
+      var.multi_derived_from_id,
+      var.doc_url,
+      var.target_type,
+      var.owner_email,
+      var.classification,
+      var.other_classification,
+      var.multi_timepoints,
+      var.equivalent_to_id,
+      var.storage_type,
+      var.db_or_fs,
+      var.schema_or_path,
+      var.table_or_file,
+      var.disabled,
+      var.admin_id,
+      var.redcap_data_dictionary_id,
+      var.created_at,
+      var.updated_at,
+      var."position",
+      var.section_id,
+      var.sub_section_id,
+      var.title,
+      var.storage_varname,
+      var.user_id
+    from
+      ref_data.datadic_variables var
+    where
+      (
+        (not coalesce(var.disabled, false))
+        and ((var.variable_name)::text <> 'participant_id'::text)
+        and (nullif((var.storage_varname)::text, ''::text) is not null)
+      )
   )
-;
-
-
---
--- Name: TABLE domain_mappings; Type: COMMENT; Schema: ref_data; Owner: -
---
-comment on table ref_data.domain_mappings is 'Dynamicmodel: Domain Mapping'
-;
-
-
---
--- Name: COLUMN domain_mappings.domain; Type: COMMENT; Schema: ref_data; Owner: -
---
-comment on column ref_data.domain_mappings.domain is 'Domain'
-;
-
-
---
--- Name: COLUMN domain_mappings.domain_title; Type: COMMENT; Schema: ref_data; Owner: -
---
-comment on column ref_data.domain_mappings.domain_title is 'Title'
-;
-
-
---
--- Name: COLUMN domain_mappings.tag_select_health_categories; Type: COMMENT; Schema: ref_data; Owner: -
---
-comment on column ref_data.domain_mappings.tag_select_health_categories is 'Health Categories'
-;
-
-
---
--- Name: COLUMN domain_mappings.notes; Type: COMMENT; Schema: ref_data; Owner: -
---
-comment on column ref_data.domain_mappings.notes is 'Notes'
-;
-
-
---
--- Name: COLUMN domain_mappings.hide_from_datadic; Type: COMMENT; Schema: ref_data; Owner: -
---
-comment on column ref_data.domain_mappings.hide_from_datadic is 'Hide from Data Dictionary'
-;
-
-
---
--- Name: domain_mappings_id_seq; Type: SEQUENCE; Schema: ref_data; Owner: -
---
-create sequence ref_data.domain_mappings_id_seq start
+select
+  var.id as variable_id,
+  stats.variable as variable_name,
+  var.label as variable_label,
+  stats.results,
+  stats.labels,
+  stats.mean,
+  stats.stddev,
+  stats.min,
+  stats.med,
+  stats.max,
+  null::character varying as choices,
+  stats.distincts,
+  stats.completed,
+  stats.total_recs
+from
+  (
+    vars var
+    join lateral ref_data.calc_var_stats_for_numeric (var.id) stats (
+      variable_id,
+      variable,
+      results,
+      labels,
+      min,
+      med,
+      max,
+      mean,
+      stddev,
+      distincts,
+      completed,
+      total_recs,
+      "chart:"
+    ) on ((stats.variable is not null))
+  )
+where
+  (
+    (var.table_or_file is not null)
+    and (
+      (var.variable_type)::text = any ((array['numeric'::character varying, 'calculated'::character varying])::text[])
+    )
+  )
+union
+select
+  var.id as variable_id,
+  stats.variable as variable_name,
+  var.label as variable_label,
+  stats.results,
+  stats.labels,
+  null::numeric as mean,
+  null::numeric as stddev,
+  null::numeric as min,
+  null::numeric as med,
+  null::numeric as max,
+  (to_json(var.multi_valid_choices))::character varying as choices,
+  stats.distincts,
+  stats.completed,
+  stats.total_recs
+from
+  (
+    vars var
+    join lateral ref_data.calc_var_stats_for_categorical (var.id) stats (variable_id, variable, results, labels, cat_counts, distincts, completed, total_recs, "chart:") on ((stats.variable is not null))
+  )
+where
+  (
+    (var.table_or_file is not null)
+    and ((var.variable_type)::text = 'categorical'::text)
+  )
+union
+select
+  var.id as variable_id,
+  stats.variable as variable_name,
+  var.label as variable_label,
+  stats.results,
+  stats.labels,
+  null::numeric as mean,
+  null::numeric as stddev,
+  null::numeric as min,
+  null::numeric as med,
+  null::numeric as max,
+  null::character varying as choices,
+  stats.distincts,
+  stats.completed,
+  stats.total_recs
+from
+  (
+    vars var
+    join lateral ref_data.calc_var_stats_for_boolean (var.id) stats (variable_id, variable, results, labels, cat_counts, distincts, completed, total_recs, "chart:") on ((stats.variable is not null))
+  )
+where
+  (
+    (var.table_or_file is not null)
+    and ((var.variable_type)::text = 'dichotomous'::text)
+  )
 with
-  1 increment by 1 no minvalue no maxvalue cache 1
-;
-
-
---
--- Name: domain_mappings_id_seq; Type: SEQUENCE OWNED BY; Schema: ref_data; Owner: -
---
-alter sequence ref_data.domain_mappings_id_seq owned by ref_data.domain_mappings.id
+  no data
 ;
 
 
@@ -9057,24 +8899,6 @@ set default nextval('ref_data.datadic_variables_id_seq'::regclass)
 
 
 --
--- Name: domain_mapping_history id; Type: DEFAULT; Schema: ref_data; Owner: -
---
-alter table only ref_data.domain_mapping_history
-alter column id
-set default nextval('ref_data.domain_mapping_history_id_seq'::regclass)
-;
-
-
---
--- Name: domain_mappings id; Type: DEFAULT; Schema: ref_data; Owner: -
---
-alter table only ref_data.domain_mappings
-alter column id
-set default nextval('ref_data.domain_mappings_id_seq'::regclass)
-;
-
-
---
 -- Name: redcap_client_requests id; Type: DEFAULT; Schema: ref_data; Owner: -
 --
 alter table only ref_data.redcap_client_requests
@@ -9968,22 +9792,6 @@ add constraint datadic_variable_history_pkey primary key (id)
 --
 alter table only ref_data.datadic_variables
 add constraint datadic_variables_pkey primary key (id)
-;
-
-
---
--- Name: domain_mapping_history domain_mapping_history_pkey; Type: CONSTRAINT; Schema: ref_data; Owner: -
---
-alter table only ref_data.domain_mapping_history
-add constraint domain_mapping_history_pkey primary key (id)
-;
-
-
---
--- Name: domain_mappings domain_mappings_pkey; Type: CONSTRAINT; Schema: ref_data; Owner: -
---
-alter table only ref_data.domain_mappings
-add constraint domain_mappings_pkey primary key (id)
 ;
 
 
@@ -11005,258 +10813,6 @@ create index index_sub_processes_on_protocol_id on ml_app.sub_processes using bt
 
 
 --
--- Name: index_test1_history_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test1_history_on_admin_id on ml_app.test1_history using btree (admin_id)
-;
-
-
---
--- Name: index_test1_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test1_history_on_master_id on ml_app.test1_history using btree (master_id)
-;
-
-
---
--- Name: index_test1_history_on_test1_table_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test1_history_on_test1_table_id on ml_app.test1_history using btree (test1_table_id)
-;
-
-
---
--- Name: index_test1_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test1_history_on_user_id on ml_app.test1_history using btree (user_id)
-;
-
-
---
--- Name: index_test1s_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test1s_on_admin_id on ml_app.test1s using btree (admin_id)
-;
-
-
---
--- Name: index_test1s_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test1s_on_master_id on ml_app.test1s using btree (master_id)
-;
-
-
---
--- Name: index_test1s_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test1s_on_user_id on ml_app.test1s using btree (user_id)
-;
-
-
---
--- Name: index_test2_history_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test2_history_on_admin_id on ml_app.test2_history using btree (admin_id)
-;
-
-
---
--- Name: index_test2_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test2_history_on_master_id on ml_app.test2_history using btree (master_id)
-;
-
-
---
--- Name: index_test2_history_on_test2_table_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test2_history_on_test2_table_id on ml_app.test2_history using btree (test2_table_id)
-;
-
-
---
--- Name: index_test2_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test2_history_on_user_id on ml_app.test2_history using btree (user_id)
-;
-
-
---
--- Name: index_test2s_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test2s_on_admin_id on ml_app.test2s using btree (admin_id)
-;
-
-
---
--- Name: index_test2s_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test2s_on_master_id on ml_app.test2s using btree (master_id)
-;
-
-
---
--- Name: index_test2s_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test2s_on_user_id on ml_app.test2s using btree (user_id)
-;
-
-
---
--- Name: index_test_2_history_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test_2_history_on_admin_id on ml_app.test_2_history using btree (admin_id)
-;
-
-
---
--- Name: index_test_2_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test_2_history_on_master_id on ml_app.test_2_history using btree (master_id)
-;
-
-
---
--- Name: index_test_2_history_on_test_2_table_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test_2_history_on_test_2_table_id on ml_app.test_2_history using btree (test_2_table_id)
-;
-
-
---
--- Name: index_test_2_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test_2_history_on_user_id on ml_app.test_2_history using btree (user_id)
-;
-
-
---
--- Name: index_test_2s_on_admin_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test_2s_on_admin_id on ml_app.test_2s using btree (admin_id)
-;
-
-
---
--- Name: index_test_2s_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test_2s_on_master_id on ml_app.test_2s using btree (master_id)
-;
-
-
---
--- Name: index_test_2s_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test_2s_on_user_id on ml_app.test_2s using btree (user_id)
-;
-
-
---
--- Name: index_test_ext2_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test_ext2_history_on_master_id on ml_app.test_ext2_history using btree (master_id)
-;
-
-
---
--- Name: index_test_ext2_history_on_test_ext2_table_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test_ext2_history_on_test_ext2_table_id on ml_app.test_ext2_history using btree (test_ext2_table_id)
-;
-
-
---
--- Name: index_test_ext2_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test_ext2_history_on_user_id on ml_app.test_ext2_history using btree (user_id)
-;
-
-
---
--- Name: index_test_ext2s_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test_ext2s_on_master_id on ml_app.test_ext2s using btree (master_id)
-;
-
-
---
--- Name: index_test_ext2s_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test_ext2s_on_user_id on ml_app.test_ext2s using btree (user_id)
-;
-
-
---
--- Name: index_test_ext_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test_ext_history_on_master_id on ml_app.test_ext_history using btree (master_id)
-;
-
-
---
--- Name: index_test_ext_history_on_test_ext_table_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test_ext_history_on_test_ext_table_id on ml_app.test_ext_history using btree (test_ext_table_id)
-;
-
-
---
--- Name: index_test_ext_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test_ext_history_on_user_id on ml_app.test_ext_history using btree (user_id)
-;
-
-
---
--- Name: index_test_exts_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test_exts_on_master_id on ml_app.test_exts using btree (master_id)
-;
-
-
---
--- Name: index_test_exts_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test_exts_on_user_id on ml_app.test_exts using btree (user_id)
-;
-
-
---
--- Name: index_test_item_history_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test_item_history_on_master_id on ml_app.test_item_history using btree (master_id)
-;
-
-
---
--- Name: index_test_item_history_on_test_item_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test_item_history_on_test_item_id on ml_app.test_item_history using btree (test_item_id)
-;
-
-
---
--- Name: index_test_item_history_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test_item_history_on_user_id on ml_app.test_item_history using btree (user_id)
-;
-
-
---
--- Name: index_test_items_on_master_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test_items_on_master_id on ml_app.test_items using btree (master_id)
-;
-
-
---
--- Name: index_test_items_on_user_id; Type: INDEX; Schema: ml_app; Owner: -
---
-create index index_test_items_on_user_id on ml_app.test_items using btree (user_id)
-;
-
-
---
 -- Name: index_tracker_history_on_item_type_id; Type: INDEX; Schema: ml_app; Owner: -
 --
 create index index_tracker_history_on_item_type_id on ml_app.tracker_history using btree (item_type, item_id)
@@ -11726,13 +11282,6 @@ create index "index_ref_data.datadic_variables_on_redcap_data_dictionary_id" on 
 
 
 --
--- Name: index_ref_data.domain_mappings_on_user_id; Type: INDEX; Schema: ref_data; Owner: -
---
-create index "index_ref_data.domain_mappings_on_user_id" on ref_data.domain_mappings using btree (user_id)
-;
-
-
---
 -- Name: index_ref_data.redcap_client_requests_on_admin_id; Type: INDEX; Schema: ref_data; Owner: -
 --
 create index "index_ref_data.redcap_client_requests_on_admin_id" on ref_data.redcap_client_requests using btree (admin_id)
@@ -12140,31 +11689,6 @@ update on ml_app.general_selections for each row when (
   )
 )
 execute function ml_app.log_general_selection_update ()
-;
-
-
---
--- Name: grit_assignments grit_assignment_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
---
-create trigger grit_assignment_history_insert
-after insert on ml_app.grit_assignments for each row
-execute function grit.log_grit_assignment_update ()
-;
-
-
---
--- Name: grit_assignments grit_assignment_history_update; Type: TRIGGER; Schema: ml_app; Owner: -
---
-create trigger grit_assignment_history_update
-after
-update on ml_app.grit_assignments for each row when (
-  (
-    old.* is distinct
-    from
-      new.*
-  )
-)
-execute function grit.log_grit_assignment_update ()
 ;
 
 
@@ -12754,15 +12278,6 @@ execute function ml_app.tracker_upsert ()
 
 
 --
--- Name: masters update_master_msid_trigger; Type: TRIGGER; Schema: ml_app; Owner: -
---
-create trigger update_master_msid_trigger
-after insert on ml_app.masters for each row
-execute function ml_app.update_master_msid ()
-;
-
-
---
 -- Name: user_access_controls user_access_control_history_insert; Type: TRIGGER; Schema: ml_app; Owner: -
 --
 create trigger user_access_control_history_insert
@@ -12863,56 +12378,6 @@ execute function ml_app.log_user_role_update ()
 
 
 --
--- Name: data_variable_packages log_data_variable_package_history_insert; Type: TRIGGER; Schema: ref_data; Owner: -
---
-create trigger log_data_variable_package_history_insert
-after insert on ref_data.data_variable_packages for each row
-execute function ref_data.log_data_variable_packages_update ()
-;
-
-
---
--- Name: data_variable_packages log_data_variable_package_history_update; Type: TRIGGER; Schema: ref_data; Owner: -
---
-create trigger log_data_variable_package_history_update
-after
-update on ref_data.data_variable_packages for each row when (
-  (
-    old.* is distinct
-    from
-      new.*
-  )
-)
-execute function ref_data.log_data_variable_packages_update ()
-;
-
-
---
--- Name: data_variable_package_vars log_data_variable_package_var_history_insert; Type: TRIGGER; Schema: ref_data; Owner: -
---
-create trigger log_data_variable_package_var_history_insert
-after insert on ref_data.data_variable_package_vars for each row
-execute function ref_data.log_data_variable_package_vars_update ()
-;
-
-
---
--- Name: data_variable_package_vars log_data_variable_package_var_history_update; Type: TRIGGER; Schema: ref_data; Owner: -
---
-create trigger log_data_variable_package_var_history_update
-after
-update on ref_data.data_variable_package_vars for each row when (
-  (
-    old.* is distinct
-    from
-      new.*
-  )
-)
-execute function ref_data.log_data_variable_package_vars_update ()
-;
-
-
---
 -- Name: datadic_choices log_datadic_choice_history_insert; Type: TRIGGER; Schema: ref_data; Owner: -
 --
 create trigger log_datadic_choice_history_insert
@@ -12959,31 +12424,6 @@ update on ref_data.datadic_variables for each row when (
   )
 )
 execute function ref_data.log_datadic_variables_update ()
-;
-
-
---
--- Name: domain_mappings log_domain_mapping_history_insert; Type: TRIGGER; Schema: ref_data; Owner: -
---
-create trigger log_domain_mapping_history_insert
-after insert on ref_data.domain_mappings for each row
-execute function ref_data.log_domain_mappings_update ()
-;
-
-
---
--- Name: domain_mappings log_domain_mapping_history_update; Type: TRIGGER; Schema: ref_data; Owner: -
---
-create trigger log_domain_mapping_history_update
-after
-update on ref_data.domain_mappings for each row when (
-  (
-    old.* is distinct
-    from
-      new.*
-  )
-)
-execute function ref_data.log_domain_mappings_update ()
 ;
 
 
@@ -14560,14 +14000,6 @@ add constraint fk_rails_25f366a78c foreign key (redcap_data_dictionary_id) refer
 
 
 --
--- Name: domain_mappings fk_rails_27e301a846; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
---
-alter table only ref_data.domain_mappings
-add constraint fk_rails_27e301a846 foreign key (user_id) references ml_app.users (id)
-;
-
-
---
 -- Name: redcap_data_collection_instruments fk_rails_2aa7bf926a; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
 --
 alter table only ref_data.redcap_data_collection_instruments
@@ -14652,14 +14084,6 @@ add constraint fk_rails_6c93846f69 foreign key (admin_id) references ml_app.admi
 --
 alter table only ref_data.redcap_project_user_history
 add constraint fk_rails_7ba2e90d7d foreign key (redcap_project_user_id) references ref_data.redcap_project_users (id)
-;
-
-
---
--- Name: domain_mapping_history fk_rails_7c6956e2d4; Type: FK CONSTRAINT; Schema: ref_data; Owner: -
---
-alter table only ref_data.domain_mapping_history
-add constraint fk_rails_7c6956e2d4 foreign key (user_id) references ml_app.users (id)
 ;
 
 
@@ -14763,1184 +14187,825 @@ set
 insert into
   "schema_migrations" (version)
 values
-  ('20150602181200'),
-  ('20150602181229'),
-  ('20150602181400'),
-  ('20150602181925'),
-  ('20150602205642'),
-  ('20150603135202'),
-  ('20150603153758'),
-  ('20150603170429'),
-  ('20150604160659'),
-  ('20150609140033'),
-  ('20150609150931'),
-  ('20150609160545'),
-  ('20150609161656'),
-  ('20150609185229'),
-  ('20150609185749'),
-  ('20150609190556'),
-  ('20150610142403'),
-  ('20150610143629'),
-  ('20150610155810'),
-  ('20150610160257'),
-  ('20150610183502'),
-  ('20150610220253'),
-  ('20150610220320'),
-  ('20150610220451'),
-  ('20150611144834'),
-  ('20150611145259'),
-  ('20150611180303'),
-  ('20150611202453'),
-  ('20150616202753'),
-  ('20150616202829'),
-  ('20150618143506'),
-  ('20150618161857'),
-  ('20150618161945'),
-  ('20150619165405'),
-  ('20150622144725'),
-  ('20150623191520'),
-  ('20150623194212'),
-  ('20150625213040'),
-  ('20150626190344'),
-  ('20150629210656'),
-  ('20150630202829'),
-  ('20150702200308'),
-  ('20150707142702'),
-  ('20150707143233'),
-  ('20150707150524'),
-  ('20150707150615'),
-  ('20150707150921'),
-  ('20150707151004'),
-  ('20150707151010'),
-  ('20150707151032'),
-  ('20150707151129'),
-  ('20150707153720'),
-  ('20150707222630'),
-  ('20150710135307'),
-  ('20150710135959'),
-  ('20150710160209'),
-  ('20150710160215'),
-  ('20150715181110'),
-  ('20150720141845'),
-  ('20150720173900'),
-  ('20150720175827'),
-  ('20150721204937'),
-  ('20150724165441'),
-  ('20150727164955'),
-  ('20150728133359'),
-  ('20150728203820'),
-  ('20150728213254'),
-  ('20150728213551'),
-  ('20150729182424'),
-  ('20150730174055'),
-  ('20150730181206'),
-  ('20150730202422'),
-  ('20150803181029'),
-  ('20150803194546'),
-  ('20150803194551'),
-  ('20150804160523'),
-  ('20150804203710'),
-  ('20150805132950'),
-  ('20150805161302'),
-  ('20150805200932'),
-  ('20150811174323'),
-  ('20150812194032'),
-  ('20150820151214'),
-  ('20150820151728'),
-  ('20150820152721'),
-  ('20150820155555'),
-  ('20150826145029'),
-  ('20150826145125'),
-  ('20150924163412'),
-  ('20150924183936'),
-  ('20151005143945'),
-  ('20151009191559'),
-  ('20151013191910'),
-  ('20151015142035'),
-  ('20151015150733'),
-  ('20151015183136'),
-  ('20151016160248'),
-  ('20151019203248'),
-  ('20151019204910'),
-  ('20151020145339'),
-  ('20151021162145'),
-  ('20151021171534'),
-  ('20151022142507'),
-  ('20151022191658'),
-  ('20151023171217'),
-  ('20151026181305'),
-  ('20151028145802'),
-  ('20151028155426'),
-  ('20151109223309'),
-  ('20151120150828'),
-  ('20151120151912'),
-  ('20151123203524'),
-  ('20151124151501'),
-  ('20151125192206'),
-  ('20151202180745'),
-  ('20151208144918'),
-  ('20151208200918'),
-  ('20151208200919'),
-  ('20151208200920'),
-  ('20151208244916'),
-  ('20151208244917'),
-  ('20151208244918'),
-  ('20151216102328'),
-  ('20151218203119'),
-  ('20160210200918'),
-  ('20160210200919'),
-  ('20170823145313'),
-  ('20170901152707'),
-  ('20170908074038'),
-  ('20170922182052'),
-  ('20170926144234'),
-  ('20171002120537'),
-  ('20171013141835'),
-  ('20171013141837'),
-  ('20171025095942'),
-  ('20171031145807'),
-  ('20171207163040'),
-  ('20171207170748'),
-  ('20180119173411'),
-  ('20180123111956'),
-  ('20180123154108'),
-  ('20180126120818'),
-  ('20180206173516'),
-  ('20180209145336'),
-  ('20180209152723'),
-  ('20180209152747'),
-  ('20180209171641'),
-  ('20180228145731'),
-  ('20180301114206'),
-  ('20180302144109'),
-  ('20180313091440'),
-  ('20180319133539'),
-  ('20180319133540'),
-  ('20180319175721'),
-  ('20180320105954'),
-  ('20180320113757'),
-  ('20180320154951'),
-  ('20180320183512'),
-  ('20180321082612'),
-  ('20180321095805'),
-  ('20180404150536'),
-  ('20180405141059'),
-  ('20180416145033'),
-  ('20180426091838'),
-  ('20180502082334'),
-  ('20180504080300'),
-  ('20180531091440'),
-  ('20180723165621'),
-  ('20180725140502'),
-  ('20180814142112'),
-  ('20180814142559'),
-  ('20180814142560'),
-  ('20180814142561'),
-  ('20180814142562'),
-  ('20180814142924'),
-  ('20180814180843'),
-  ('20180815104221'),
-  ('20180817114138'),
-  ('20180817114157'),
-  ('20180818133205'),
-  ('20180821123717'),
-  ('20180822085118'),
-  ('20180822093147'),
-  ('20180830144523'),
-  ('20180831132605'),
-  ('20180911153518'),
-  ('20180913142103'),
-  ('20180924153547'),
-  ('20181002142656'),
-  ('20181002165822'),
-  ('20181003182428'),
-  ('20181004113953'),
-  ('20181008104204'),
-  ('20181030185123'),
-  ('20181108115216'),
-  ('20181113143210'),
-  ('20181113143327'),
-  ('20181113150331'),
-  ('20181113150713'),
-  ('20181113152652'),
-  ('20181113154525'),
-  ('20181113154855'),
-  ('20181113154920'),
-  ('20181113154942'),
-  ('20181113165948'),
-  ('20181113170144'),
-  ('20181113172429'),
-  ('20181113175031'),
-  ('20181113180608'),
-  ('20181113183446'),
-  ('20181113184022'),
-  ('20181113184516'),
-  ('20181113184920'),
-  ('20181113185315'),
-  ('20181205103333'),
-  ('20181206123849'),
-  ('20181220131156'),
-  ('20181220160047'),
-  ('20190130152053'),
-  ('20190130152208'),
-  ('20190131130024'),
-  ('20190201160559'),
-  ('20190201160606'),
-  ('20190225094021'),
-  ('20190226165932'),
-  ('20190226165938'),
-  ('20190226173917'),
-  ('20190312160404'),
-  ('20190312163119'),
-  ('20190416181222'),
-  ('20190502142561'),
-  ('20190517135351'),
-  ('20190523115611'),
-  ('20190528152006'),
-  ('20190612140618'),
-  ('20190614162317'),
-  ('20190624082535'),
-  ('20190628131713'),
-  ('20190709174613'),
-  ('20190709174638'),
-  ('20190711074003'),
-  ('20190711084434'),
-  ('20190902123518'),
-  ('20190906172361'),
-  ('20191115124723'),
-  ('20191115124732'),
-  ('20200313160640'),
-  ('20200403172361'),
-  ('20200611123849'),
-  ('20200723153130'),
-  ('20200727081305'),
-  ('20200727081306'),
-  ('20200727122116'),
-  ('20200727122117'),
-  ('20200731121100'),
-  ('20200731121144'),
-  ('20200731122147'),
-  ('20200731124515'),
-  ('20201109114833'),
-  ('20201111160935'),
-  ('20201111161035'),
-  ('20201111164800'),
-  ('20201111165107'),
-  ('20201111165109'),
-  ('20201111165110'),
-  ('20201112163129'),
-  ('20210108085826'),
-  ('20210110191022'),
-  ('20210110191023'),
-  ('20210110191024'),
-  ('20210110191026'),
-  ('20210110191028'),
-  ('20210110191029'),
-  ('20210110191030'),
-  ('20210110191031'),
-  ('20210110191033'),
-  ('20210124185731'),
-  ('20210124185733'),
-  ('20210124185959'),
-  ('20210124190000'),
-  ('20210124190034'),
-  ('20210124190035'),
-  ('20210124190150'),
-  ('20210124190152'),
-  ('20210124190153'),
-  ('20210124190155'),
-  ('20210124190905'),
-  ('20210124190907'),
-  ('20210124190908'),
-  ('20210124190909'),
-  ('20210124190911'),
-  ('20210124190912'),
-  ('20210128180947'),
-  ('20210129150044'),
-  ('20210129154600'),
-  ('20210201124324'),
-  ('20210204205746'),
-  ('20210209095546'),
-  ('20210209154901'),
-  ('20210215153201'),
-  ('20210216132458'),
-  ('20210216133011'),
-  ('20210303164631'),
-  ('20210303164632'),
-  ('20210305113828'),
-  ('20210308143952'),
-  ('20210312143952'),
-  ('20210318150132'),
-  ('20210318150446'),
-  ('20210330085617'),
-  ('20210406154800'),
-  ('20210428102016'),
-  ('20210526183942'),
-  ('20210712152134'),
-  ('20210809151207'),
-  ('20210816170804'),
-  ('20211020183551'),
-  ('20211031152538'),
-  ('20211031183210'),
-  ('20211031183429'),
-  ('20211041105001'),
-  ('20211115141001'),
-  ('20211117180701'),
-  ('20211124120038'),
-  ('20211126152918'),
-  ('20211206102025'),
-  ('20211206102026'),
-  ('20211206102028'),
-  ('20211206102030'),
-  ('20211206102244'),
-  ('20211206102249'),
-  ('20211206160502'),
-  ('20211220122834'),
-  ('20211220122835'),
-  ('20211220122837'),
-  ('20211220122840'),
-  ('20211220123345'),
-  ('20211220123347'),
-  ('20211220123348'),
-  ('20211220123518'),
-  ('20211220123519'),
-  ('20211220124525'),
-  ('20211220124527'),
-  ('20211220124611'),
-  ('20211220124612'),
-  ('20211220125302'),
-  ('20211220125303'),
-  ('20211220125327'),
-  ('20211220125329'),
-  ('20211220125410'),
-  ('20211220125411'),
-  ('20211220125452'),
-  ('20211220125454'),
-  ('20211220125821'),
-  ('20211220125823'),
-  ('20211220130316'),
-  ('20211220130318'),
-  ('20211220130532'),
-  ('20211220130534'),
-  ('20211220130655'),
-  ('20211220130656'),
-  ('20211220130659'),
-  ('20211222111016'),
-  ('20211222111721'),
-  ('20211222134557'),
-  ('20211222134602'),
-  ('20211222135634'),
-  ('20211222135957'),
-  ('20211222140008'),
-  ('20211222140019'),
-  ('20211231113457'),
-  ('20220121143719'),
-  ('20220131111232'),
-  ('20220131121830'),
-  ('20220131121831'),
-  ('20220131121833'),
-  ('20220131121834'),
-  ('20220131121835'),
-  ('20220131123017'),
-  ('20220131123100'),
-  ('20220131131244'),
-  ('20220131132533'),
-  ('20220131135242'),
-  ('20220131135349'),
-  ('20220131135547'),
-  ('20220131135600'),
-  ('20220131140353'),
-  ('20220131140521'),
-  ('20220131143324'),
-  ('20220131155227'),
-  ('20220131155229'),
-  ('20220131171632'),
-  ('20220131172554'),
-  ('20220131172618'),
-  ('20220131182607'),
-  ('20220131184011'),
-  ('20220131184041'),
-  ('20220131184511'),
-  ('20220201102247'),
-  ('20220201102549'),
-  ('20220201173928'),
-  ('20220201174829'),
-  ('20220202175848'),
-  ('20220202190849'),
-  ('20220202190931'),
-  ('20220202193750'),
-  ('20220203193018'),
-  ('20220203201903'),
-  ('20220214120443'),
-  ('20220214122255'),
-  ('20220214124934'),
-  ('20220214125216'),
-  ('20220214125928'),
-  ('20220214130001'),
-  ('20220214140459'),
-  ('20220214154149'),
-  ('20220216145207'),
-  ('20220217092246'),
-  ('20220217144044'),
-  ('20220218171203'),
-  ('20220218171455'),
-  ('20220221101714'),
-  ('20220221102030'),
-  ('20220221113950'),
-  ('20220221120737'),
-  ('20220221123203'),
-  ('20220222112229'),
-  ('20220222112301'),
-  ('20220223113931'),
-  ('20220223113932'),
-  ('20220223113934'),
-  ('20220223114443'),
-  ('20220223114445'),
-  ('20220223114447'),
-  ('20220223114848'),
-  ('20220223114849'),
-  ('20220223114851'),
-  ('20220223114919'),
-  ('20220223114920'),
-  ('20220223114922'),
-  ('20220223115250'),
-  ('20220223115252'),
-  ('20220223115253'),
-  ('20220223120331'),
-  ('20220223120333'),
-  ('20220223120335'),
-  ('20220223121351'),
-  ('20220223121353'),
-  ('20220223121355'),
-  ('20220223121713'),
-  ('20220223121714'),
-  ('20220223121716'),
-  ('20220224020931'),
-  ('20220224023446'),
-  ('20220224114432'),
-  ('20220224115009'),
-  ('20220224135435'),
-  ('20220224135635'),
-  ('20220224141444'),
-  ('20220224143222'),
-  ('20220225122155'),
-  ('20220301093010'),
-  ('20220301093041'),
-  ('20220301093304'),
-  ('20220301120158'),
-  ('20220301120734'),
-  ('20220301120755'),
-  ('20220301201512'),
-  ('20220303112202'),
-  ('20220304115603'),
-  ('20220304115824'),
-  ('20220304115826'),
-  ('20220304115827'),
-  ('20220304115830'),
-  ('20220304115836'),
-  ('20220304115838'),
-  ('20220304115839'),
-  ('20220304115841'),
-  ('20220304120359'),
-  ('20220304120401'),
-  ('20220304120404'),
-  ('20220304120557'),
-  ('20220304120558'),
-  ('20220304120600'),
-  ('20220304120602'),
-  ('20220304120604'),
-  ('20220304120605'),
-  ('20220307144639'),
-  ('20220307153310'),
-  ('20220307154248'),
-  ('20220307162856'),
-  ('20220307162929'),
-  ('20220307163124'),
-  ('20220307164817'),
-  ('20220307164959'),
-  ('20220324133938'),
-  ('20220324133940'),
-  ('20220324133941'),
-  ('20220324133943'),
-  ('20220324133945'),
-  ('20220324133946'),
-  ('20220324133948'),
-  ('20220324133949'),
-  ('20220324133951'),
-  ('20220324133952'),
-  ('20220324133953'),
-  ('20220328115603'),
-  ('20220329113632'),
-  ('20220329113634'),
-  ('20220329113635'),
-  ('20220329113637'),
-  ('20220329113640'),
-  ('20220329113641'),
-  ('20220329113642'),
-  ('20220329130557'),
-  ('20220329181503'),
-  ('20220330105313'),
-  ('20220330105858'),
-  ('20220331110656'),
-  ('20220331110717'),
-  ('20220331110820'),
-  ('20220421190539'),
-  ('20220421190541'),
-  ('20220421190542'),
-  ('20220421190544'),
-  ('20220421190545'),
-  ('20220421190547'),
-  ('20220421190549'),
-  ('20220421190550'),
-  ('20220421190552'),
-  ('20220421190553'),
-  ('20220421190555'),
-  ('20220421190556'),
-  ('20220421190557'),
-  ('20220421203328'),
-  ('20220422170048'),
-  ('20220422170050'),
-  ('20220422170051'),
-  ('20220422170418'),
-  ('20220422170420'),
-  ('20220422170421'),
-  ('20220422170446'),
-  ('20220422170448'),
-  ('20220422170449'),
-  ('20220422170830'),
-  ('20220422170832'),
-  ('20220422170833'),
-  ('20220422170919'),
-  ('20220422170920'),
-  ('20220422170922'),
-  ('20220422171039'),
-  ('20220422171041'),
-  ('20220422171042'),
-  ('20220422172000'),
-  ('20220422172002'),
-  ('20220422172003'),
-  ('20220422172155'),
-  ('20220422172157'),
-  ('20220422172158'),
-  ('20220422172305'),
-  ('20220422172307'),
-  ('20220422172308'),
-  ('20220422172839'),
-  ('20220422172841'),
-  ('20220422172842'),
-  ('20220422173038'),
-  ('20220422173040'),
-  ('20220422173041'),
-  ('20220422173147'),
-  ('20220422173149'),
-  ('20220422173150'),
-  ('20220422173153'),
-  ('20220422173710'),
-  ('20220422173712'),
-  ('20220422173713'),
-  ('20220422173857'),
-  ('20220422173859'),
-  ('20220422173900'),
-  ('20220422173902'),
-  ('20220422173904'),
-  ('20220422173905'),
-  ('20220422173907'),
-  ('20220422173908'),
-  ('20220422180358'),
-  ('20220422180430'),
-  ('20220422180453'),
-  ('20220422180936'),
-  ('20220422181037'),
-  ('20220426181659'),
-  ('20220427144604'),
-  ('20220427144732'),
-  ('20220429142550'),
-  ('20220429142651'),
-  ('20220503171647'),
-  ('20220503172002'),
-  ('20220503172112'),
-  ('20220503172331'),
-  ('20220503172418'),
-  ('20220503172607'),
-  ('20220503172620'),
-  ('20220503172651'),
-  ('20220503172714'),
-  ('20220505095408'),
-  ('20220509163510'),
-  ('20220510103824'),
-  ('20220510104245'),
-  ('20220510104418'),
-  ('20220510104623'),
-  ('20220510104958'),
-  ('20220510105005'),
-  ('20220510105350'),
-  ('20220510105624'),
-  ('20220510105625'),
-  ('20220510111800'),
-  ('20220510111823'),
-  ('20220510115936'),
-  ('20220510120159'),
-  ('20220510120548'),
-  ('20220510134118'),
-  ('20220510134159'),
-  ('20220511181927'),
-  ('20220511182044'),
-  ('20220512131102'),
-  ('20220512143846'),
-  ('20220512143859'),
-  ('20220512144040'),
-  ('20220512144126'),
-  ('20220512144303'),
-  ('20220512144337'),
-  ('20220512145418'),
-  ('20220512145552'),
-  ('20220512145818'),
-  ('20220512145831'),
-  ('20220512150022'),
-  ('20220512150119'),
-  ('20220512150230'),
-  ('20220512184859'),
-  ('20220512185002'),
-  ('20220512191330'),
-  ('20220512191711'),
-  ('20220512192613'),
-  ('20220512192730'),
-  ('20220512192833'),
-  ('20220512193005'),
-  ('20220512193108'),
-  ('20220512193213'),
-  ('20220512193318'),
-  ('20220512194008'),
-  ('20220512194228'),
-  ('20220512194359'),
-  ('20220512194457'),
-  ('20220512194611'),
-  ('20220512194744'),
-  ('20220512194926'),
-  ('20220516092942'),
-  ('20220516100849'),
-  ('20220516113651'),
-  ('20220516113940'),
-  ('20220516122435'),
-  ('20220516122623'),
-  ('20220516122849'),
-  ('20220516123101'),
-  ('20220516123415'),
-  ('20220516123459'),
-  ('20220516123628'),
-  ('20220517122146'),
-  ('20220517122239'),
-  ('20220517142648'),
-  ('20220517142650'),
-  ('20220517142651'),
-  ('20220517142654'),
-  ('20220517142655'),
-  ('20220517142657'),
-  ('20220517142851'),
-  ('20220517142853'),
-  ('20220517142854'),
-  ('20220517142857'),
-  ('20220517142858'),
-  ('20220517142900'),
-  ('20220517142902'),
-  ('20220517142903'),
-  ('20220517142904'),
-  ('20220517143044'),
-  ('20220517143124'),
-  ('20220517144705'),
-  ('20220517150044'),
-  ('20220519170301'),
-  ('20220524105006'),
-  ('20220524105008'),
-  ('20220524105009'),
-  ('20220524105012'),
-  ('20220524105013'),
-  ('20220524105015'),
-  ('20220524105017'),
-  ('20220524105018'),
-  ('20220526172521'),
-  ('20220526172550'),
-  ('20220526173106'),
-  ('20220526173112'),
-  ('20220526173244'),
-  ('20220526181804'),
-  ('20220526182143'),
-  ('20220531121546'),
-  ('20220601180701'),
-  ('20220621090729'),
-  ('20220621090731'),
-  ('20220621090732'),
-  ('20220621090734'),
-  ('20220621090737'),
-  ('20220621090739'),
-  ('20220621091859'),
-  ('20220621091900'),
-  ('20220621091902'),
-  ('20220621205650'),
-  ('20220621205651'),
-  ('20220621210030'),
-  ('20220621210031'),
-  ('20220621210654'),
-  ('20220621210656'),
-  ('20220621210923'),
-  ('20220621210924'),
-  ('20220621212005'),
-  ('20220621212007'),
-  ('20220621212454'),
-  ('20220621212456'),
-  ('20220621212457'),
-  ('20220621212459'),
-  ('20220621212500'),
-  ('20220621212502'),
-  ('20220621212503'),
-  ('20220621212504'),
-  ('20220621212506'),
-  ('20220621212507'),
-  ('20220621212509'),
-  ('20220621212510'),
-  ('20220621212626'),
-  ('20220621212628'),
-  ('20220621212630'),
-  ('20220621212631'),
-  ('20220621212632'),
-  ('20220621212634'),
-  ('20220621212635'),
-  ('20220621212636'),
-  ('20220621212638'),
-  ('20220621212639'),
-  ('20220621212641'),
-  ('20220621212642'),
-  ('20220621212644'),
-  ('20220621212645'),
-  ('20220621212646'),
-  ('20220621212648'),
-  ('20220621212650'),
-  ('20220621212747'),
-  ('20220621212749'),
-  ('20220621212751'),
-  ('20220621212752'),
-  ('20220621212753'),
-  ('20220621212755'),
-  ('20220621212756'),
-  ('20220621212757'),
-  ('20220621212759'),
-  ('20220621212800'),
-  ('20220621212802'),
-  ('20220621212803'),
-  ('20220621212805'),
-  ('20220621212806'),
-  ('20220621212807'),
-  ('20220621212810'),
-  ('20220621212811'),
-  ('20220621212812'),
-  ('20220621212814'),
-  ('20220622095513'),
-  ('20220622095644'),
-  ('20220624132515'),
-  ('20220624150128'),
-  ('20220624150155'),
-  ('20220627154143'),
-  ('20220627154145'),
-  ('20220627154146'),
-  ('20220627154148'),
-  ('20220627154149'),
-  ('20220627154150'),
-  ('20220627154152'),
-  ('20220627154153'),
-  ('20220627154155'),
-  ('20220627154156'),
-  ('20220627154158'),
-  ('20220627154159'),
-  ('20220627154200'),
-  ('20220627154202'),
-  ('20220627154203'),
-  ('20220627154206'),
-  ('20220627154207'),
-  ('20220627154327'),
-  ('20220627154329'),
-  ('20220627154330'),
-  ('20220627154331'),
-  ('20220627154333'),
-  ('20220627154334'),
-  ('20220627154335'),
-  ('20220627154337'),
-  ('20220627154338'),
-  ('20220627154340'),
-  ('20220627154341'),
-  ('20220627154343'),
-  ('20220627154344'),
-  ('20220627154345'),
-  ('20220627154347'),
-  ('20220627154349'),
-  ('20220627154350'),
-  ('20220630082801'),
-  ('20220704183420'),
-  ('20220704183422'),
-  ('20220704183424'),
-  ('20220704183425'),
-  ('20220704183426'),
-  ('20220704183428'),
-  ('20220704183429'),
-  ('20220704183430'),
-  ('20220704183432'),
-  ('20220704183433'),
-  ('20220704183435'),
-  ('20220704183436'),
-  ('20220704183437'),
-  ('20220704183439'),
-  ('20220704183440'),
-  ('20220704183443'),
-  ('20220704183444'),
-  ('20220824102025'),
-  ('20220824190346'),
-  ('20220915144411'),
-  ('20220915144413'),
-  ('20220915144414'),
-  ('20220915144415'),
-  ('20220915144417'),
-  ('20220915144418'),
-  ('20220915144419'),
-  ('20220915144421'),
-  ('20220915144422'),
-  ('20220915144424'),
-  ('20220915144426'),
-  ('20220915144428'),
-  ('20220915144429'),
-  ('20220915144430'),
-  ('20220915144432'),
-  ('20220915144434'),
-  ('20220915144436'),
-  ('20220915144444'),
-  ('20220915144445'),
-  ('20220916105116'),
-  ('20220916105118'),
-  ('20220916105119'),
-  ('20220916105121'),
-  ('20220916105122'),
-  ('20220916105123'),
-  ('20220916105125'),
-  ('20220916105126'),
-  ('20220916105128'),
-  ('20220916105129'),
-  ('20220916105131'),
-  ('20220916105132'),
-  ('20220916105133'),
-  ('20220916105135'),
-  ('20220916105137'),
-  ('20220916105143'),
-  ('20220916105149'),
-  ('20220916105150'),
-  ('20221031174109'),
-  ('20221110101203'),
-  ('20221110101411'),
-  ('20221110101647'),
-  ('20221110102412'),
-  ('20221110102414'),
-  ('20221110102415'),
-  ('20221110102417'),
-  ('20221110102419'),
-  ('20221110102421'),
-  ('20221110102422'),
-  ('20221110102424'),
-  ('20221110102426'),
-  ('20221110102437'),
-  ('20221110102438'),
-  ('20221110102439'),
-  ('20221110102441'),
-  ('20221110102442'),
-  ('20221110102443'),
-  ('20221110102445'),
-  ('20221110102446'),
-  ('20221110102447'),
-  ('20221110102819'),
-  ('20221110102820'),
-  ('20221110102822'),
-  ('20221110102823'),
-  ('20221110102826'),
-  ('20221110102827'),
-  ('20221110102830'),
-  ('20221110102833'),
-  ('20221110102834'),
-  ('20221110103050'),
-  ('20221110103052'),
-  ('20221110103054'),
-  ('20221110103055'),
-  ('20221110103058'),
-  ('20221110103059'),
-  ('20221110103101'),
-  ('20230104133814'),
-  ('20230117115913'),
-  ('20230209153019'),
-  ('20230309104811'),
-  ('20230309104813'),
-  ('20230309104814'),
-  ('20230309104817'),
-  ('20230309104819'),
-  ('20230309104820'),
-  ('20230309104822'),
-  ('20230309104824'),
-  ('20230309104825'),
-  ('20230309104827'),
-  ('20230309104828'),
-  ('20230309104829'),
-  ('20230309104831'),
-  ('20230309104832'),
-  ('20230309105041'),
-  ('20230309105042'),
-  ('20230309105044'),
-  ('20230309105047'),
-  ('20230309105048'),
-  ('20230309105050'),
-  ('20230309105053'),
-  ('20230309105055'),
-  ('20230309105056'),
-  ('20230309105057'),
-  ('20230309105059'),
-  ('20230309105100'),
-  ('20230309105449'),
-  ('20230309105450'),
-  ('20230309105452'),
-  ('20230309105455'),
-  ('20230309105456'),
-  ('20230309105457'),
-  ('20230309105459'),
-  ('20230309105941'),
-  ('20230309105942'),
-  ('20230309105943'),
-  ('20230309105946'),
-  ('20230309105948'),
-  ('20230309105949'),
-  ('20230309110022'),
-  ('20230309110024'),
-  ('20230309110025'),
-  ('20230309110028'),
-  ('20230309110029'),
-  ('20230309110031'),
-  ('20230309110157'),
-  ('20230309110159'),
-  ('20230309110200'),
-  ('20230309110203'),
-  ('20230309110205'),
-  ('20230309110206'),
-  ('20230309110556'),
-  ('20230309110557'),
-  ('20230309110559'),
-  ('20230309110602'),
-  ('20230309110603'),
-  ('20230309110605'),
-  ('20230309110609'),
-  ('20230309110610'),
-  ('20230309110612'),
-  ('20230309111233'),
-  ('20230309111234'),
-  ('20230309111236'),
-  ('20230309111239'),
-  ('20230309111240'),
-  ('20230309111400'),
-  ('20230309111401'),
-  ('20230309111403'),
-  ('20230309111406'),
-  ('20230309111407'),
-  ('20230309111436'),
-  ('20230309111437'),
-  ('20230309111439'),
-  ('20230309111442'),
-  ('20230309111443'),
-  ('20230309111447'),
-  ('20230309111449'),
-  ('20230309111450'),
-  ('20230309111658'),
-  ('20230309111724'),
-  ('20230309111816'),
-  ('20230420125603'),
+  ('20250106184405'),
+  ('20250106184404'),
+  ('20250106112044'),
+  ('20250106112043'),
+  ('20240523180315'),
+  ('20240523180159'),
+  ('20240523174132'),
+  ('20240523174130'),
+  ('20240523174016'),
+  ('20240523174014'),
+  ('20240506141400'),
+  ('20240213104713'),
+  ('20240213103516'),
+  ('20240129184934'),
+  ('20240129184931'),
+  ('20240129184920'),
+  ('20240116090402'),
+  ('20240116090347'),
+  ('20240116090341'),
+  ('20240116090108'),
+  ('20240116090106'),
+  ('20240116090105'),
+  ('20240116090103'),
+  ('20240116090102'),
+  ('20240116090059'),
+  ('20231212093458'),
+  ('20231212093456'),
+  ('20231212093454'),
+  ('20231212093453'),
+  ('20231212093450'),
+  ('20231204090620'),
+  ('20231130164355'),
+  ('20231130164353'),
+  ('20231130164351'),
+  ('20231130164246'),
+  ('20231127083515'),
+  ('20231127083514'),
+  ('20231127083512'),
+  ('20231115100719'),
+  ('20231115100717'),
+  ('20231115100715'),
+  ('20231107155231'),
+  ('20231106120905'),
+  ('20231106102840'),
+  ('20231106102839'),
+  ('20231106102837'),
+  ('20231106102835'),
+  ('20231106102834'),
+  ('20231106102832'),
+  ('20231106102830'),
+  ('20231106102828'),
+  ('20231030175801'),
+  ('20231030175759'),
+  ('20231017163817'),
+  ('20231017100609'),
+  ('20231017100519'),
+  ('20231017100511'),
+  ('20231017100419'),
+  ('20231012130116'),
+  ('20231011140608'),
+  ('20231011135835'),
+  ('20231011135621'),
+  ('20231011135200'),
+  ('20231011135158'),
+  ('20231011135153'),
+  ('20231011135151'),
+  ('20231011135146'),
+  ('20230927125854'),
+  ('20230927123224'),
+  ('20230927111319'),
+  ('20230920160720'),
+  ('20230920160545'),
+  ('20230920160339'),
+  ('20230920160337'),
+  ('20230920160334'),
+  ('20230920160248'),
+  ('20230920155803'),
+  ('20230920155802'),
+  ('20230920155800'),
+  ('20230920155547'),
+  ('20230920154904'),
+  ('20230920154903'),
+  ('20230920154901'),
+  ('20230920154629'),
+  ('20230920154628'),
+  ('20230920154626'),
+  ('20230920154252'),
+  ('20230920154251'),
+  ('20230920154249'),
+  ('20230824095001'),
+  ('20230822183554'),
+  ('20230822183552'),
+  ('20230822183550'),
+  ('20230822183547'),
+  ('20230822183546'),
+  ('20230822183544'),
+  ('20230822183543'),
+  ('20230822183541'),
+  ('20230822183540'),
+  ('20230822183538'),
+  ('20230822183537'),
+  ('20230822183535'),
+  ('20230822183534'),
+  ('20230822183533'),
+  ('20230822183531'),
+  ('20230822183530'),
+  ('20230822183528'),
+  ('20230822183526'),
+  ('20230814082437'),
+  ('20230814082436'),
+  ('20230814082433'),
+  ('20230814082430'),
+  ('20230814082429'),
+  ('20230814082428'),
+  ('20230814082426'),
+  ('20230814082424'),
+  ('20230814082423'),
+  ('20230814082421'),
+  ('20230814082420'),
+  ('20230814082418'),
+  ('20230814082417'),
+  ('20230814082416'),
+  ('20230814082414'),
+  ('20230814082412'),
+  ('20230814082411'),
+  ('20230809093235'),
+  ('20230809093233'),
+  ('20230809093231'),
+  ('20230809093228'),
+  ('20230809093227'),
+  ('20230809093225'),
+  ('20230809093224'),
+  ('20230809093222'),
+  ('20230809093220'),
+  ('20230809093219'),
+  ('20230809093217'),
+  ('20230809093216'),
+  ('20230809093215'),
+  ('20230809093213'),
+  ('20230809093212'),
+  ('20230809093210'),
+  ('20230809093208'),
+  ('20230712133316'),
+  ('20230712133315'),
+  ('20230712133312'),
+  ('20230712133309'),
+  ('20230712133308'),
+  ('20230712133307'),
+  ('20230712133305'),
+  ('20230712133303'),
+  ('20230712133302'),
+  ('20230712133300'),
+  ('20230712133259'),
+  ('20230712133258'),
+  ('20230712133256'),
+  ('20230712133255'),
+  ('20230712133253'),
+  ('20230712133251'),
+  ('20230712133250'),
+  ('20230712132546'),
+  ('20230712132545'),
+  ('20230712132543'),
+  ('20230712132540'),
+  ('20230712132538'),
+  ('20230712132537'),
+  ('20230712132536'),
+  ('20230712132534'),
+  ('20230712132533'),
+  ('20230712132531'),
+  ('20230712132529'),
+  ('20230712132528'),
+  ('20230712132527'),
+  ('20230712132525'),
+  ('20230712132524'),
+  ('20230712132522'),
+  ('20230712132520'),
+  ('20230712112742'),
+  ('20230712112740'),
+  ('20230712112736'),
+  ('20230712112734'),
+  ('20230712112731'),
+  ('20230712112729'),
+  ('20230712112728'),
+  ('20230712112556'),
+  ('20230712112552'),
+  ('20230712112550'),
+  ('20230712112547'),
+  ('20230712112545'),
+  ('20230712112543'),
+  ('20230712111956'),
+  ('20230712111954'),
+  ('20230712111952'),
+  ('20230712111949'),
+  ('20230712111948'),
+  ('20230712111946'),
+  ('20230712111945'),
+  ('20230712111943'),
+  ('20230712111942'),
+  ('20230712111940'),
+  ('20230712111939'),
+  ('20230712111937'),
+  ('20230712111936'),
+  ('20230712111935'),
+  ('20230712111933'),
+  ('20230712111931'),
+  ('20230712111929'),
+  ('20230711170820'),
+  ('20230711170818'),
+  ('20230711170813'),
+  ('20230711170811'),
+  ('20230711170809'),
+  ('20230711170808'),
+  ('20230711170806'),
+  ('20230711170804'),
+  ('20230711170803'),
+  ('20230711170801'),
+  ('20230711170800'),
+  ('20230711170758'),
+  ('20230711170757'),
+  ('20230711170756'),
+  ('20230711170754'),
+  ('20230711170752'),
+  ('20230711170750'),
+  ('20230711170614'),
+  ('20230711170611'),
+  ('20230711170610'),
+  ('20230711170609'),
+  ('20230711170607'),
+  ('20230711170605'),
+  ('20230711170604'),
+  ('20230711170602'),
+  ('20230711170601'),
+  ('20230711170600'),
+  ('20230711170558'),
+  ('20230711170557'),
+  ('20230711170555'),
+  ('20230711170554'),
+  ('20230711170552'),
+  ('20230711170101'),
+  ('20230711170058'),
+  ('20230711170057'),
+  ('20230711170055'),
+  ('20230711170054'),
+  ('20230711170052'),
+  ('20230711170051'),
+  ('20230711170049'),
+  ('20230711170047'),
+  ('20230711170046'),
+  ('20230711170045'),
+  ('20230711170043'),
+  ('20230711170042'),
+  ('20230711170040'),
+  ('20230711170038'),
+  ('20230711165606'),
+  ('20230711165604'),
+  ('20230711165602'),
+  ('20230711165601'),
+  ('20230711165559'),
+  ('20230711165557'),
+  ('20230711165556'),
+  ('20230711165554'),
+  ('20230711165553'),
+  ('20230711165551'),
+  ('20230711165550'),
+  ('20230711165549'),
+  ('20230711165547'),
+  ('20230711165545'),
+  ('20230711165543'),
+  ('20230711165229'),
+  ('20230711165220'),
+  ('20230711165218'),
+  ('20230711165216'),
+  ('20230711165215'),
+  ('20230711165213'),
+  ('20230711165211'),
+  ('20230711165210'),
+  ('20230711165208'),
+  ('20230711165207'),
+  ('20230711165205'),
+  ('20230711165204'),
+  ('20230711165203'),
+  ('20230711165201'),
+  ('20230711165159'),
+  ('20230711165157'),
+  ('20230502180810'),
+  ('20230502180248'),
+  ('20230502180019'),
+  ('20230502172849'),
   ('20230420125634'),
   ('20230420125603'),
-  ('20230329123743'),
-  ('20230329122758'),
-  ('20230329111230'),
-  ('20230329110438'),
-  ('20230328175853'),
-  ('20230328175817'),
-  ('20230328175745'),
-  ('20230328175220'),
-  ('20230328174140'),
-  ('20230328173855'),
-  ('20230328172219'),
-  ('20230328170404'),
-  ('20230328165113'),
-  ('20230328165040'),
-  ('20230214164921'),
-  ('20230213184027'),
+  ('20230309111816'),
+  ('20230309111724'),
+  ('20230309111658'),
+  ('20230309111450'),
+  ('20230309111449'),
+  ('20230309111447'),
+  ('20230309111443'),
+  ('20230309111442'),
+  ('20230309111439'),
+  ('20230309111437'),
+  ('20230309111436'),
+  ('20230309111407'),
+  ('20230309111406'),
+  ('20230309111403'),
+  ('20230309111401'),
+  ('20230309111400'),
+  ('20230309111240'),
+  ('20230309111239'),
+  ('20230309111236'),
+  ('20230309111234'),
+  ('20230309111233'),
+  ('20230309110612'),
+  ('20230309110610'),
+  ('20230309110609'),
+  ('20230309110605'),
+  ('20230309110603'),
+  ('20230309110602'),
+  ('20230309110559'),
+  ('20230309110557'),
+  ('20230309110556'),
+  ('20230309110206'),
+  ('20230309110205'),
+  ('20230309110203'),
+  ('20230309110200'),
+  ('20230309110159'),
+  ('20230309110157'),
+  ('20230309110031'),
+  ('20230309110029'),
+  ('20230309110028'),
+  ('20230309110025'),
+  ('20230309110024'),
+  ('20230309110022'),
+  ('20230309105949'),
+  ('20230309105948'),
+  ('20230309105946'),
+  ('20230309105943'),
+  ('20230309105942'),
+  ('20230309105941'),
+  ('20230309105459'),
+  ('20230309105457'),
+  ('20230309105456'),
+  ('20230309105455'),
+  ('20230309105452'),
+  ('20230309105450'),
+  ('20230309105449'),
+  ('20230309105100'),
+  ('20230309105059'),
+  ('20230309105057'),
+  ('20230309105056'),
+  ('20230309105055'),
+  ('20230309105053'),
+  ('20230309105050'),
+  ('20230309105048'),
+  ('20230309105047'),
+  ('20230309105044'),
+  ('20230309105042'),
+  ('20230309105041'),
+  ('20230309104832'),
+  ('20230309104831'),
+  ('20230309104829'),
+  ('20230309104828'),
+  ('20230309104827'),
+  ('20230309104825'),
+  ('20230309104824'),
+  ('20230309104822'),
+  ('20230309104820'),
+  ('20230309104819'),
+  ('20230309104817'),
+  ('20230309104814'),
+  ('20230309104813'),
+  ('20230309104811'),
   ('20230209153019'),
-  ('20230117115926'),
-  ('20230117115924'),
-  ('20230117115922'),
-  ('20230117115921'),
-  ('20230117115919'),
-  ('20230117115918'),
-  ('20230117115916'),
-  ('20230117115915'),
   ('20230117115913'),
-  ('20230109160157'),
-  ('20230109155918'),
-  ('20230105145316'),
-  ('20230105145314'),
-  ('20230105145312'),
-  ('20230105145310'),
-  ('20230105145308'),
-  ('20230104141902'),
   ('20230104133814'),
-  ('20230104133255'),
-  ('20230103170551'),
-  ('20230103170549'),
-  ('20230103170548'),
-  ('20230103170546'),
-  ('20230103170545'),
-  ('20230103170544'),
-  ('20230103170542'),
-  ('20221130095920'),
-  ('20221130095916'),
-  ('20221130095450'),
-  ('20221130095449'),
-  ('20221130095445'),
-  ('20221130095444'),
+  ('20221110103101'),
+  ('20221110103059'),
+  ('20221110103058'),
+  ('20221110103055'),
+  ('20221110103054'),
+  ('20221110103052'),
+  ('20221110103050'),
+  ('20221110102834'),
+  ('20221110102833'),
+  ('20221110102830'),
+  ('20221110102827'),
+  ('20221110102826'),
+  ('20221110102823'),
+  ('20221110102822'),
+  ('20221110102820'),
+  ('20221110102819'),
+  ('20221110102447'),
+  ('20221110102446'),
+  ('20221110102445'),
+  ('20221110102443'),
+  ('20221110102442'),
+  ('20221110102441'),
+  ('20221110102439'),
+  ('20221110102438'),
+  ('20221110102437'),
+  ('20221110102426'),
+  ('20221110102424'),
+  ('20221110102422'),
+  ('20221110102421'),
   ('20221110102419'),
-  ('20221013111911'),
-  ('20221013111909'),
-  ('20221013111908'),
-  ('20221013111907'),
-  ('20221013111905'),
-  ('20221013111904'),
-  ('20221013111902'),
-  ('20221013111901'),
-  ('20221013111859'),
-  ('20221013111858'),
-  ('20221013111857'),
-  ('20221013111855'),
-  ('20221013111848'),
-  ('20221006143131'),
-  ('20221006142524'),
-  ('20221006120829'),
-  ('20221006120646'),
-  ('20221006120346'),
-  ('20221006120020'),
-  ('20221006115741'),
-  ('20221006115707'),
-  ('20221006115502'),
-  ('20221006115409'),
-  ('20221006115325'),
-  ('20221006112017'),
-  ('20221006111937'),
-  ('20221006110807'),
+  ('20221110102417'),
+  ('20221110102415'),
+  ('20221110102414'),
+  ('20221110102412'),
+  ('20221110101647'),
+  ('20221110101411'),
+  ('20221110101203'),
+  ('20221031174109'),
+  ('20220916105150'),
+  ('20220916105149'),
+  ('20220916105143'),
+  ('20220916105137'),
+  ('20220916105135'),
+  ('20220916105133'),
+  ('20220916105132'),
+  ('20220916105131'),
+  ('20220916105129'),
+  ('20220916105128'),
+  ('20220916105126'),
   ('20220916105125'),
   ('20220916105123'),
   ('20220916105122'),
   ('20220916105121'),
   ('20220916105119'),
+  ('20220916105118'),
+  ('20220916105116'),
+  ('20220915144445'),
+  ('20220915144444'),
+  ('20220915144436'),
+  ('20220915144434'),
+  ('20220915144432'),
+  ('20220915144430'),
+  ('20220915144429'),
+  ('20220915144428'),
+  ('20220915144426'),
+  ('20220915144424'),
+  ('20220915144422'),
   ('20220915144421'),
   ('20220915144419'),
   ('20220915144418'),
   ('20220915144417'),
   ('20220915144415'),
   ('20220915144414'),
-  ('20220902111938'),
-  ('20220902103048'),
-  ('20220902103000'),
-  ('20220902102732'),
+  ('20220915144413'),
+  ('20220915144411'),
+  ('20220824190346'),
+  ('20220824102025'),
+  ('20220704183444'),
+  ('20220704183443'),
+  ('20220704183440'),
+  ('20220704183439'),
+  ('20220704183437'),
+  ('20220704183436'),
+  ('20220704183435'),
+  ('20220704183433'),
+  ('20220704183432'),
+  ('20220704183430'),
   ('20220704183429'),
   ('20220704183428'),
   ('20220704183426'),
   ('20220704183425'),
   ('20220704183424'),
+  ('20220704183422'),
+  ('20220704183420'),
+  ('20220630082801'),
+  ('20220627154350'),
+  ('20220627154349'),
+  ('20220627154347'),
+  ('20220627154345'),
+  ('20220627154344'),
+  ('20220627154343'),
+  ('20220627154341'),
+  ('20220627154340'),
+  ('20220627154338'),
+  ('20220627154337'),
   ('20220627154335'),
   ('20220627154334'),
   ('20220627154333'),
   ('20220627154331'),
   ('20220627154330'),
+  ('20220627154329'),
+  ('20220627154327'),
+  ('20220627154207'),
+  ('20220627154206'),
+  ('20220627154203'),
+  ('20220627154202'),
+  ('20220627154200'),
+  ('20220627154159'),
+  ('20220627154158'),
+  ('20220627154156'),
+  ('20220627154155'),
+  ('20220627154153'),
   ('20220627154152'),
   ('20220627154150'),
   ('20220627154149'),
   ('20220627154148'),
   ('20220627154146'),
+  ('20220627154145'),
+  ('20220627154143'),
   ('20220624150155'),
   ('20220624150128'),
   ('20220624132515'),
+  ('20220622095644'),
+  ('20220622095513'),
+  ('20220621212814'),
+  ('20220621212812'),
   ('20220621212811'),
+  ('20220621212810'),
+  ('20220621212807'),
+  ('20220621212806'),
+  ('20220621212805'),
+  ('20220621212803'),
+  ('20220621212802'),
+  ('20220621212800'),
+  ('20220621212759'),
+  ('20220621212757'),
   ('20220621212756'),
   ('20220621212755'),
   ('20220621212753'),
   ('20220621212752'),
   ('20220621212751'),
+  ('20220621212749'),
+  ('20220621212747'),
+  ('20220621212650'),
+  ('20220621212648'),
+  ('20220621212646'),
+  ('20220621212645'),
+  ('20220621212644'),
+  ('20220621212642'),
+  ('20220621212641'),
+  ('20220621212639'),
+  ('20220621212638'),
+  ('20220621212636'),
   ('20220621212635'),
   ('20220621212634'),
   ('20220621212632'),
   ('20220621212631'),
   ('20220621212630'),
+  ('20220621212628'),
+  ('20220621212626'),
+  ('20220621212510'),
+  ('20220621212509'),
+  ('20220621212507'),
+  ('20220621212506'),
+  ('20220621212504'),
   ('20220621212503'),
   ('20220621212502'),
   ('20220621212500'),
   ('20220621212459'),
   ('20220621212457'),
-  ('20220613152058'),
-  ('20220613152056'),
-  ('20220613152055'),
-  ('20220613095536'),
-  ('20220613095535'),
-  ('20220613095534'),
-  ('20220613095532'),
-  ('20220613095531'),
-  ('20220607175510'),
-  ('20220607172657'),
-  ('20220607172410'),
-  ('20220607172136'),
-  ('20220607171859'),
-  ('20220607171857'),
-  ('20220607171856'),
-  ('20220607171143'),
-  ('20220607171141'),
-  ('20220607171140'),
-  ('20220607171105'),
-  ('20220607171104'),
-  ('20220607171102'),
-  ('20220607171012'),
-  ('20220607170746'),
-  ('20220607170744'),
-  ('20220607170743'),
-  ('20220607170741'),
-  ('20220607170739'),
-  ('20220602124746'),
-  ('20220602124208'),
-  ('20220602124206'),
-  ('20220602124205'),
-  ('20220602124203'),
-  ('20220602124201'),
-  ('20220602124145'),
-  ('20220602124037'),
-  ('20220602123829'),
-  ('20220602122558'),
-  ('20220602121405'),
-  ('20220602112348'),
-  ('20220602112346'),
-  ('20220602111347'),
-  ('20220602111344'),
+  ('20220621212456'),
+  ('20220621212454'),
+  ('20220621212007'),
+  ('20220621212005'),
+  ('20220621210924'),
+  ('20220621210923'),
+  ('20220621210656'),
+  ('20220621210654'),
+  ('20220621210031'),
+  ('20220621210030'),
+  ('20220621205651'),
+  ('20220621205650'),
+  ('20220621091902'),
+  ('20220621091900'),
+  ('20220621091859'),
+  ('20220621090739'),
+  ('20220621090737'),
+  ('20220621090734'),
+  ('20220621090732'),
+  ('20220621090731'),
+  ('20220621090729'),
+  ('20220601180701'),
   ('20220531121546'),
-  ('20220519170259'),
+  ('20220526182143'),
+  ('20220526181804'),
+  ('20220526173244'),
+  ('20220526173112'),
+  ('20220526173106'),
+  ('20220526172550'),
+  ('20220526172521'),
+  ('20220524105018'),
+  ('20220524105017'),
+  ('20220524105015'),
+  ('20220524105013'),
+  ('20220524105012'),
+  ('20220524105009'),
+  ('20220524105008'),
+  ('20220524105006'),
+  ('20220519170301'),
+  ('20220517150044'),
+  ('20220517144705'),
+  ('20220517143124'),
+  ('20220517143044'),
+  ('20220517142904'),
+  ('20220517142903'),
+  ('20220517142902'),
+  ('20220517142900'),
+  ('20220517142858'),
+  ('20220517142857'),
+  ('20220517142854'),
+  ('20220517142853'),
+  ('20220517142851'),
+  ('20220517142657'),
+  ('20220517142655'),
+  ('20220517142654'),
+  ('20220517142651'),
+  ('20220517142650'),
+  ('20220517142648'),
+  ('20220517122239'),
+  ('20220517122146'),
+  ('20220516123628'),
+  ('20220516123459'),
+  ('20220516123415'),
+  ('20220516123101'),
+  ('20220516122849'),
+  ('20220516122623'),
+  ('20220516122435'),
+  ('20220516113940'),
+  ('20220516113651'),
+  ('20220516100849'),
+  ('20220516092942'),
+  ('20220512194926'),
+  ('20220512194744'),
+  ('20220512194611'),
+  ('20220512194457'),
+  ('20220512194359'),
+  ('20220512194228'),
+  ('20220512194008'),
+  ('20220512193318'),
+  ('20220512193213'),
+  ('20220512193108'),
+  ('20220512193005'),
+  ('20220512192833'),
+  ('20220512192730'),
+  ('20220512192613'),
+  ('20220512191711'),
+  ('20220512191330'),
+  ('20220512185002'),
+  ('20220512184859'),
+  ('20220512150230'),
+  ('20220512150119'),
+  ('20220512150022'),
+  ('20220512145831'),
+  ('20220512145818'),
+  ('20220512145552'),
+  ('20220512145418'),
+  ('20220512144337'),
+  ('20220512144303'),
+  ('20220512144126'),
+  ('20220512144040'),
+  ('20220512143859'),
+  ('20220512143846'),
+  ('20220512131102'),
+  ('20220511182044'),
+  ('20220511181927'),
+  ('20220510134159'),
+  ('20220510134118'),
+  ('20220510120548'),
+  ('20220510120159'),
+  ('20220510115936'),
+  ('20220510111823'),
+  ('20220510111800'),
+  ('20220510105625'),
+  ('20220510105624'),
+  ('20220510105350'),
+  ('20220510105005'),
+  ('20220510104958'),
+  ('20220510104623'),
+  ('20220510104418'),
+  ('20220510104245'),
+  ('20220510103824'),
+  ('20220509163510'),
   ('20220505095408'),
+  ('20220503172714'),
+  ('20220503172651'),
+  ('20220503172620'),
+  ('20220503172607'),
+  ('20220503172418'),
+  ('20220503172331'),
+  ('20220503172112'),
+  ('20220503172002'),
+  ('20220503171647'),
+  ('20220429142651'),
+  ('20220429142550'),
+  ('20220427144732'),
+  ('20220427144604'),
+  ('20220426181659'),
+  ('20220422181037'),
+  ('20220422180936'),
+  ('20220422180453'),
+  ('20220422180430'),
+  ('20220422180358'),
+  ('20220422173908'),
+  ('20220422173907'),
+  ('20220422173905'),
+  ('20220422173904'),
+  ('20220422173902'),
+  ('20220422173900'),
+  ('20220422173859'),
+  ('20220422173857'),
+  ('20220422173713'),
+  ('20220422173712'),
+  ('20220422173710'),
+  ('20220422173153'),
+  ('20220422173150'),
+  ('20220422173149'),
+  ('20220422173147'),
+  ('20220422173041'),
+  ('20220422173040'),
+  ('20220422173038'),
+  ('20220422172842'),
+  ('20220422172841'),
+  ('20220422172839'),
+  ('20220422172308'),
+  ('20220422172307'),
+  ('20220422172305'),
+  ('20220422172158'),
+  ('20220422172157'),
+  ('20220422172155'),
+  ('20220422172003'),
+  ('20220422172002'),
+  ('20220422172000'),
+  ('20220422171042'),
+  ('20220422171041'),
+  ('20220422171039'),
+  ('20220422170922'),
+  ('20220422170920'),
+  ('20220422170919'),
+  ('20220422170833'),
+  ('20220422170832'),
+  ('20220422170830'),
+  ('20220422170449'),
+  ('20220422170448'),
+  ('20220422170446'),
+  ('20220422170421'),
+  ('20220422170420'),
+  ('20220422170418'),
+  ('20220422170051'),
+  ('20220422170050'),
+  ('20220422170048'),
+  ('20220421203328'),
+  ('20220421190557'),
+  ('20220421190556'),
+  ('20220421190555'),
+  ('20220421190553'),
   ('20220421190552'),
+  ('20220421190550'),
   ('20220421190549'),
+  ('20220421190547'),
+  ('20220421190545'),
+  ('20220421190544'),
   ('20220421190542'),
   ('20220421190541'),
-  ('20220420155908'),
-  ('20220420155825'),
-  ('20220420155752'),
-  ('20220420155719'),
-  ('20220420155546'),
-  ('20220420155110'),
+  ('20220421190539'),
+  ('20220331110820'),
+  ('20220331110717'),
+  ('20220331110656'),
+  ('20220330105858'),
+  ('20220330105313'),
+  ('20220329181503'),
+  ('20220329130557'),
+  ('20220329113642'),
+  ('20220329113641'),
+  ('20220329113640'),
+  ('20220329113637'),
+  ('20220329113635'),
+  ('20220329113634'),
+  ('20220329113632'),
+  ('20220328115603'),
+  ('20220324133953'),
+  ('20220324133952'),
+  ('20220324133951'),
+  ('20220324133949'),
+  ('20220324133948'),
+  ('20220324133946'),
+  ('20220324133945'),
   ('20220324133943'),
-  ('20220309140421'),
+  ('20220324133941'),
+  ('20220324133940'),
+  ('20220324133938'),
+  ('20220307164959'),
+  ('20220307164817'),
+  ('20220307163124'),
+  ('20220307162929'),
+  ('20220307162856'),
   ('20220307154248'),
+  ('20220307153310'),
+  ('20220307144639'),
+  ('20220304120605'),
+  ('20220304120604'),
+  ('20220304120602'),
+  ('20220304120600'),
+  ('20220304120558'),
+  ('20220304120557'),
+  ('20220304120404'),
+  ('20220304120401'),
+  ('20220304120359'),
+  ('20220304115841'),
+  ('20220304115839'),
+  ('20220304115838'),
   ('20220304115836'),
+  ('20220304115830'),
+  ('20220304115827'),
+  ('20220304115826'),
+  ('20220304115824'),
+  ('20220304115603'),
+  ('20220303112202'),
   ('20220301201512'),
+  ('20220301120755'),
+  ('20220301120734'),
+  ('20220301120158'),
+  ('20220301093304'),
+  ('20220301093041'),
+  ('20220301093010'),
+  ('20220225122155'),
   ('20220224143222'),
   ('20220224141444'),
   ('20220224135635'),
@@ -15949,16 +15014,58 @@ values
   ('20220224114432'),
   ('20220224023446'),
   ('20220224020931'),
-  ('20220223154144'),
-  ('20220223154138'),
-  ('20220223154137'),
-  ('20220223154135'),
-  ('20220208183044'),
-  ('20220208182910'),
-  ('20220208182855'),
+  ('20220223121716'),
+  ('20220223121714'),
+  ('20220223121713'),
+  ('20220223121355'),
+  ('20220223121353'),
+  ('20220223121351'),
+  ('20220223120335'),
+  ('20220223120333'),
+  ('20220223120331'),
+  ('20220223115253'),
+  ('20220223115252'),
+  ('20220223115250'),
+  ('20220223114922'),
+  ('20220223114920'),
+  ('20220223114919'),
+  ('20220223114851'),
+  ('20220223114849'),
+  ('20220223114848'),
+  ('20220223114447'),
+  ('20220223114445'),
+  ('20220223114443'),
+  ('20220223113934'),
+  ('20220223113932'),
+  ('20220223113931'),
+  ('20220222112301'),
+  ('20220222112229'),
+  ('20220221123203'),
+  ('20220221120737'),
+  ('20220221113950'),
+  ('20220221102030'),
+  ('20220221101714'),
+  ('20220218171455'),
+  ('20220218171203'),
+  ('20220217144044'),
+  ('20220217092246'),
+  ('20220216145207'),
+  ('20220214154149'),
+  ('20220214140459'),
+  ('20220214130001'),
+  ('20220214125928'),
+  ('20220214125216'),
+  ('20220214124934'),
+  ('20220214122255'),
+  ('20220214120443'),
+  ('20220203201903'),
+  ('20220203193018'),
+  ('20220202193750'),
   ('20220202190931'),
   ('20220202190849'),
   ('20220202175848'),
+  ('20220201174829'),
+  ('20220201173928'),
   ('20220201102549'),
   ('20220201102247'),
   ('20220131184511'),
@@ -15981,12 +15088,12 @@ values
   ('20220131131244'),
   ('20220131123100'),
   ('20220131123017'),
+  ('20220131121835'),
   ('20220131121834'),
   ('20220131121833'),
   ('20220131121831'),
   ('20220131121830'),
   ('20220131111232'),
-  ('20220128173739'),
   ('20220121143719'),
   ('20211231113457'),
   ('20211222140019'),
@@ -15997,321 +15104,66 @@ values
   ('20211222134557'),
   ('20211222111721'),
   ('20211222111016'),
-  ('20211216181406'),
-  ('20211210161534'),
-  ('20211202172811'),
-  ('20211202165754'),
-  ('20211202104939'),
-  ('20211202104628'),
-  ('20211202104124'),
-  ('20211202104105'),
-  ('20211202104021'),
-  ('20211202103557'),
-  ('20211202094341'),
-  ('20211201193110'),
-  ('20211201191903'),
-  ('20211201175056'),
-  ('20211201162930'),
-  ('20211201162822'),
-  ('20211201162807'),
-  ('20211201162655'),
-  ('20211201160012'),
-  ('20211201155927'),
-  ('20211201155810'),
-  ('20211201155632'),
-  ('20211201155608'),
-  ('20211201155327'),
-  ('20211201155258'),
-  ('20211201154230'),
-  ('20211201153732'),
-  ('20211130170043'),
-  ('20211130165832'),
-  ('20211129185048'),
-  ('20211129184710'),
-  ('20211129184654'),
-  ('20211129183005'),
-  ('20211129174514'),
-  ('20211129174409'),
-  ('20211129152611'),
+  ('20211220130659'),
+  ('20211220130656'),
+  ('20211220130655'),
+  ('20211220130534'),
+  ('20211220130532'),
+  ('20211220130318'),
+  ('20211220130316'),
+  ('20211220125823'),
+  ('20211220125821'),
+  ('20211220125454'),
+  ('20211220125452'),
+  ('20211220125411'),
+  ('20211220125410'),
+  ('20211220125329'),
+  ('20211220125327'),
+  ('20211220125303'),
+  ('20211220125302'),
+  ('20211220124612'),
+  ('20211220124611'),
+  ('20211220124527'),
+  ('20211220124525'),
+  ('20211220123519'),
+  ('20211220123518'),
+  ('20211220123348'),
+  ('20211220123347'),
+  ('20211220123345'),
+  ('20211220122840'),
+  ('20211220122837'),
+  ('20211220122835'),
+  ('20211220122834'),
+  ('20211206160502'),
+  ('20211206102249'),
+  ('20211206102244'),
+  ('20211206102030'),
+  ('20211206102028'),
+  ('20211206102026'),
+  ('20211206102025'),
   ('20211126152918'),
-  ('20211124163246'),
-  ('20211124143306'),
-  ('20211124142532'),
-  ('20211124141547'),
-  ('20211124141512'),
-  ('20211124135213'),
   ('20211124120038'),
-  ('20211122210402'),
-  ('20211122204834'),
-  ('20211122202618'),
-  ('20211122190158'),
-  ('20211122190108'),
-  ('20211122184842'),
-  ('20211122162529'),
-  ('20211122162402'),
-  ('20211122154939'),
-  ('20211122154543'),
-  ('20211122151922'),
-  ('20211122131219'),
-  ('20211122130620'),
-  ('20211119145821'),
-  ('20211119145801'),
-  ('20211118082753'),
   ('20211117180701'),
-  ('20211117152250'),
-  ('20211117124809'),
-  ('20211117123100'),
-  ('20211115152200'),
-  ('20211115144103'),
-  ('20211115143116'),
   ('20211115141001'),
-  ('20211104105531'),
-  ('20211104105307'),
-  ('20211101165235'),
-  ('20211101164222'),
   ('20211041105001'),
+  ('20211031183429'),
+  ('20211031183210'),
   ('20211031152538'),
-  ('20211028200607'),
-  ('20211028195929'),
-  ('20211028195631'),
-  ('20211028195545'),
-  ('20211028190129'),
-  ('20211028185104'),
-  ('20211028185013'),
-  ('20211028184708'),
-  ('20211028184606'),
-  ('20211028183655'),
-  ('20211028183605'),
-  ('20211028183352'),
-  ('20211028183307'),
-  ('20211028183052'),
-  ('20211028183011'),
-  ('20211028182620'),
-  ('20211028182535'),
-  ('20211028181343'),
-  ('20211028181038'),
-  ('20211028181009'),
-  ('20211028180910'),
-  ('20211028161448'),
-  ('20211028160643'),
-  ('20211028160454'),
-  ('20211027191521'),
-  ('20211027190244'),
-  ('20211027184654'),
-  ('20211025142128'),
-  ('20211025131706'),
-  ('20211025130455'),
-  ('20211025130333'),
-  ('20211025124250'),
-  ('20211020180413'),
-  ('20211020175455'),
-  ('20211020172435'),
-  ('20211020122426'),
-  ('20211020122312'),
-  ('20211020122203'),
-  ('20211020121904'),
-  ('20211020121731'),
-  ('20211019160522'),
-  ('20211019154822'),
-  ('20211019154648'),
-  ('20211019154403'),
-  ('20211019153138'),
-  ('20211019145359'),
-  ('20211019144612'),
-  ('20211019142850'),
-  ('20211019142128'),
-  ('20211013193651'),
-  ('20211013192724'),
-  ('20211013192451'),
-  ('20211011130407'),
-  ('20211011130405'),
-  ('20211011123319'),
-  ('20211011123318'),
-  ('20211011123317'),
-  ('20211011123315'),
-  ('20211011123314'),
-  ('20211011122908'),
-  ('20211005162513'),
-  ('20211005162512'),
-  ('20211005162206'),
-  ('20211005161717'),
-  ('20211005161515'),
-  ('20211005100000'),
-  ('20210920165012'),
-  ('20210920154843'),
-  ('20210920154842'),
-  ('20210920154841'),
-  ('20210920154840'),
-  ('20210920154838'),
-  ('20210920154257'),
-  ('20210920154255'),
-  ('20210820162714'),
-  ('20210820120501'),
-  ('20210820120428'),
-  ('20210820120358'),
-  ('20210820120329'),
-  ('20210820120259'),
-  ('20210820120230'),
-  ('20210820120200'),
-  ('20210820115844'),
-  ('20210820115817'),
-  ('20210820115748'),
-  ('20210820115720'),
-  ('20210820115651'),
-  ('20210820115621'),
-  ('20210820112537'),
-  ('20210820112511'),
-  ('20210820112444'),
-  ('20210820112417'),
-  ('20210820112351'),
-  ('20210820112324'),
-  ('20210820111602'),
-  ('20210820111536'),
-  ('20210820111510'),
-  ('20210820111444'),
-  ('20210820111417'),
-  ('20210820111341'),
-  ('20210819172712'),
-  ('20210819162924'),
-  ('20210819145830'),
-  ('20210819142214'),
-  ('20210819121250'),
-  ('20210819112959'),
+  ('20211020183551'),
   ('20210816170804'),
-  ('20210810141801'),
   ('20210809151207'),
-  ('20210804122847'),
-  ('20210804115317'),
-  ('20210804115107'),
-  ('20210804114825'),
-  ('20210804114625'),
-  ('20210804113928'),
-  ('20210804111741'),
-  ('20210802113737'),
-  ('20210802113037'),
-  ('20210802112713'),
-  ('20210730094243'),
-  ('20210730094241'),
-  ('20210730094240'),
-  ('20210730094239'),
-  ('20210730094238'),
-  ('20210729121748'),
-  ('20210729120034'),
-  ('20210729115538'),
   ('20210712152134'),
   ('20210526183942'),
-  ('20210511160335'),
-  ('20210511160109'),
-  ('20210511155831'),
-  ('20210511155830'),
-  ('20210511155828'),
-  ('20210511154334'),
-  ('20210511154017'),
-  ('20210511154015'),
-  ('20210507141445'),
-  ('20210507140526'),
-  ('20210507140002'),
-  ('20210506093638'),
-  ('20210505154246'),
-  ('20210505153500'),
-  ('20210505152307'),
-  ('20210505151544'),
-  ('20210505141004'),
-  ('20210430161544'),
-  ('20210430150839'),
-  ('20210428191045'),
   ('20210428102016'),
-  ('20210426160527'),
-  ('20210426160502'),
-  ('20210426111533'),
-  ('20210426111529'),
-  ('20210426110031'),
-  ('20210426110029'),
-  ('20210426105809'),
-  ('20210426105232'),
-  ('20210426105231'),
-  ('20210426105230'),
-  ('20210426105229'),
-  ('20210426105227'),
-  ('20210426105226'),
-  ('20210419123853'),
-  ('20210419104252'),
-  ('20210419103700'),
-  ('20210419103623'),
-  ('20210416124846'),
-  ('20210416124230'),
-  ('20210416122418'),
-  ('20210416115820'),
-  ('20210416115129'),
-  ('20210416114628'),
-  ('20210415171455'),
-  ('20210415153255'),
-  ('20210415135520'),
-  ('20210414192323'),
-  ('20210414192103'),
-  ('20210414192034'),
-  ('20210414170935'),
-  ('20210414170005'),
-  ('20210409154754'),
-  ('20210409154247'),
-  ('20210409153417'),
-  ('20210409153403'),
-  ('20210409153002'),
-  ('20210409151245'),
-  ('20210409151227'),
-  ('20210409151142'),
-  ('20210409121507'),
-  ('20210409121417'),
-  ('20210409121215'),
-  ('20210409121129'),
-  ('20210409111740'),
-  ('20210408191723'),
-  ('20210408185624'),
-  ('20210408185527'),
-  ('20210408185512'),
-  ('20210408184539'),
-  ('20210408184517'),
-  ('20210408184456'),
-  ('20210408182932'),
-  ('20210408182740'),
-  ('20210408175134'),
-  ('20210408174853'),
-  ('20210408174528'),
-  ('20210408172909'),
-  ('20210408145937'),
-  ('20210408145914'),
-  ('20210408142308'),
-  ('20210407112018'),
   ('20210406154800'),
   ('20210330085617'),
   ('20210318150446'),
   ('20210318150132'),
-  ('20210312161907'),
   ('20210312143952'),
-  ('20210311173439'),
-  ('20210309175437'),
-  ('20210309145849'),
-  ('20210309141058'),
-  ('20210309134840'),
-  ('20210309132550'),
-  ('20210309130529'),
-  ('20210309121304'),
-  ('20210309121011'),
   ('20210308143952'),
   ('20210305113828'),
-  ('20210303185633'),
-  ('20210303185434'),
   ('20210303164632'),
   ('20210303164631'),
-  ('20210303114347'),
-  ('20210219164832'),
-  ('20210219154518'),
-  ('20210219115851'),
-  ('20210219110031'),
-  ('20210219110030'),
-  ('20210219102128'),
-  ('20210218155345'),
-  ('20210218115904'),
   ('20210216133011'),
   ('20210216132458'),
   ('20210215153201'),
@@ -16322,622 +15174,52 @@ values
   ('20210129154600'),
   ('20210129150044'),
   ('20210128180947'),
-  ('20210122163753'),
-  ('20210118175202'),
-  ('20210118175201'),
-  ('20210113190726'),
-  ('20210112140918'),
-  ('20210112093953'),
-  ('20210111193953'),
-  ('20210111193758'),
-  ('20210111193757'),
-  ('20210111193126'),
-  ('20210111185241'),
+  ('20210124190912'),
+  ('20210124190911'),
+  ('20210124190909'),
+  ('20210124190908'),
+  ('20210124190907'),
+  ('20210124190905'),
+  ('20210124190155'),
+  ('20210124190153'),
+  ('20210124190152'),
+  ('20210124190150'),
+  ('20210124190035'),
+  ('20210124190034'),
+  ('20210124190000'),
+  ('20210124185959'),
+  ('20210124185733'),
+  ('20210124185731'),
+  ('20210110191033'),
+  ('20210110191031'),
+  ('20210110191030'),
+  ('20210110191029'),
+  ('20210110191028'),
+  ('20210110191026'),
+  ('20210110191024'),
+  ('20210110191023'),
+  ('20210110191022'),
   ('20210108085826'),
-  ('20210106120035'),
-  ('20210106115442'),
-  ('20210105153826'),
-  ('20201214120823'),
-  ('20201211173803'),
-  ('20201203173231'),
-  ('20201202152550'),
-  ('20201201135335'),
-  ('20201201123431'),
-  ('20201130181726'),
-  ('20201130181506'),
-  ('20201130171046'),
-  ('20201130164615'),
-  ('20201130155629'),
-  ('20201130151146'),
-  ('20201130145415'),
-  ('20201123164901'),
-  ('20201123133436'),
-  ('20201123132802'),
-  ('20201120172435'),
-  ('20201120172431'),
-  ('20201120172430'),
-  ('20201120172427'),
-  ('20201120172425'),
-  ('20201120172424'),
-  ('20201120172423'),
-  ('20201120172422'),
-  ('20201120172421'),
-  ('20201120172419'),
-  ('20201120172418'),
-  ('20201120172417'),
-  ('20201120172416'),
-  ('20201120172411'),
-  ('20201120172326'),
-  ('20201120172051'),
-  ('20201120172049'),
-  ('20201120172047'),
-  ('20201120172045'),
-  ('20201120171657'),
-  ('20201120171655'),
-  ('20201120171654'),
-  ('20201120113633'),
-  ('20201120113632'),
-  ('20201120113630'),
-  ('20201120113629'),
-  ('20201120113628'),
-  ('20201120113627'),
-  ('20201120113625'),
-  ('20201120113624'),
-  ('20201120113623'),
-  ('20201120113622'),
-  ('20201120113620'),
-  ('20201120113619'),
-  ('20201120113618'),
-  ('20201120113617'),
-  ('20201120113616'),
-  ('20201120113614'),
-  ('20201120113613'),
-  ('20201120113612'),
-  ('20201120113611'),
-  ('20201120113610'),
-  ('20201120113608'),
-  ('20201120113607'),
-  ('20201120113606'),
-  ('20201120113605'),
-  ('20201120113604'),
-  ('20201120113602'),
-  ('20201120113601'),
-  ('20201120113600'),
-  ('20201120113559'),
-  ('20201120113558'),
-  ('20201120113556'),
-  ('20201120113555'),
-  ('20201120113554'),
-  ('20201120113553'),
-  ('20201120113552'),
-  ('20201120113550'),
-  ('20201120113549'),
-  ('20201120113548'),
-  ('20201120113547'),
-  ('20201120113545'),
-  ('20201120113544'),
-  ('20201120113543'),
-  ('20201120113542'),
-  ('20201120113541'),
-  ('20201120113539'),
-  ('20201120113538'),
-  ('20201120113537'),
-  ('20201120113536'),
-  ('20201120113534'),
-  ('20201120113533'),
-  ('20201120113532'),
-  ('20201120113531'),
-  ('20201120113530'),
-  ('20201120113528'),
-  ('20201120113527'),
-  ('20201120113526'),
-  ('20201120113525'),
-  ('20201120113523'),
-  ('20201120113522'),
-  ('20201120113521'),
-  ('20201120113520'),
-  ('20201120113518'),
-  ('20201120113517'),
-  ('20201120113516'),
-  ('20201120113515'),
-  ('20201120113513'),
-  ('20201120113512'),
-  ('20201120010636'),
-  ('20201120005728'),
-  ('20201120005727'),
-  ('20201120005724'),
-  ('20201120005722'),
-  ('20201120005147'),
-  ('20201120005146'),
-  ('20201120005144'),
-  ('20201120005143'),
-  ('20201120005142'),
-  ('20201120005141'),
-  ('20201120005139'),
-  ('20201120005138'),
-  ('20201120005137'),
-  ('20201120005136'),
-  ('20201120005134'),
-  ('20201120005132'),
-  ('20201120004525'),
-  ('20201120004524'),
-  ('20201120004523'),
-  ('20201120004521'),
-  ('20201120004520'),
-  ('20201120004519'),
-  ('20201120004517'),
-  ('20201120004516'),
-  ('20201120004515'),
-  ('20201120004514'),
-  ('20201120004511'),
-  ('20201120004509'),
-  ('20201120004508'),
-  ('20201120004507'),
-  ('20201120004506'),
-  ('20201120004504'),
-  ('20201120004503'),
-  ('20201120004502'),
-  ('20201120004500'),
-  ('20201120004459'),
-  ('20201120004458'),
-  ('20201120004457'),
-  ('20201120004455'),
-  ('20201120004454'),
-  ('20201120004453'),
-  ('20201120004452'),
-  ('20201120004450'),
-  ('20201120004449'),
-  ('20201120004448'),
-  ('20201120004446'),
-  ('20201120004445'),
-  ('20201120004444'),
-  ('20201120004443'),
-  ('20201120004442'),
-  ('20201120004440'),
-  ('20201120004439'),
-  ('20201120004438'),
-  ('20201120004437'),
-  ('20201120004435'),
-  ('20201120004433'),
-  ('20201120004432'),
-  ('20201120004431'),
-  ('20201120004429'),
-  ('20201120004428'),
-  ('20201120004427'),
-  ('20201120004426'),
-  ('20201120004424'),
-  ('20201120004423'),
-  ('20201120004422'),
-  ('20201120004420'),
-  ('20201120004417'),
-  ('20201120004416'),
-  ('20201120004415'),
-  ('20201120004413'),
-  ('20201120004412'),
-  ('20201120004411'),
-  ('20201120004410'),
-  ('20201120004408'),
-  ('20201120004407'),
-  ('20201120004406'),
-  ('20201120004402'),
-  ('20201120004401'),
-  ('20201120004359'),
-  ('20201120004358'),
-  ('20201120004357'),
-  ('20201120004356'),
-  ('20201120004354'),
-  ('20201120004353'),
-  ('20201120004352'),
-  ('20201120004351'),
-  ('20201120004347'),
-  ('20201120004346'),
-  ('20201120004345'),
-  ('20201120004343'),
-  ('20201120004342'),
-  ('20201120004341'),
-  ('20201120004339'),
-  ('20201120004338'),
-  ('20201120004337'),
-  ('20201120004335'),
-  ('20201120004334'),
-  ('20201120004331'),
-  ('20201120004330'),
-  ('20201120004328'),
-  ('20201120004327'),
-  ('20201120004326'),
-  ('20201120004325'),
-  ('20201120004323'),
-  ('20201120004322'),
-  ('20201120004321'),
-  ('20201120004320'),
-  ('20201120004315'),
-  ('20201120004314'),
-  ('20201120004312'),
-  ('20201120004311'),
-  ('20201120004310'),
-  ('20201120004309'),
-  ('20201120004307'),
-  ('20201120004306'),
-  ('20201120004305'),
-  ('20201120004303'),
-  ('20201120003633'),
-  ('20201120003506'),
-  ('20201120003505'),
-  ('20201120002824'),
-  ('20201120002618'),
-  ('20201120002617'),
-  ('20201120002615'),
-  ('20201120002614'),
-  ('20201120002613'),
-  ('20201120002612'),
-  ('20201120002608'),
-  ('20201120002607'),
-  ('20201120002606'),
-  ('20201120002604'),
-  ('20201120002603'),
-  ('20201120002602'),
-  ('20201120002601'),
-  ('20201120002559'),
-  ('20201120002557'),
-  ('20201120002556'),
-  ('20201120002555'),
-  ('20201120002554'),
-  ('20201120001433'),
-  ('20201120001432'),
-  ('20201120001430'),
-  ('20201120001429'),
-  ('20201120001428'),
-  ('20201120001427'),
-  ('20201120001426'),
-  ('20201120001424'),
-  ('20201120001423'),
-  ('20201120000241'),
-  ('20201119231649'),
-  ('20201119221358'),
-  ('20201119215607'),
-  ('20201119215606'),
-  ('20201119215605'),
-  ('20201119215603'),
-  ('20201119215602'),
-  ('20201119215601'),
-  ('20201119215559'),
-  ('20201119215558'),
-  ('20201119215557'),
-  ('20201119215514'),
-  ('20201119215513'),
-  ('20201119215511'),
-  ('20201119215510'),
-  ('20201119215509'),
-  ('20201119215508'),
-  ('20201119215506'),
-  ('20201119215505'),
-  ('20201119215504'),
-  ('20201119214817'),
-  ('20201119214815'),
-  ('20201119214814'),
-  ('20201119214813'),
-  ('20201119214812'),
-  ('20201119214810'),
-  ('20201119214809'),
-  ('20201119214808'),
-  ('20201119214806'),
-  ('20201119214158'),
-  ('20201119214156'),
-  ('20201119214155'),
-  ('20201119214154'),
-  ('20201119214153'),
-  ('20201119214151'),
-  ('20201119214150'),
-  ('20201119214149'),
-  ('20201119214147'),
-  ('20201119214105'),
-  ('20201119214104'),
-  ('20201119214102'),
-  ('20201119214101'),
-  ('20201119214100'),
-  ('20201119214058'),
-  ('20201119214057'),
-  ('20201119214056'),
-  ('20201119214054'),
-  ('20201119213857'),
-  ('20201119213856'),
-  ('20201119213854'),
-  ('20201119213849'),
-  ('20201119213848'),
-  ('20201119213846'),
-  ('20201119213845'),
-  ('20201119213843'),
-  ('20201119213842'),
-  ('20201119213841'),
-  ('20201119213840'),
-  ('20201119213838'),
-  ('20201119213837'),
-  ('20201119213836'),
-  ('20201119213834'),
-  ('20201119213833'),
-  ('20201119213831'),
-  ('20201119213829'),
-  ('20201119213545'),
-  ('20201119213105'),
-  ('20201119212412'),
-  ('20201119212054'),
-  ('20201119211755'),
-  ('20201119211642'),
-  ('20201119211641'),
-  ('20201119211640'),
-  ('20201119211638'),
-  ('20201119210104'),
-  ('20201119210103'),
-  ('20201119210102'),
-  ('20201119210100'),
-  ('20201119210059'),
-  ('20201119210058'),
-  ('20201119210056'),
-  ('20201119210055'),
-  ('20201119210054'),
-  ('20201119210052'),
-  ('20201119205546'),
-  ('20201119205143'),
-  ('20201119205016'),
-  ('20201119204519'),
-  ('20201119204518'),
-  ('20201119204516'),
-  ('20201119204515'),
-  ('20201119204513'),
-  ('20201119204512'),
-  ('20201119141450'),
-  ('20201119141134'),
-  ('20201119140723'),
-  ('20201119135239'),
-  ('20201119135029'),
-  ('20201119134745'),
-  ('20201119134520'),
-  ('20201119134404'),
-  ('20201119131230'),
-  ('20201119125920'),
-  ('20201119122415'),
-  ('20201119121523'),
-  ('20201119121416'),
-  ('20201119121123'),
-  ('20201119120645'),
-  ('20201119120521'),
-  ('20201119120343'),
-  ('20201119115023'),
-  ('20201119114712'),
-  ('20201119114239'),
-  ('20201119113826'),
-  ('20201119112211'),
-  ('20201119112112'),
-  ('20201119111628'),
-  ('20201119111307'),
-  ('20201119111111'),
-  ('20201119111037'),
-  ('20201119110159'),
-  ('20201119110031'),
-  ('20201119105629'),
-  ('20201119105147'),
-  ('20201119105115'),
-  ('20201119104716'),
-  ('20201119104640'),
-  ('20201119103930'),
-  ('20201119103527'),
-  ('20201119103256'),
-  ('20201119103206'),
-  ('20201119103040'),
-  ('20201119102915'),
-  ('20201118185845'),
-  ('20201118185134'),
-  ('20201118184632'),
-  ('20201118184421'),
-  ('20201118184036'),
-  ('20201118183451'),
-  ('20201118183218'),
-  ('20201118183050'),
-  ('20201118182925'),
-  ('20201118182833'),
-  ('20201118180407'),
-  ('20201118171823'),
-  ('20201118171743'),
-  ('20201118171355'),
-  ('20201118170705'),
-  ('20201118165559'),
-  ('20201118164706'),
-  ('20201118164209'),
-  ('20201118162434'),
-  ('20201117172114'),
-  ('20201117165758'),
-  ('20201116184553'),
-  ('20201116181212'),
-  ('20201116165843'),
-  ('20201116165724'),
-  ('20201116165548'),
-  ('20201116165236'),
-  ('20201116160721'),
-  ('20201113171433'),
-  ('20201113171138'),
-  ('20201113165946'),
-  ('20201113165938'),
-  ('20201113165919'),
-  ('20201113165911'),
-  ('20201113165842'),
-  ('20201113165754'),
-  ('20201113165558'),
-  ('20201113165116'),
-  ('20201113160651'),
-  ('20201113154338'),
-  ('20201113153931'),
-  ('20201113153724'),
-  ('20201113153421'),
-  ('20201113153255'),
-  ('20201113153220'),
-  ('20201113153051'),
-  ('20201113150359'),
-  ('20201113134431'),
-  ('20201113134328'),
-  ('20201113131147'),
-  ('20201113122021'),
-  ('20201113114812'),
-  ('20201112190055'),
-  ('20201112190054'),
-  ('20201112190053'),
   ('20201112163129'),
-  ('20201112141132'),
-  ('20201112112019'),
+  ('20201111165110'),
+  ('20201111165109'),
+  ('20201111165107'),
+  ('20201111164800'),
   ('20201111161035'),
   ('20201111160935'),
-  ('20201109190307'),
-  ('20201109181444'),
-  ('20201109180117'),
   ('20201109114833'),
-  ('20201014172505'),
-  ('20201009172744'),
-  ('20201009172508'),
-  ('20201009172107'),
-  ('20201009171508'),
-  ('20201009171251'),
-  ('20201009170927'),
-  ('20201009170614'),
-  ('20201009165247'),
-  ('20201009152535'),
-  ('20201009123016'),
-  ('20201009113556'),
-  ('20201009113555'),
-  ('20201009113553'),
-  ('20201009113552'),
-  ('20201009113551'),
-  ('20201009113549'),
-  ('20201009113548'),
-  ('20201009113547'),
-  ('20201009113546'),
-  ('20201009113544'),
-  ('20201001120642'),
-  ('20200929165700'),
-  ('20200929163440'),
-  ('20200924121742'),
-  ('20200924100402'),
-  ('20200923103106'),
-  ('20200921185531'),
-  ('20200921184426'),
-  ('20200921184247'),
-  ('20200921173450'),
-  ('20200921172540'),
-  ('20200921110750'),
-  ('20200917113300'),
-  ('20200914163936'),
-  ('20200914163633'),
-  ('20200914143300'),
-  ('20200914102627'),
-  ('20200914102206'),
-  ('20200914101758'),
-  ('20200914101207'),
-  ('20200914095348'),
-  ('20200911174444'),
-  ('20200911173337'),
-  ('20200911172935'),
-  ('20200911165448'),
-  ('20200911145939'),
-  ('20200911144023'),
-  ('20200911143100'),
-  ('20200911143042'),
-  ('20200911142536'),
-  ('20200911140600'),
-  ('20200911140450'),
-  ('20200911135706'),
-  ('20200911135516'),
-  ('20200911135514'),
-  ('20200911135428'),
-  ('20200911135257'),
-  ('20200911134749'),
-  ('20200911134413'),
-  ('20200911134327'),
-  ('20200911134237'),
-  ('20200911134009'),
-  ('20200911133749'),
-  ('20200911133450'),
-  ('20200911133300'),
-  ('20200911133203'),
-  ('20200911133043'),
-  ('20200911132926'),
-  ('20200911132442'),
-  ('20200911132315'),
-  ('20200911132124'),
-  ('20200911131905'),
-  ('20200911131637'),
-  ('20200911131636'),
-  ('20200911131634'),
-  ('20200911131633'),
-  ('20200911131631'),
-  ('20200911131556'),
-  ('20200911131317'),
-  ('20200911131246'),
-  ('20200911131237'),
-  ('20200911123056'),
-  ('20200911123055'),
-  ('20200911123053'),
-  ('20200911123052'),
-  ('20200821114133'),
-  ('20200818143559'),
-  ('20200818140236'),
-  ('20200818135756'),
-  ('20200818132644'),
-  ('20200818125452'),
-  ('20200818124658'),
-  ('20200818105216'),
-  ('20200818105202'),
-  ('20200818090628'),
-  ('20200817152630'),
-  ('20200814114646'),
-  ('20200814105415'),
-  ('20200814104336'),
-  ('20200814103248'),
-  ('20200814092900'),
-  ('20200814092726'),
-  ('20200813162728'),
-  ('20200812180924'),
-  ('20200812180350'),
-  ('20200812175807'),
-  ('20200812130051'),
-  ('20200804150142'),
-  ('20200804145940'),
-  ('20200804145635'),
-  ('20200804144545'),
-  ('20200804125517'),
-  ('20200804125500'),
-  ('20200803162444'),
-  ('20200803161100'),
-  ('20200731130750'),
-  ('20200731124908'),
   ('20200731124515'),
   ('20200731122147'),
   ('20200731121144'),
   ('20200731121100'),
-  ('20200730130051'),
-  ('20200730124512'),
-  ('20200729193941'),
-  ('20200727162041'),
   ('20200727122117'),
   ('20200727122116'),
-  ('20200727111100'),
-  ('20200727111057'),
-  ('20200727111056'),
-  ('20200727100543'),
-  ('20200727100431'),
-  ('20200727100429'),
   ('20200727081306'),
   ('20200727081305'),
-  ('20200724181747'),
-  ('20200724153400'),
   ('20200723153130'),
-  ('20200723104100'),
-  ('20200720161100'),
-  ('20200720161000'),
-  ('20200720121356'),
-  ('20200720110000'),
-  ('20200720100000'),
   ('20200611123849'),
   ('20200403172361'),
   ('20200313160640'),
-  ('20200225115151'),
   ('20191115124732'),
   ('20191115124723'),
   ('20190906172361'),
@@ -16947,7 +15229,6 @@ values
   ('20190709174638'),
   ('20190709174613'),
   ('20190628131713'),
-  ('20190625142421'),
   ('20190624082535'),
   ('20190614162317'),
   ('20190612140618'),
@@ -17058,21 +15339,11 @@ values
   ('20170922182052'),
   ('20170908074038'),
   ('20170901152707'),
-  ('20170830105123'),
-  ('20170830100037'),
   ('20170823145313'),
   ('20160210200919'),
   ('20160210200918'),
-  ('20160204120512'),
-  ('20160203211330'),
-  ('20160203151737'),
-  ('20160203130714'),
-  ('20160203121701'),
-  ('20160203120436'),
   ('20151218203119'),
   ('20151216102328'),
-  ('20151215170733'),
-  ('20151215165127'),
   ('20151208244918'),
   ('20151208244917'),
   ('20151208244916'),
