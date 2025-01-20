@@ -3,8 +3,8 @@ begin;
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 15.6
--- Dumped by pg_dump version 15.6
+-- Dumped from database version 15.9
+-- Dumped by pg_dump version 15.9
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -3519,7 +3519,8 @@ CREATE TABLE ml_app.admins (
     last_name character varying,
     do_not_email boolean DEFAULT false,
     admin_id bigint,
-    capabilities character varying[]
+    capabilities character varying[],
+    otp_secret character varying
 );
 
 
@@ -6709,7 +6710,8 @@ CREATE TABLE ml_app.users (
     confirmed_at timestamp without time zone,
     confirmation_sent_at timestamp without time zone,
     country_code character varying,
-    terms_of_use_accepted character varying
+    terms_of_use_accepted character varying,
+    otp_secret character varying
 );
 
 
