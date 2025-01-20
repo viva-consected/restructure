@@ -14,6 +14,85 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
+### From FPHS - # PR 443 - 2025-01-20
+
+- [Fixed] issue with standard definitions for extra options
+- [Fixed] the use of masters resource name when using no_masters to lookup a crosswalk identifier
+- [Fixed] broken log filename in some environments
+- [Fixed] Zeus Advanced Search protocol not having a sub process query fails with SQL syntax error - fixes #438
+- [Added] sample form to external identifiers admin panel
+- [Added] fields sorter to external identifiers admin panel
+- [Added] resource name value to external identifiers admin panel
+- [Fixed] report  count button not working - fixes #439
+- [Added] link from external identifier details panel to pregenerated search report - fixes #377
+- [Changed] ordering of external identifier master panel based on size - fixes #390
+- [Fixed] incorrect URL for editing file classification record
+- [Fixed] error running notify after uploading files
+- [Added] save_trigger_results to notify
+- [Fixed] spring stop in parallel test
+- [Fixed] admin forms with dependent fields not setting up on load
+- [Fixed] admin forms display
+- [Fixed] tracker, protocol column shows with titelized case, rather than original entry - fixes #433
+- [Changed] use of `@import` in SCSS files to use `@use` without a namespace - fixes #436
+- [Fixed] Zeus toolbar search broken after upgrade to Rails 7 - fixes #437
+- [Fixed] a crosswalk error when requested master records don't match
+- [Fixed] incorrect documentation for tracker sorter options
+- [Fixed] failure of table lists to be rendered
+- [Fixed] dynamic options standard definitions not being preprended correctly
+- [Fixed] handling of legacy otp for 2FA
+
+### From FPHS - PR #442 - 2025-01-07
+
+**NOTE:** DB migration required
+
+- [Changed] handling of SECRET_KEY_BASE and other non-production credentials to use Rails standard environment variable and credentials rather than secrets
+- [Added] USEVER variable handling for batch use of release_and_build.sh
+- [Fixed] specs for more info on failures and to fix inline activity log configurations
+- [Updated] schema for Postgres v15
+- [Added] new otp_secret field for devise-two-factor gem
+- [Fixed] tracker_histories association
+- [Changed] message when failing to load a dynamic model during reload
+- [Fixed] dynamic migrations
+- [Updated] sprockets gem to v4
+- [Changed] browser check to use new Rails support for browser version checking
+- [Updated] configs for Rails 7
+- [Updated] gems to Rails 7.2 via 7.0 and 7.1
+- [Fixed] admin panel email field styling
+- [Changed] login issues text to simplify it for users
+
+### From FPHS - PR #441 - 2024-12-23
+
+- [Fixed] standard definition loading
+- [Fixed] position handling to avoid unnecessary recursion Fixed specs to account for admin panels filtering out disabled items correctly
+- [Fixed] protocol / subprocess / event issues Fixed bad styling in admin panels
+
+### From FPHS - PR #430 - 2024-12-19
+
+- [Fixed] inconsistency in labelling protocols / sub processes / events for admin
+- [Added] DB table access information for protocols / sub processes / events to help
+- [Added] sub process and protocol event help docs (pointing back to protocol doc)
+
+### From FPHS - PR #429 - 2024-12-19
+
+- [Fixed] admin panels for protocol / sub process / event to allow more than one item to be added without breaking - fixes #42
+- [Added] information to the protocol admin panel to show the protocol ordering configured for the tracker
+- [Added] documentation for the configuration of protocols and the hierarchy of protocol / sub process / event
+
+### From FPHS - PR #428 - 2024-12-18
+
+- [Fixed] Can't select a "blank" no access option in user access controls - fixes #424
+- [Fixed] admin copy item select shows value, but this isn't actually submitted and the field is really submitted as blank
+
+### From FPHS - PR #427 - 2024-12-18
+
+- [Added] preconfigured yaml placeholders for dynamic definition options to simplify configurations
+- [Added] click on activity list item to auto select it in the sample forms
+- [Added] user access control information to each activity list item
+
+### From FPHS - PR #426 - 2024-12-18
+
+- [Fixed] e-signature form captions don't handle substitutions - fixes #425
+
 ### From FPHS - PR #421 - 2024-12-12
 
 - [Added] nested embed and references sections under activity list items
