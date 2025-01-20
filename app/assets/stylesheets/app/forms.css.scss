@@ -42,7 +42,7 @@ form .full-width input.form-control {
 }
 
 .form-inline .twitter-typeahead {
-  width: auto;
+  width: 100%;
 }
 
 form select {
@@ -110,6 +110,10 @@ input[type="date"].attached-datepicker {
 }
 
 li.list-group-item.placeholder-field-item {
+  display: none !important;
+}
+
+li.edit-field-container[data-edit-field-name="created_by_user_id"] {
   display: none !important;
 }
 

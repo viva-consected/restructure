@@ -12,9 +12,110 @@ Note that not every tagged version may be suitable for production use. A Github 
 
 Since [version 8.4.0](#840---2024-01-10) the convention is that releases made within forked repositories should be up-versioned with a patch release, *x.y.z+1*. When changes are incorporated back into the primary repo [consected/restructure](https://github.com/consected/restructure) a new minor release will be created, *x.y+1,0*.
 
+## Unreleased
+
+### From FPHS - # PR 443 - 2025-01-20
+
+- [Fixed] issue with standard definitions for extra options
+- [Fixed] the use of masters resource name when using no_masters to lookup a crosswalk identifier
+- [Fixed] broken log filename in some environments
+- [Fixed] Zeus Advanced Search protocol not having a sub process query fails with SQL syntax error - fixes #438
+- [Added] sample form to external identifiers admin panel
+- [Added] fields sorter to external identifiers admin panel
+- [Added] resource name value to external identifiers admin panel
+- [Fixed] report  count button not working - fixes #439
+- [Added] link from external identifier details panel to pregenerated search report - fixes #377
+- [Changed] ordering of external identifier master panel based on size - fixes #390
+- [Fixed] incorrect URL for editing file classification record
+- [Fixed] error running notify after uploading files
+- [Added] save_trigger_results to notify
+- [Fixed] spring stop in parallel test
+- [Fixed] admin forms with dependent fields not setting up on load
+- [Fixed] admin forms display
+- [Fixed] tracker, protocol column shows with titelized case, rather than original entry - fixes #433
+- [Changed] use of `@import` in SCSS files to use `@use` without a namespace - fixes #436
+- [Fixed] Zeus toolbar search broken after upgrade to Rails 7 - fixes #437
+- [Fixed] a crosswalk error when requested master records don't match
+- [Fixed] incorrect documentation for tracker sorter options
+- [Fixed] failure of table lists to be rendered
+- [Fixed] dynamic options standard definitions not being preprended correctly
+- [Fixed] handling of legacy otp for 2FA
+
+### From FPHS - PR #442 - 2025-01-07
+
+**NOTE:** DB migration required
+
+- [Changed] handling of SECRET_KEY_BASE and other non-production credentials to use Rails standard environment variable and credentials rather than secrets
+- [Added] USEVER variable handling for batch use of release_and_build.sh
+- [Fixed] specs for more info on failures and to fix inline activity log configurations
+- [Updated] schema for Postgres v15
+- [Added] new otp_secret field for devise-two-factor gem
+- [Fixed] tracker_histories association
+- [Changed] message when failing to load a dynamic model during reload
+- [Fixed] dynamic migrations
+- [Updated] sprockets gem to v4
+- [Changed] browser check to use new Rails support for browser version checking
+- [Updated] configs for Rails 7
+- [Updated] gems to Rails 7.2 via 7.0 and 7.1
+- [Fixed] admin panel email field styling
+- [Changed] login issues text to simplify it for users
+
+### From FPHS - PR #441 - 2024-12-23
+
+- [Fixed] standard definition loading
+- [Fixed] position handling to avoid unnecessary recursion Fixed specs to account for admin panels filtering out disabled items correctly
+- [Fixed] protocol / subprocess / event issues Fixed bad styling in admin panels
+
+### From FPHS - PR #430 - 2024-12-19
+
+- [Fixed] inconsistency in labelling protocols / sub processes / events for admin
+- [Added] DB table access information for protocols / sub processes / events to help
+- [Added] sub process and protocol event help docs (pointing back to protocol doc)
+
+### From FPHS - PR #429 - 2024-12-19
+
+- [Fixed] admin panels for protocol / sub process / event to allow more than one item to be added without breaking - fixes #42
+- [Added] information to the protocol admin panel to show the protocol ordering configured for the tracker
+- [Added] documentation for the configuration of protocols and the hierarchy of protocol / sub process / event
+
+### From FPHS - PR #428 - 2024-12-18
+
+- [Fixed] Can't select a "blank" no access option in user access controls - fixes #424
+- [Fixed] admin copy item select shows value, but this isn't actually submitted and the field is really submitted as blank
+
+### From FPHS - PR #427 - 2024-12-18
+
+- [Added] preconfigured yaml placeholders for dynamic definition options to simplify configurations
+- [Added] click on activity list item to auto select it in the sample forms
+- [Added] user access control information to each activity list item
+
+### From FPHS - PR #426 - 2024-12-18
+
+- [Fixed] e-signature form captions don't handle substitutions - fixes #425
+
+### From FPHS - PR #421 - 2024-12-12
+
+- [Added] nested embed and references sections under activity list items
+- [Fixed] Admin reports panel add or edit report very slow (now only slow the first time) - fixes #420
+- [Changed] ordering of reports admin list
+- [Fixed] bad reloading of page layouts admin panel
+
+### From Viva - PR #418 - 2024-12-04
+
+- [Fixed] "created_by_user_id" field showing unnecessarily in edit forms
+
+### From Viva - PR #417 - 2024-12-03
+
+- [Fixed] filestore browser not loading correctly in vertical activity log block
+
 ## [8.9.1] - 2024-11-14
 
-### From FPHS - 2024-11-14
+## From FPHS - PR #416 - 2024-11-14
+
+- [Fixed] reloading of index after updating users and admins
+- [Added] ability for users to be added by an admin when self registration is allowed
+
+### From FPHS - PR #415 - 2024-11-14
 
 - [Fixed] failing versions list when creating a new dynamic model
 
@@ -344,6 +445,81 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 - [Fixed] use of Etag headers for caching
 - [Changed] browser caching for common scenarios
+
+### Merge pull request #320 from hmsrc/hms-perf
+
+- [Added] exception information to failure mailer
+- [Updated] gems
+- [Fixed] specs
+- [Changed] logging of dynamic definition setup
+- [Changed] handling of info and help pages to show a not found for missing library or not authorized access
+- [Changed] handling of item flags for new selector caching
+- [Changed] handling of selector cache handling and application version to log when changes will affect performance
+- [Added] index to tracker_history to improve performance
+
+## [8.6.5] - 2024-05-02
+
+- [Updated] gems
+- [Fixed] logging of sensitive params
+- [Added] report search field options with the first option implemented for "select from model" drop downs being order: attr: asc|desc
+- [Added] action_position option to extra options references configurations to set a creatable reference action button to appear at the top or bottom of the form
+- [Added] a report results handler implementation to provide "expand all" link to tree view
+- [Changed] form fields to cancel previous request when clicking on a "chosen" select field
+- [Fixed] UI error if no match on date time string when converting to locale
+
+### Merge pull request #315 from hmsrc/gen-enhancements
+
+- [Added] set_item_flag options to add_flags and remove_flags
+- [Fixed] failure to show Redcap project if it is in the process of being
+
+### Merge pull request #314 from hmsrc/clean-log
+
+- [Changed] job error message to be clearer
+
+### Merge pull request #311 from hmsrc/change-save-trigger
+
+- [Added] set_item_flags save trigger to allow flags to be set against an item
+- [Added]  return of created masters, items and references from save triggers, so they can be used later
+- [Added] logging to show more information when failing to generate real show_if from Redcap definition
+- [Changed] external identifiers to allow update from save trigger if currently unassigned
+
+### Merge pull request #310 from hmsrc/fix-job-error
+
+- [Fixed] job failure notifications
+
+### Merge pull request #309 from hmsrc/app-import-errors
+
+- [Fixed] reporting of changes for app imports
+- [Changed] handling of user access control configurations to force blank fields to null
+- [Changed] app import error backtrace to include only essentials
+- [Fixed] reporting of error in app import
+- [Changed] reporting of updated configs in app type import when only updated_at timestamp changed
+- [Fixed] sidebar help to prevent it breaking simple hash hrefs
+
+## [8.6.4] - 2024-04-03
+
+- [Added] automatically select user date/time preferences based on user browser locale at registration - from pull request #284, issue #135
+- [Added] superscript and subscript support to the editor
+- [Fixed] editor bugs
+- [Fixed] strikethrough support in the editor
+- [Fixed] pasting from documents when certain <img> or <a> attributes are missing
+- [Added] auto creation of signature document when activity created through create_reference save trigger
+- [Changed] styles for e-sign and general forms
+- [Changed] e-signatures to allow a plain document to be created for signature - fixes #299
+- [Fixed] report not able to show tags in results correctly
+- [Fixed] bug trying to singularize configuration keys in e_sign setup
+
+## [8.6.3] - 2024-03-07
+
+- [Fixed] incorrect matching dynamic models on name. Use table_name instead.
+
+## [8.6.2] - 2024-03-06
+
+- [Fixed] parallel tests and specs
+- [Fixed] various rspec issues
+- [Changed] the naming of Redcap project dynamic models to be more human - fixes #276
+- [Fixed] to raise an exception if a nfs store container directory already exists
+- [Fixed] Redcap pull updating all records if there are empty `<vars>_chosen_array` fields - fixes #289
 
 ## [8.6.1] - 2024-03-04
 
