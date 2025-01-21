@@ -436,7 +436,6 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 - [Changed] display of tree report loading
 - [Fixed] tree embedded report when there is a report in the underlying page (embedded in a placeholder for example)
 - [Added] report results handler to force all \<pre> elements to be fully expanded
-
 - [Fixed] mailto links breaking in sidebar when content is a portal page
 - [Fixed] editor html cleanup losing images and horizonal rule
 - [Fixed] tree expander implementations
