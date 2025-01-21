@@ -598,7 +598,7 @@ _fpa.form_utils = {
           var no_sel_text = 'no tags selected';
           var alt_nst = sel.attr('data-nothing-selected-text');
           if (alt_nst) no_sel_text = alt_nst;
-          sel.chosen({ width: '100%', placeholder_text_multiple: no_sel_text, hide_results_on_select: false, display_disabled_options: false });
+          sel.chosen({ width: '100%', placeholder_text_multiple: no_sel_text, hide_results_on_select: false, display_disabled_options: false, allow_single_deselect: true });
 
           sel.on('chosen:showing_dropdown', function (evt, params) {
 
@@ -835,12 +835,26 @@ _fpa.form_utils = {
               $(this).attr('data-group-num', ls[first]);
             }
           })
-          .hide().attr('disabled', 'disabled');
-        $(`${filter_sel} optgroup[data-group-num="${val}"]`).show().attr('disabled', null);
+          .hide().attr('disabled', 'disabled').attr('data-disabled', 'disabled');
+        $(`${filter_sel} optgroup[data-group-num="${val}"]`).show().attr('disabled', null).attr('data-disabled', null);
+        // Clear any of the options that are in a disabled group
+        $(`${filter_sel} optgroup[disabled] option[selected="selected"]`).attr('selected', null)
         if ($(filter_sel).hasClass('attached-chosen')) {
           // Refresh the associate chosen.js values if chosen is attached to this field
           $(filter_sel).trigger('chosen:updated');
         }
+        var new_val = $(`${filter_sel} option[selected="selected"]`).val();
+
+        // Allow the value to be set - this is a necessary hack
+        $(`${filter_sel} optgroup[label][data-disabled="disabled"]`).attr('disabled', null)
+        $(filter_sel).val(new_val);
+        $(filter_sel).parent().find('.chosen-container .chosen-single span').html('tracker').removeClass('chosen-default')
+        console.log(`set filtered select ${filter_sel} to val: ${new_val} == ${$(filter_sel).val()}`)
+        // end of hack
+
+        window.setTimeout(function () {
+          $($el).change()
+        }, 1)
 
       })
       .addClass('filters-select-attached');
@@ -1964,6 +1978,43 @@ _fpa.form_utils = {
       .addClass('formatted-slfs');
   },
 
+  reorder_sub_list_columns: function (block) {
+    const $outer = block.parents('.reorder-sublist-columns');
+    if ($outer.length === 0) return;
+
+    window.setTimeout(function () {
+      var heights = [];
+      var cols = $outer.find('.sublist-column');
+      if (cols.length === 0) return;
+
+      cols.each(function () {
+        var h = $(this).height();
+        if ($(this).find('[data-sub-item]').length === 0) {
+          // No items in the column
+          h = 0;
+        }
+        heights.push([$(this).prop('id'), h]);
+      });
+
+      heights.sort(function (a, b) {
+        return b[1] - a[1]
+      });
+
+      var prev = null;
+      for (var key in heights) {
+        if (!heights.hasOwnProperty(key)) continue;
+
+        var id = heights[key][0];
+        var $col = $(`#${id}`);
+        if (prev) {
+          prev.after($col);
+        }
+        prev = $col;
+      }
+    }, 200)
+
+  },
+
   setup_contact_field_mask: function (block) {
     var check_rec = function (rec_type, input) {
       if (typeof rec_type == 'string') {
@@ -2305,6 +2356,7 @@ _fpa.form_utils = {
     _fpa.form_utils.setup_error_clear(block);
     _fpa.form_utils.resize_children(block);
     _fpa.form_utils.setup_sub_lists(block);
+    _fpa.form_utils.reorder_sub_list_columns(block);
     _fpa.form_utils.apply_view_handlers(block);
     _fpa.form_utils.setup_secure_view_links(block);
 
