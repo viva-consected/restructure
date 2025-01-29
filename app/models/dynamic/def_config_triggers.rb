@@ -38,8 +38,8 @@ module Dynamic
 
     def handle_all_option_configs
       option_configs.each do |option_config|        
-        create_defaults( option_config)
-        create_configs( option_config)
+        create_defaults(option_config)
+        create_configs(option_config)
       end
     rescue StandardError => e
       Rails.logger.warn e
@@ -75,7 +75,7 @@ module Dynamic
         config = on_define[:create_configs]
         next unless config
 
-        create_config(config)
+        create_config(config, option_config)
       end      
     end
 
@@ -219,7 +219,7 @@ module Dynamic
       Admin::PageLayout.create! cond
     end
 
-    def create_config(config)
+    def create_config(config, option_config)
       return nil unless config
 
       subdata = if dynamic_def_type == :activity_log
