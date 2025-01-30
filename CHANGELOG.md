@@ -14,6 +14,9 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
+- [Fixed] import CSV bugs
+- [Fixed] log filename breaking Rails server log search
+
 ## [9.2.2] - 2025-01-30
 
 - [Build]
