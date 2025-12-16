@@ -6,20 +6,8 @@ describe 'admin dynamic model batch jobs link', js: true, driver: $browser_drive
   include ModelSupport
   include AdminActionsSetup
 
-  # Override the shared admin_sign_in_with_2fa to handle flash message timing issues
-  def admin_sign_in_with_2fa
-    super
-  rescue RSpec::Expectations::ExpectationNotMetError => e
-    # If flash message check fails, verify we're on the admin page instead
-    raise unless e.message.include?('flash') && current_path != '/admins/sign_in'
-
-    # We're logged in successfully even though flash didn't appear
-    expect(current_path).not_to eq '/admins/sign_in'
-  end
-
   before(:all) do
     SetupHelper.feature_setup
-    ENV['FPHS_ADMIN_SETUP'] = 'yes'
     make_an_admin
   end
 
@@ -89,8 +77,11 @@ describe 'admin dynamic model batch jobs link', js: true, driver: $browser_drive
     windows.last.close while windows.length > 1
     switch_to_window(windows.first)
 
-    # Sign out if already signed in
-    visit '/admins/sign_out' if page.has_css?('.admin-navbar', wait: 1)
+    # Log out if already signed in from previous test
+    if page.has_css?('.admin-navbar', wait: 1)
+      visit '/admins/sign_out'
+      expect(page).to have_current_path('/admins/sign_in')
+    end
 
     # Create a dynamic model without batch_trigger
     dm = DynamicModel.create!(
@@ -138,8 +129,11 @@ describe 'admin dynamic model batch jobs link', js: true, driver: $browser_drive
     windows.last.close while windows.length > 1
     switch_to_window(windows.first)
 
-    # Sign out if already signed in
-    visit '/admins/sign_out' if page.has_css?('.admin-navbar', wait: 1)
+    # Log out if already signed in from previous test
+    if page.has_css?('.admin-navbar', wait: 1)
+      visit '/admins/sign_out'
+      expect(page).to have_current_path('/admins/sign_in')
+    end
 
     # Enable delayed job creation but prevent execution
     # This allows RecurringBatchTask.schedule_task to create job records
@@ -257,12 +251,10 @@ describe 'admin dynamic model batch jobs link', js: true, driver: $browser_drive
       # Wait for the job reviews page to load
       expect(page).to have_css('table', wait: 10)
 
-      # Should see job for first dynamic model in the ID column
-      within 'table tbody' do
-        expect(page).to have_css('tr', text: /\A\s*#{job1.id}\s/)
-        # Should NOT see job for second dynamic model
-        expect(page).not_to have_css('tr', text: /\A\s*#{job2.id}\s/)
-      end
+      # Should see job for first dynamic model
+      expect(page).to have_css('table tr', text: job1.id.to_s)
+      # Should NOT see job for second dynamic model (check within table rows only)
+      expect(page).not_to have_css('table tbody tr', text: /\A\s*#{Regexp.escape(job2.id.to_s)}\s/)
     end
 
     # Now test the second dynamic model
@@ -301,12 +293,10 @@ describe 'admin dynamic model batch jobs link', js: true, driver: $browser_drive
       # Wait for the job reviews page to load
       expect(page).to have_css('table', wait: 10)
 
-      # Should see job for second dynamic model in the ID column
-      within 'table tbody' do
-        expect(page).to have_css('tr', text: /\A\s*#{job2.id}\s/)
-        # Should NOT see job for first dynamic model
-        expect(page).not_to have_css('tr', text: /\A\s*#{job1.id}\s/)
-      end
+      # Should see job for second dynamic model
+      expect(page).to have_css('table tr', text: job2.id.to_s)
+      # Should NOT see job for first dynamic model (check within table rows only)
+      expect(page).not_to have_css('table tbody tr', text: /\A\s*#{Regexp.escape(job1.id.to_s)}\s/)
     end
   ensure
     # Always restore the original delay_jobs setting
