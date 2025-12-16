@@ -75,6 +75,8 @@ module UserSupport
                                        resource_name: :create_master, current_admin: @admin, user:
     end
     @user = user
+    @good_email = user.email
+    @good_password = good_password
     let_user_create :player_contacts
 
     delay = Time.now - start_time

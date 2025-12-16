@@ -19,19 +19,36 @@ module FeatureSupport
   def login
     just_signed_in = false
     already_signed_in = false
-    # NOTE: TwoFactorAuth disabled via ENV['FPHS_2FA_AUTH_DISABLED'] in rails_helper.rb
-    # Don't re-enable 2FA here with change_setting
-    # !two_factor_auth_disabled && !(otp_secret.present? && otp_required_for_login)
-    unless @user.two_factor_auth_disabled
-      puts "Settings::TwoFactorAuthDisabledForUser #{Settings::TwoFactorAuthDisabledForUser}"
-      puts "user.two_factor_auth_disabled: #{@user.two_factor_auth_disabled}"
-      puts 'Changing to true'
-      change_setting('TwoFactorAuthDisabledForUser', true)
-      puts "Settings::TwoFactorAuthDisabledForUser #{Settings::TwoFactorAuthDisabledForUser}"
-      puts "user.two_factor_auth_disabled: #{@user.two_factor_auth_disabled}"
+
+    # Ensure @good_email and @good_password are set
+    unless @good_email && @good_password
+      # If not set, try to retrieve from the user
+      raise 'Cannot login - no @user, @good_email, or @good_password set' unless @user
+
+      @good_email ||= @user.email
+      # We can't recover the password if it wasn't saved, but we can try to generate a new one
+      unless @good_password
+        puts_debug "ERROR: Cannot login - @good_password not set for user #{@user.id} (#{@user.email})"
+        raise 'Cannot login - @good_password not set and cannot be recovered'
+      end
+
     end
 
-    expect(@user.two_factor_setup_required?).to be_falsey, "#{@user.two_factor_auth_disabled}, #{@user.otp_secret.present?}, #{@user.otp_required_for_login}"
+    puts_debug "→ login attempt with email=#{@good_email}, user_id=#{@user.id}, password_set=#{!!@good_password}"
+
+    # NOTE: TwoFactorAuth can be disabled via ENV['FPHS_2FA_AUTH_DISABLED']
+    # But we also need to ensure the user instance has 2FA disabled
+    unless @user.two_factor_auth_disabled
+      change_setting('TwoFactorAuthDisabledForUser', true)
+      @user.otp_required_for_login = false
+      @user.save!
+      @user = User.find(@user.id) # Reload to get fresh state
+      # Keep @good_email in sync - it should not have changed, but let's be safe
+      @good_email = @user.email
+    end
+
+    expect(@user.two_factor_setup_required?).to be_falsey,
+                                                "#{@user.two_factor_auth_disabled}, #{@user.otp_secret.present?}, #{@user.otp_required_for_login}"
 
     3.times do
       return if user_logged_in?
@@ -48,12 +65,8 @@ module FeatureSupport
       end
       expect(page).to have_css('#new_user')
 
-      if @user.email != @good_email
-        puts "in login @user does not match @good_email: #{@user} does not match #{@good_email}"
-        @user = User.active.where(email: @good_email).first
-      end
-
-      expect(@user.valid_password?(@good_password)).to be(true), "Bad password (#{@good_password}) so can't login with email: #{@good_email}. #{@user}"
+      expect(@user.valid_password?(@good_password)).to be(true),
+                                                       "Bad password (#{@good_password}) so can't login with email: #{@good_email}. #{@user}"
       expect(@user.email).to eq @good_email
 
       within '#new_user' do
@@ -62,15 +75,12 @@ module FeatureSupport
         click_button 'Log in'
       end
 
-      # Only handle 2FA if it's enabled
-      if User.two_factor_auth_disabled
-        # When 2FA disabled, wait for redirect after login
-        sleep 4
-      else
-        expect(page).to have_selector('.login-2fa-block', visible: true)
-        expect(page).to have_selector('#new_user', visible: true)
-        expect(page).to have_selector('input[type="submit"]:not([disabled])', visible: true)
-
+      # Check if 2FA form appears (it shouldn't if we disabled it correctly)
+      # Wait a bit to see if 2FA form shows up
+      sleep 2
+      if has_selector?('.login-2fa-block', visible: true, wait: 1)
+        puts_debug 'WARNING: 2FA form appeared even though we disabled it!'
+        # Handle it anyway
         within '#new_user' do
           fill_in 'Two-Factor Authentication Code', with: @user.current_otp
           click_button 'Log in'
@@ -83,9 +93,26 @@ module FeatureSupport
 
       fa = all('.flash .alert', wait: 0)[0]
       just_signed_in = (fa&.text == "×\nSigned in successfully.")
+
+      # Debug output when login fails
+      unless just_signed_in || already_signed_in
+        puts_debug "Flash message: #{fa&.text.inspect}"
+        puts_debug "Current URL: #{current_url}"
+        puts_debug 'Login failed - checking page state...'
+        puts_debug "  - Form present: #{has_css?('#new_user')}"
+        puts_debug "  - Alert present: #{has_css?('.alert')}"
+        puts_debug "  - User menu present: #{has_css?('.nav a[data-do-action=\"show-user-options\"]')}"
+        # Save HTML for debugging
+        begin
+          File.write('/tmp/failed_login.html', page.html)
+        rescue StandardError
+          nil
+        end
+      end
+
       break if just_signed_in
 
-      sleep 35
+      sleep 35 unless @user.two_factor_auth_disabled
       puts_debug 'Attempting another login'
     end
 
@@ -414,12 +441,14 @@ module FeatureSupport
 
     # The dropdown appears absolutely positioned at body level
     results_selector = 'body > .chosen-container.chosen-with-drop .chosen-results li.active-result'
-    expect(page).to have_css(results_selector, wait: 4), "No dropdown results appeared for #{field_id} - NOTE - remove the method call from any within blocks to avoid scope issues"
+    expect(page).to have_css(results_selector, wait: 4),
+                    "No dropdown results appeared for #{field_id} - NOTE - remove the method call from any within blocks to avoid scope issues"
 
     # Find matching result
     results = page.all(results_selector)
     matching = results.find { |r| r.text.downcase == value.downcase }
-    expect(matching).not_to(be_nil, "Could not find matching chosen option '#{value}' in field #{field_id} - #{results.map(&:text)}")
+    expect(matching).not_to(be_nil,
+                            "Could not find matching chosen option '#{value}' in field #{field_id} - #{results.map(&:text)}")
 
     matching.click
     sleep 0.3
@@ -493,9 +522,15 @@ module FeatureSupport
   #
   # Expand a master record, optionally with matching text
   # @param [String, nil] text The text to match for the master-expander link
-  def expand_master_record(text: nil)
+  def expand_master_record(text: nil, master_id: nil)
     finish_form_formatting
-    link = all('a.master-expander', text: text, match: :first, wait: 5).first
+    if text
+      link = all('a.master-expander', text: text, match: :first, wait: 5).first
+    elsif master_id
+      link = all("#master-#{master_id} a.master-expander", match: :first, wait: 5).first
+    else
+      raise 'Either text or master_id must be provided to expand_master_record'
+    end
     unless link
       puts_debug "all master-expanders: #{all('a.master-expander').map(&:text).join(', ')}"
       save_html_snapshot('/tmp/no_master_expander.html')
@@ -687,7 +722,9 @@ module FeatureSupport
       res[:is_custom_editor] = f[:class].include?('use-text-area-for-custom-editor')
 
       if f.tag_name == 'select'
-        res[:options] = f.all('option', wait: 0).map { |opt| { text: opt.text, value: opt[:value], selected: opt.selected? } }
+        res[:options] = f.all('option', wait: 0).map do |opt|
+          { text: opt.text, value: opt[:value], selected: opt.selected? }
+        end
       end
       results << res
     end
@@ -799,7 +836,7 @@ module FeatureSupport
   def puts_modals
     puts_debug 'Modals visible:'
     results = []
-    all('.modal.in', wait: false, visible: true).each do |m|
+    all('.modal.in', visible: true, wait: 0).each do |m|
       res = {}
       res[:id] = m[:id]
       res[:title] = res.find('.modal-title')
