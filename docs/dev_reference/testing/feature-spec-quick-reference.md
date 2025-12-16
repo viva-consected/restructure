@@ -185,16 +185,16 @@ spec/support/{feature}_feature_support/
 
 ```bash
 # Standard headless run
-bundle exec rspec spec/features/your_spec.rb
+bundle exec rspec spec/system/your_spec.rb
 
 # With visible browser
-app-scripts/not_headless_rspec.sh spec/features/your_spec.rb
+app-scripts/not_headless_rspec.sh spec/system/your_spec.rb
 
 # Capture full output
-bundle exec rspec spec/features/your_spec.rb 2>&1 | tee /tmp/test_run.log | tail -100
+bundle exec rspec spec/system/your_spec.rb 2>&1 | tee /tmp/test_run.log | tail -100
 
 # Specific test
-bundle exec rspec spec/features/your_spec.rb:38
+bundle exec rspec spec/system/your_spec.rb:38
 
 # Clean database first
 app-scripts/clean-test-db.sh

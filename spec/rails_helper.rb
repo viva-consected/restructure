@@ -94,7 +94,7 @@ end
 
 put_now 'Browser setups'
 
-# The setting for AllowUsersToRegister is forced to *true* for the test environment, to allow features tests to work.
+# The setting for AllowUsersToRegister is forced to *true* for the test environment, to allow system tests to work.
 # We set this back to false here, which does not affect those tests, but allows controllers, models, etc specs to
 # run without AllowUsersToRegister being set.
 change_setting('AllowUsersToRegister', false)
@@ -109,7 +109,7 @@ SetupHelper.setup_nfs_directories
 
 `mkdir -p db/app_migrations/redcap_test; rm -f db/app_migrations/redcap_test/*test_*.rb`
 `mkdir -p db/app_migrations/imports_test; rm -f db/app_migrations/imports_test/*test_imports*.rb`
-`mkdir -p db/app_migrations/dynamic_test; rm -f db/app_migrations/dynamic_test/*test_imports*.rb`
+`mkdir -p db/app_migrations/dynamic_test; rm -f db/app_migrations/dynamic_test/*.rb`
 `rm -f db/app_migrations/test/*test_*.rb`
 
 put_now 'Devise and warden'
@@ -191,7 +191,7 @@ unless ENV['SKIP_DB_SETUP']
   puts "Exists test_file_field_recs? > #{ActiveRecord::Base.connection.table_exists?('test_file_field_recs')}"
 end
 
-SetupHelper.run_extra_setups if ENV['RUN_APP_SPECS'] == 'true'
+SetupHelper.run_extra_setups
 
 put_now 'RSpec configure'
 

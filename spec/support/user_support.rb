@@ -45,7 +45,7 @@ module UserSupport
       user.new_two_factor_auth_code = false
     end
 
-    # Set confirmed for features tests
+    # Set confirmed for system tests
     user.confirmed_at ||= Time.now if respond_to?(:page) && !opt[:not_confirmed]
 
     user.save!

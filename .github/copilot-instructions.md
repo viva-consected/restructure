@@ -288,12 +288,12 @@ Standard Rspec tests, which exclude environment / app specific tests in
 bundle exec rspec  # Run in headless mode
 ```
 
-For headless (visible browser) feature tests, which include the environment / app specific specs:
+For headless (visible browser) system tests, which include the environment / app specific specs:
 ```bash
 app-scripts/headless_rspec.sh spec/system/apps/grant_aims/grant_aims_process_spec.rb
 ```
 
-For non-headless (visible browser) feature tests, which include the environment / app specific specs:
+For non-headless (visible browser) system tests, which include the environment / app specific specs:
 ```bash
 app-scripts/not_headless_rspec.sh spec/system/apps/grant_aims/grant_aims_process_spec.rb
 ```
