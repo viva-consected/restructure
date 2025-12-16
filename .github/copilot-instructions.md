@@ -146,12 +146,12 @@ Don't pipe output to other commands like `grep`, `tail`, `awk`, `sed`, etc since
 
 **Don't do this:**
 ```bash
-bundle exec rspec spec/features/ 2>&1 | grep -E "PHASE|✓ Grant|Failures|Finished|examples" | tail -15
+bundle exec rspec spec/system/ 2>&1 | grep -E "PHASE|✓ Grant|Failures|Finished|examples" | tail -15
 ```
 
 **Do this instead:**
 ```bash
-bundle exec rspec spec/features/ 2>&1 | tee /tmp/rspec_output.log | tail -100
+bundle exec rspec spec/system/ 2>&1 | tee /tmp/rspec_output.log | tail -100
 grep -E "PHASE|✓ Grant|Failures|Finished|examples" /tmp/rspec_output.log | tail -15
 ```
 
@@ -269,10 +269,10 @@ Key variables (see `app-scripts/get-aws-env-vars.sh`):
 Background to the test framework and conventions:
 
 - **RSpec**: Main test framework with parallel execution support
-- **Capybara**: Feature tests with Chrome by default, or Firefox/Geckodriver
+- **Capybara**: systems tests with Chrome by default, or Firefox/Geckodriver
 - **Database Cleaner**: Test isolation
 - **Model specs** must be produced to cover all new model logic
-- **Feature specs** should be produced for all new UI functionality
+- **System specs** (not features specs) should be produced for all new UI functionality
 - **Run `rspec` on new spec tests** after implementing new features to make sure they run
 
 ### Running tests
@@ -283,19 +283,19 @@ app-scripts/setup-dev-filestore.sh
 NOTE: this needs "sudo" to run, and although the Rspec suite attempts to run this automatically if required, it is best to run this manually once after a reboot to avoid test failures.
 
 Standard Rspec tests, which exclude environment / app specific tests in 
-`spec/features/apps/` and `spec/support/apps/`
+`spec/system/apps/` and `spec/support/apps/`
 ```bash
 bundle exec rspec  # Run in headless mode
 ```
 
 For headless (visible browser) feature tests, which include the environment / app specific specs:
 ```bash
-app-scripts/headless_rspec.sh spec/features/apps/grant_aims/grant_aims_process_spec.rb
+app-scripts/headless_rspec.sh spec/system/apps/grant_aims/grant_aims_process_spec.rb
 ```
 
 For non-headless (visible browser) feature tests, which include the environment / app specific specs:
 ```bash
-app-scripts/not_headless_rspec.sh spec/features/apps/grant_aims/grant_aims_process_spec.rb
+app-scripts/not_headless_rspec.sh spec/system/apps/grant_aims/grant_aims_process_spec.rb
 ```
 
 To use the Rails runner without prompting a human for approval, use:
@@ -351,6 +351,16 @@ save_html_snapshot('/tmp/debug_page.html')
 
 
 Attempt to follow the real user / admin flow through the UI as much as possible, avoiding direct model manipulation except for setup/teardown. Avoid using `visit` to go directly to pages that would not normally be accessible through the UI flow. 
+
+For example:
+```ruby
+# Don't do this:
+visit "/redcap/project_admins/edit/#{project.id}"
+# Do this instead:
+visit "/redcap/project_admins?filter[id]=#{project.id}&perform_action=edit"
+finish_page_loading
+# If this doesn't work for some reason, check for Javascript errors
+```
 
 Any "edit" button represented by a glyphicon should be clicked in the UI rather than visiting the edit URL directly. These buttons typically have the HTML class something like: "edit-entity glyphicon glyphicon-pencil".
 
@@ -410,7 +420,8 @@ save_html_snapshot('/tmp/debug.html')  # Save HTML (last resort)
 
 **Enable debug output:**
 ```bash
-FEATURE_DEBUG=true bundle exec rspec spec/features/your_spec.rb
+app-scripts/headless_rspec.sh spec/system/your_spec.rb
+
 ```
 
 ### Edit Button AJAX Pattern
