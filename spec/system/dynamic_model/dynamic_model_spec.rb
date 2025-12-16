@@ -13,7 +13,7 @@ describe 'external id (bhs_assignments)', js: true, driver: $browser_driver do
 
   def set_up_feature
     SetupHelper.feature_setup
-    change_setting('TwoFactorAuthDisabledForUser', false)
+    change_setting('TwoFactorAuthDisabledForUser', true)
 
     create_admin
 
