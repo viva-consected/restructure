@@ -235,8 +235,8 @@ skip('Phase 6 skipped: Big select configuration needs fixing for Analysis Plan g
 # Run the full test
 bundle exec rspec spec/features/apps/grant_aims/grant_aims_process_spec.rb:28
 
-# With debug output (if FEATURE_DEBUG=true is set in helper)
-FEATURE_DEBUG=true bundle exec rspec spec/features/apps/grant_aims/grant_aims_process_spec.rb:28
+# With debug output
+app-scripts/headless_rspec.sh spec/features/apps/grant_aims/grant_aims_process_spec.rb:28
 ```
 
 ## Known Limitations
