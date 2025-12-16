@@ -9,6 +9,7 @@ describe 'admin dynamic model batch jobs link', js: true, driver: $browser_drive
   before(:all) do
     SetupHelper.feature_setup
     ENV['FPHS_ADMIN_SETUP'] = 'yes'
+    # Don't disable 2FA since admin_sign_in_with_2fa expects it enabled
     make_an_admin
   end
 

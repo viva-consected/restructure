@@ -47,6 +47,18 @@ module FeatureSupport
       @good_email = @user.email
     end
 
+    # Reset any account lockout before attempting login
+    if @user.access_locked?
+      @user.unlock_access!
+      @user = User.find(@user.id) # Reload to get fresh state
+    end
+
+    # Ensure the password is still valid
+    unless @user.valid_password?(@good_password)
+      # Password was corrupted - reload from database
+      @user = User.find(@user.id)
+    end
+
     expect(@user.two_factor_setup_required?).to be_falsey,
                                                 "#{@user.two_factor_auth_disabled}, #{@user.otp_secret.present?}, #{@user.otp_required_for_login}"
 
