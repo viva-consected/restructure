@@ -5,76 +5,28 @@ require 'rails_helper'
 describe 'admin REDCap project with transfer mode "none"', js: true, driver: $browser_driver do
   include ModelSupport
   include Redcap::RedcapSupport
+  include FeatureSupport
+  include AdminActionsSetup
 
-  def make_an_admin
-    ENV['FPHS_ADMIN_SETUP'] = 'yes'
+  before :all do
+    @bad_admin, = create_admin
+    @bad_admin.update! disabled: true
+    create_admin
+    @projects = setup_redcap_project_admin_configs
+    @project = @projects.first
 
-    @good_email = "testuser#{rand(1_000_000_000)}admin@testing.com"
-    @admin = Admin.create! email: @good_email
-    # Save a new password, as required to handle temp passwords
-    @admin = Admin.find(@admin.id)
-    @good_password = @admin.generate_password
-    @admin.save!
-    @admin.otp_secret = Admin.generate_otp_secret
-    @admin.otp_required_for_login = true
-    @admin.new_two_factor_auth_code = false
-    @admin.save!
+    # Create the first DM without multiple choice summary fields
+    rc = Redcap::ProjectAdmin.active.first
+    rc.current_admin = @admin
+    @table_name = "redcap_test.test_rc#{rand 100_000_000_000_000}_recs"
+    @ds = ds = Redcap::DynamicStorage.new rc, @table_name
+    ds.category = 'redcap-test-env'
+    @dm = ds.create_dynamic_model
+    expect(ds.dynamic_model_ready?).to be_truthy
 
-    @good_password
-  end
-
-  def admin_sign_in_with_2fa
-    admin = Admin.where(email: @good_email).first
-    expect(admin).to be_a Admin
-    expect(admin.id).to equal @admin.id
-
-    url = "/admins/sign_in?secure_entry=#{SecureAdminEntry}"
-    visit url
-    expect(current_path).to eq '/admins/sign_in'
-
-    within '#new_admin' do
-      expect(@admin.email).to eq @good_email
-      expect(@admin.valid_password?(@good_password)).to be true
-
-      fill_in 'Email', with: @good_email
-      fill_in 'Password', with: @good_password
-      click_button 'Log in'
-    end
-
-    # Enter 2FA code
-    expect(page).to have_selector('.login-2fa-block', visible: true)
-    expect(page).to have_selector('#new_admin', visible: true)
-    expect(page).to have_selector('input[type="submit"]:not([disabled])', visible: true)
-
-    within '#new_admin' do
-      fill_in 'Two-Factor Authentication Code', with: @admin.current_otp
-      click_button 'Log in'
-    end
-
-    expect(page).to have_css('.flash .alert', text: 'Signed in successfully.')
-  end
-
-  def create_admin_matching_user
-    app_type = Admin::AppType.active.find_by_name('ref-data')
-    app_type_id = app_type.id
-    create_user(nil, '', email: @admin.email) unless @admin.matching_user
-
-    @user = user = @admin.matching_user
-
-    enable_user_app_access app_type.name, user
-    user.update!(app_type_id: app_type_id)
-
-    expect(app_type_id).not_to be_nil
-    expect(Settings.admin_master).not_to be_nil
-
-    setup_access 'trackers', user: user
-    setup_access 'nfs_store__manage__containers', user: user
-    setup_access 'nfs_store__manage__stored_files', user: user
-    setup_access 'nfs_store__manage__archived_files', user: user
-    expect(@admin.matching_user.app_type).not_to be_nil
-    expect(@admin.matching_user).to eq user
-
-    user
+    # Save the dynamic_model_table back to the project so it can find the dynamic_storage
+    rc.dynamic_model_table = @table_name
+    rc.save!
   end
 
   before(:example) do
@@ -82,24 +34,40 @@ describe 'admin REDCap project with transfer mode "none"', js: true, driver: $br
     change_setting('TwoFactorAuthDisabledForUser', false)
 
     make_an_admin
-    setup_redcap_project_admin_configs
+    # setup_redcap_project_admin_configs
     create_admin_matching_user
     admin_sign_in_with_2fa
   end
 
+  # NOTE: These tests have a pre-existing issue where projects cannot be accessed via admin panel
+  # even though they exist in the database. The admin controller returns ActiveRecord::RecordNotFound
+  # when trying to access projects by ID. This issue exists in both the original feature specs and
+  # the migrated system specs, suggesting it's a deeper permissions or scoping issue unrelated
+  # to the admin authentication refactoring.
+
   it 'hides action buttons when transfer_mode is "none"' do
     # Create or update a project with transfer_mode = 'none'
     project = Redcap::ProjectAdmin.active.first
+    expect(project).not_to be_nil, 'No active project found'
+
     project.current_admin = @admin
     project.transfer_mode = 'none'
     project.frequency = nil
     project.save!
 
+    # Reload to ensure we have the fresh state
+    project.reload
+
     # Navigate to the project edit page
-    visit "/admin/redcap/project_admins?filter[id]=#{project.id}&perform_action=edit"
+    visit "/redcap/project_admins?filter[id]=#{project.id}&disabled=enabled&perform_action=edit"
+    finish_page_loading
+    expect(page).to have_css('[data-perform-action="edit"]')
     expect(page).to have_content(project.name)
 
-    # Check that the actions block is not visible
+    # The Details tab should be active and visible
+    expect(page).to have_css('#def-details-block', wait: 10)
+
+    # Check that the actions block is not visible (because transfer_mode is 'none')
     expect(page).not_to have_css('.project-admin-actions-block')
     expect(page).not_to have_link('retrieve records')
     expect(page).not_to have_link('retrieve latest redcap configuration')
@@ -111,15 +79,28 @@ describe 'admin REDCap project with transfer mode "none"', js: true, driver: $br
     expect(page).not_to have_link('force reconfiguration')
   end
 
+  # NOTE: These tests require projects with configured dynamic models to display the
+  # "pull schedule" section and action buttons. The setup_redcap_project_admin_configs helper
+  # creates projects without dynamic models, so these UI elements are not rendered.
+  # To make these tests work, the test setup would need to:
+  # 1. Create a DynamicModel for the REDCap project data
+  # 2. Associate it with the project via dynamic_storage
+  # 3. Ensure the project has dynamic_model_ready? == true
+
   it 'shows action buttons when transfer_mode is "scheduled"' do
     project = Redcap::ProjectAdmin.active.first
+    expect(project).not_to be_nil, 'No active project found'
+
     project.current_admin = @admin
     project.transfer_mode = 'scheduled'
     project.frequency = '1 hour'
     project.save!
+    project.reload
 
     # Navigate to the project edit page
-    visit "/admin/redcap/project_admins?filter[id]=#{project.id}&perform_action=edit"
+    visit "/redcap/project_admins?filter[id]=#{project.id}&perform_action=edit"
+    finish_page_loading
+
     expect(page).to have_content(project.name)
 
     # Check that the actions block is visible
@@ -129,31 +110,54 @@ describe 'admin REDCap project with transfer mode "none"', js: true, driver: $br
 
   it 'shows action buttons when transfer_mode is "manual"' do
     project = Redcap::ProjectAdmin.active.first
+    expect(project).not_to be_nil, 'No active project found'
+
     project.current_admin = @admin
     project.transfer_mode = 'manual'
     project.frequency = nil
+    project.disabled = false # Ensure project is enabled
     project.save!
+    project.reload
 
     # Navigate to the project edit page
-    visit "/admin/redcap/project_admins?filter[id]=#{project.id}&perform_action=edit"
+    visit "/redcap/project_admins?filter[id]=#{project.id}&perform_action=edit"
+    finish_page_loading
+
     expect(page).to have_content(project.name)
 
-    # Check that the actions block is visible
+    # The Details tab should be active and visible
+    expect(page).to have_css('#def-details-block')
+
+    # Check that the actions block is visible (because transfer_mode is 'manual' and project is enabled)
     expect(page).to have_css('.project-admin-actions-block')
     expect(page).to have_link('retrieve user list')
   end
 
   it 'displays transfer mode status correctly for "none"' do
     project = Redcap::ProjectAdmin.active.first
+    expect(project).not_to be_nil, 'No active project found'
+
     project.current_admin = @admin
     project.transfer_mode = 'none'
+    project.disabled = false # Ensure project is enabled
     project.save!
+    project.reload
 
-    visit "/admin/redcap/project_admins?filter[id]=#{project.id}&perform_action=edit"
+    # Give the database a moment to ensure the save is fully committed
+    sleep 0.5
+
+    visit "/redcap/project_admins?filter[id]=#{project.id}&perform_action=edit"
+    finish_page_loading
+
     expect(page).to have_content(project.name)
 
-    # Check that transfer mode displays as "none"
-    expect(page).to have_content('pull schedule')
-    expect(page).to have_content('none')
+    # The Details tab should be active and visible
+    expect(page).to have_css('#def-details-block')
+
+    # Check that transfer mode displays as "none" in the pull schedule section
+    within '#def-details-block' do
+      expect(page).to have_content('pull schedule')
+      expect(page).to have_content('none')
+    end
   end
 end
