@@ -151,7 +151,7 @@ require "#{Rails.root}/spec/support/master_support.rb"
 require "#{Rails.root}/spec/support/model_support.rb"
 SetupHelper.check_bhs_assignments_table
 Dir[Rails.root.join('spec/support/*.rb')].sort.each { |f| require f }
-Dir[Rails.root.join('spec/support/*/*.rb')].sort.each { |f| require f }
+Dir[Rails.root.join('spec/support/**/*.rb')].sort.each { |f| require f }
 Dir[Rails.root.join('spec/support/apps/*/*.rb')].sort.each { |f| require f }
 SetupHelper.check_bhs_assignments_table
 unless ENV['SKIP_DB_SETUP']
@@ -275,13 +275,7 @@ RSpec.configure do |config|
   # https://relishapp.com/rspec/rspec-rails/docs
   config.infer_spec_type_from_file_location!
 
-  unless ENV['RUN_APP_SPECS'] == 'true'
-    config.exclude_pattern = 'spec/support/apps/**/*.rb'
-    config.exclude_pattern = 'spec/features/apps/**/*.rb'
-  end
-  # config.define_derived_metadata(file_path: escaped_path) do |metadata|
-  #             metadata[:type] ||= type
-  #           end
+  config.exclude_pattern = 'spec/system/apps/**/*_spec.rb' unless ENV['RUN_APP_SPECS'] == 'true'
 
   # removed Devise::TestHelpers from the following line, since it is now deprecated.
   # Using Devise::Test::ControllerHelpers as advised
@@ -291,6 +285,12 @@ RSpec.configure do |config|
   config.extend ControllerMacros, type: :controller
   config.after :each do
     Warden.test_reset!
+  end
+
+  # For system tests that need javascript, use selenium_chrome
+  # The following avoids this needing to be specified in each spec file
+  config.before(:each, type: :system, js: true) do
+    driven_by $browser_driver
   end
 
   Shoulda::Matchers.configure do |config|
