@@ -189,7 +189,7 @@ skip('Phase 6 skipped: Big select configuration needs fixing for Analysis Plan g
 
 ### Test Spec
 
-- `spec/features/apps/grant_aims/grant_aims_process_spec.rb`
+- `spec/system/apps/grant_aims/grant_aims_process_spec.rb`
   - Added 4 notification check calls
   - Properly skipped Phase 6 with documentation
   - Added better end message
@@ -233,10 +233,10 @@ skip('Phase 6 skipped: Big select configuration needs fixing for Analysis Plan g
 
 ```bash
 # Run the full test
-bundle exec rspec spec/features/apps/grant_aims/grant_aims_process_spec.rb:28
+bundle exec rspec spec/system/apps/grant_aims/grant_aims_process_spec.rb:28
 
 # With debug output
-app-scripts/headless_rspec.sh spec/features/apps/grant_aims/grant_aims_process_spec.rb:28
+app-scripts/headless_rspec.sh spec/system/apps/grant_aims/grant_aims_process_spec.rb:28
 ```
 
 ## Known Limitations

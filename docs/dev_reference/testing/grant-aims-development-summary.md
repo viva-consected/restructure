@@ -235,7 +235,7 @@ spec/support/apps/grant_aims_feature_support/
 
 ### 3. Updated Implementation Status
 
-**Location:** `spec/features/grant_aims/IMPLEMENTATION_STATUS.md`
+**Location:** `spec/system/grant_aims/IMPLEMENTATION_STATUS.md`
 
 **Updates:**
 
@@ -293,7 +293,7 @@ Used to understand AJAX loading behavior.
 ### 5. Test Output Redirection
 
 ```bash
-bundle exec rspec spec/features/apps/grant_aims/grant_aims_process_spec.rb:24 2>&1 | tee /tmp/test_run.log | tail -100
+bundle exec rspec spec/system/apps/grant_aims/grant_aims_process_spec.rb:24 2>&1 | tee /tmp/test_run.log | tail -100
 ```
 
 Used to capture full test output for analysis.
@@ -378,17 +378,17 @@ Used to capture full test output for analysis.
 
 - `docs/dev_reference/testing/feature-spec-development-guide.md`
 - `spec/support/apps/grant_aims_feature_support/` (10 files)
-- `spec/features/apps/grant_aims/grant_aims_process_spec.rb`
+- `spec/system/apps/grant_aims/grant_aims_process_spec.rb`
 
 ### Updated
 
 - `.github/copilot-instructions.md` (added ~400 lines)
-- `spec/features/grant_aims/IMPLEMENTATION_STATUS.md`
-- `spec/features/grant_aims/README.md`
+- `spec/system/grant_aims/IMPLEMENTATION_STATUS.md`
+- `spec/system/grant_aims/README.md`
 
 ### Maintained
 
-- `spec/features/grant_aims/FORM_STRUCTURE_GUIDE.md`
+- `spec/system/grant_aims/FORM_STRUCTURE_GUIDE.md`
 
 ## Conclusion
 

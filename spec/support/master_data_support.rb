@@ -99,6 +99,22 @@ module MasterDataSupport
   # but has the side effect of leaving the database with data
   # after each run
   def create_data_set_outside_tx(options = {})
+    # Check if data set has already been created in this test run
+    # Use a cache key that includes the options to ensure different configurations are handled separately
+    cache_key = "data_set_#{options.hash}"
+
+    if SetupHelper.spec_tally_names.include?(cache_key)
+      Rails.logger.info '** Data set already created, skipping **'
+      puts '** Data set already created, skipping **'
+
+      # Still need to set up instance variables that specs expect
+      ms = Master.no_temporary_masters
+      @master = ms.first if ms.count > 0
+      @master_id = @master&.id
+
+      return
+    end
+
     t0 = Time.now
     Rails.logger.info '** Creating data set outside transaction **'
     puts "#{t0} ** Creating data set outside transaction **"
@@ -115,6 +131,9 @@ module MasterDataSupport
     puts "**   Ran create_data_set in #{t2 - t1} seconds **"
     puts "** Created data set outside transaction in #{t2 - t0} seconds **"
     Rails.logger.info "** Created data set outside transaction in #{t2 - t0} seconds **"
+
+    # Mark this data set as created
+    SetupHelper.add_to_spec_db(cache_key)
   end
 
   def create_data_set(options = {})
