@@ -328,10 +328,9 @@ app-scripts/retest_failed_parallel_tests.sh
 
 ### Rspec feature test tips
 
-To avoid 2FA logins blocking tests, the following settings are recommended in test setup (in `before(:all)` block):
+To avoid 2FA logins blocking user tests, the following settings are recommended in test setup (in `before(:all)` block):
 ```ruby
 change_setting('TwoFactorAuthDisabledForUser', true)
-change_setting('TwoFactorAuthDisabledForAdmin', true)
 ```
 
 Never click on elements programmatically using Javascript if they may not be interactable. Instead, use JavaScript to scroll them into view first:
@@ -367,6 +366,10 @@ Any "edit" button represented by a glyphicon should be clicked in the UI rather 
 Any link or button that has the HTML attribute `data-remote="true"` (which may appear in a Rails helper like `<%= link_to ..., remote: true %>`) should be clicked in the UI rather than visiting the URL directly. This is because these links typically perform AJAX requests that update parts of the page dynamically.
 
 Don't use Javascript to manipulate or show fields not visible due to `show_if` rules. These are hidden due to the business logic, and if the tests dictate they should be shown then this indicates a bug.
+
+Avoid relying on `skip` or `xit` in spec files. Instead, fix the underlying issues causing test failures. The aim is not to have tests that simply run without errors, but to have tests that accurately verify the functionality.
+
+If changes are made to a spec file, make sure to re-run the tests to verify they still pass. Nothing should be considered "fixed" until the tests pass successfully.
 
 ## Feature Spec Development Patterns
 

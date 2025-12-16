@@ -102,15 +102,19 @@ module MasterDataSupport
     t0 = Time.now
     Rails.logger.info '** Creating data set outside transaction **'
     puts "#{t0} ** Creating data set outside transaction **"
+    t1 = nil
     Thread.new do
       ActiveRecord::Base.connection_pool.with_connection do
         SeedSupport.setup
+        t1 = Time.now
+        puts "**   Ran seeds in #{t1 - t0} seconds **"
         create_data_set options
       end
     end.join
-    t1 = Time.now
-    puts "** Created data set outside transaction in #{t1 - t0} seconds **"
-    Rails.logger.info "** Created data set outside transaction in #{t1 - t0} seconds **"
+    t2 = Time.now
+    puts "**   Ran create_data_set in #{t2 - t1} seconds **"
+    puts "** Created data set outside transaction in #{t2 - t0} seconds **"
+    Rails.logger.info "** Created data set outside transaction in #{t2 - t0} seconds **"
   end
 
   def create_data_set(options = {})

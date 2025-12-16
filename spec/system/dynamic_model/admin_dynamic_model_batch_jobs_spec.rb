@@ -8,12 +8,14 @@ describe 'admin dynamic model batch jobs link', js: true, driver: $browser_drive
 
   before(:all) do
     SetupHelper.feature_setup
-    ENV['FPHS_ADMIN_SETUP'] = 'yes'
-    # Don't disable 2FA since admin_sign_in_with_2fa expects it enabled
     make_an_admin
   end
 
   it 'shows batch jobs link when batch_trigger is configured' do
+    # Close any extra windows and switch to main window
+    windows.last.close while windows.length > 1
+    switch_to_window(windows.first)
+
     # Create a dynamic model with batch_trigger configuration
     dm = DynamicModel.create!(
       current_admin: @admin,
@@ -71,6 +73,16 @@ describe 'admin dynamic model batch jobs link', js: true, driver: $browser_drive
   end
 
   it 'does not show batch jobs link when batch_trigger is not configured' do
+    # Close any extra windows from previous tests and switch to main window
+    windows.last.close while windows.length > 1
+    switch_to_window(windows.first)
+
+    # Log out if already signed in from previous test
+    if page.has_css?('.admin-navbar', wait: 1)
+      visit '/admins/sign_out'
+      expect(page).to have_current_path('/admins/sign_in')
+    end
+
     # Create a dynamic model without batch_trigger
     dm = DynamicModel.create!(
       current_admin: @admin,
@@ -88,10 +100,6 @@ describe 'admin dynamic model batch jobs link', js: true, driver: $browser_drive
     )
     dm.current_admin = @admin
     dm.update_tracker_events
-
-    # Close any extra windows from previous tests and switch to main window
-    windows.last.close while windows.length > 1
-    switch_to_window(windows.first)
 
     admin_sign_in_with_2fa
 
@@ -120,6 +128,12 @@ describe 'admin dynamic model batch jobs link', js: true, driver: $browser_drive
     # Close any extra windows from previous tests and switch to main window
     windows.last.close while windows.length > 1
     switch_to_window(windows.first)
+
+    # Log out if already signed in from previous test
+    if page.has_css?('.admin-navbar', wait: 1)
+      visit '/admins/sign_out'
+      expect(page).to have_current_path('/admins/sign_in')
+    end
 
     # Enable delayed job creation but prevent execution
     # This allows RecurringBatchTask.schedule_task to create job records
@@ -239,12 +253,15 @@ describe 'admin dynamic model batch jobs link', js: true, driver: $browser_drive
 
       # Should see job for first dynamic model
       expect(page).to have_css('table tr', text: job1.id.to_s)
-
       # Should NOT see job for second dynamic model (check within table rows only)
       expect(page).not_to have_css('table tbody tr', text: /\A\s*#{Regexp.escape(job2.id.to_s)}\s/)
     end
 
     # Now test the second dynamic model
+    # Close extra windows and switch back to main window
+    windows.last.close while windows.length > 1
+    switch_to_window(windows.first)
+
     visit '/admin/dynamic_models'
 
     # Wait for the dynamic models page to load
@@ -278,7 +295,6 @@ describe 'admin dynamic model batch jobs link', js: true, driver: $browser_drive
 
       # Should see job for second dynamic model
       expect(page).to have_css('table tr', text: job2.id.to_s)
-
       # Should NOT see job for first dynamic model (check within table rows only)
       expect(page).not_to have_css('table tbody tr', text: /\A\s*#{Regexp.escape(job1.id.to_s)}\s/)
     end
