@@ -647,6 +647,7 @@ module FeatureSupport
   # - available model reference expanders (the carets that are linked by #mr-expander-... ids)
   # - available submit buttons
   def debug_process_status
+    puts_error_page
     puts_alerts
     available_report_tabs
     puts_modals
@@ -657,8 +658,8 @@ module FeatureSupport
       available_model_reference_expanders
       user_instructions_placeholders
       available_form_fields
-      available_model_reference_expanders
       available_submit_fields
+      available_embedded_model_reference_add_buttons
     end
   rescue Selenium::WebDriver::Error::StaleElementReferenceError
     puts_debug 'StaleElementReferenceError encountered in debug_process_status - skipping'
@@ -683,7 +684,7 @@ module FeatureSupport
       end
       res_html = doc.to_html
       res_html = res_html.gsub("\r", '').gsub(/\n\n+/, "\n")
-      res_md = Redcap::Utilities.html_to_markdown(res_html)
+      res_md = res_html.html_to_markdown
       puts_debug 'Caption for user:'
       puts '---'
       puts res_md
@@ -781,6 +782,24 @@ module FeatureSupport
     results
   end
 
+  def available_embedded_model_reference_add_buttons
+    puts_debug 'Available embedded model reference add buttons:'
+    all_mrs = all('a.embedded-add-item-button', visible: :all, wait: 0)
+    results = []
+    all_mrs.each do |mr_action|
+      next unless mr_action
+
+      res = {}
+      res[:label] = mr_action.text
+      res[:href] = mr_action[:href]
+      res[:data_target] = mr_action['data-target']
+      results << res
+    end
+    puts String.yaml_dump(results)
+    puts '---'
+    results
+  end
+
   def available_model_reference_expanders
     puts_debug 'Available model reference expanders:'
     all_mrs = all('.in-item-model-references', visible: :all, wait: 0)
@@ -841,6 +860,17 @@ module FeatureSupport
     puts ('=' * 80) + "\n"
   end
 
+  def puts_error_page
+    epb = all('.error-page-block', wait: 0).first
+    if epb.nil?
+      puts_debug 'No error page block found'
+      return
+    end
+    puts_debug '⚠️  Error page message:'
+    puts epb.html.html_to_markdown
+    puts '---'
+  end
+
   def puts_alerts
     puts_debug "⚠️  Alert messages: #{alert_messages.join(' | ')}" if flashed_alert?
   end
@@ -867,5 +897,49 @@ module FeatureSupport
       btn.click
     end
     sleep 0.5
+  end
+
+  def take_screenshot(name = nil, description = nil, force: false)
+    return unless ENV['TAKE_SCREENSHOTS'] || force
+
+    name ||= 'screenshot'
+    timestamp = Time.now.strftime('%Y%m%d_%H%M%S')
+    filename = "#{self.class&.name&.underscore}_#{name}_#{timestamp}.png"
+    filepath = File.join('tmp', 'screenshots', filename)
+
+    # Ensure directory exists
+    FileUtils.mkdir_p(File.dirname(filepath))
+
+    # Take screenshot
+    page.save_screenshot(filepath)
+
+    # Log the screenshot
+    puts "[Screenshot] #{name}: #{filepath}"
+    puts "[Screenshot] #{description}" if description
+
+    # Return relative path for documentation
+    "/tmp/screenshots/#{filename}"
+  end
+
+  def debug_state(name = nil, description = nil)
+    name ||= 'debug_state'
+    puts_debug("DEBUG STATE: #{name} - #{description}")
+    begin
+      filename = "#{self.class&.name&.underscore}_#{name}.html"
+      filepath = File.join('tmp', filename)
+      save_html_snapshot(filepath)
+    rescue Exception
+      puts_debug '  - Failed to save HTML snapshot'
+    end
+    begin
+      debug_process_status
+    rescue Exception
+      puts_debug '  - Failed to debug process status'
+    end
+    begin
+      take_screenshot('edit_player_info_missing', "Expected to be in edit_player_info form to edit college '#{college}'", force: true)
+    rescue Exception
+      puts_debug '  - Failed to take screenshot'
+    end
   end
 end

@@ -191,7 +191,10 @@ unless ENV['SKIP_DB_SETUP']
   puts "Exists test_file_field_recs? > #{ActiveRecord::Base.connection.table_exists?('test_file_field_recs')}"
 end
 
-SetupHelper.run_extra_setups
+if ENV['RUN_APP_SPECS'] == 'true' && !ENV.fetch('SKIP_APP_SETUP', nil)
+  put_now 'Run extra app setups'
+  SetupHelper.run_extra_setups
+end
 
 put_now 'RSpec configure'
 
@@ -291,6 +294,20 @@ RSpec.configure do |config|
   # The following avoids this needing to be specified in each spec file
   config.before(:each, type: :system, js: true) do
     driven_by $browser_driver
+  end
+
+  config.before(:each) do
+    instance_variables.each do |var|
+      # Check if the variable's class has been reloaded since it was assigned
+      var_val = instance_variable_get(var)
+      var_class = var_val.class
+      next if var_class&.name.nil? # Typically if an instance variable is holding a Class object itself
+      # CollectionProxy is just a wrapper, skip it
+      next if var_class.name == 'ActiveRecord::Associations::CollectionProxy'
+      next unless var_class.name =~ /^[A-Z]/ # Skip non-constant class names (e.g., "scantrons")
+
+      expect(var_class).to eq(var_class.name.constantize), "Class of instance variable #{var} (#{var_class.name}) has been reloaded in #{self}. Please reassign it within the test to avoid stale class issues."
+    end
   end
 
   Shoulda::Matchers.configure do |config|

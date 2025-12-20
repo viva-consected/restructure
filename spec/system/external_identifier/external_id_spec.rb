@@ -22,7 +22,7 @@ describe 'external id (bhs_assignments)', js: true, driver: $browser_driver do
       g.current_admin = @admin
       g.create_with = true
       g.edit_always = true
-      g.save!
+      g.save
     end
 
     @user, @good_password = create_user

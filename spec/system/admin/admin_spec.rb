@@ -5,6 +5,7 @@ require 'rails_helper'
 describe 'admin sign in process', driver: $browser_driver do
   include ModelSupport
   include AdminActionsSetup
+  include FeatureSupport
 
   before(:all) do
     SetupHelper.feature_setup
