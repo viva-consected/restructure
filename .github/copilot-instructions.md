@@ -22,6 +22,34 @@
 4. Verify show_if conditions are met for hidden fields
 5. As last resort: `debug_state('action_name', 'description')` to save HTML snapshot, screenshot and UI status
 
+### Ruby on Rails Conventions
+
+- Follow the RuboCop Style Guide and use tools like `rubocop`, `standardrb`, or `rufo` for consistent formatting.
+- Use snake_case for variables/methods and CamelCase for classes/modules.
+- Keep methods short and focused; use early returns, guard clauses, and private methods to reduce complexity.
+- Favor meaningful names over short or generic ones.
+- Comment only when necessary — avoid explaining the obvious.
+- Apply the Single Responsibility Principle to classes, methods, and modules.
+- Prefer composition over inheritance; extract reusable logic into modules or services.
+- Keep controllers thin — move business logic into models, services, or command/query objects.
+- Apply the “fat model, skinny controller” pattern thoughtfully and with clean abstractions.
+- Extract business logic into service objects for reusability and testability.
+- Use partials or view components to reduce duplication and simplify views.
+- Use `unless` for negative conditions, but avoid it with `else` for clarity.
+- Avoid deeply nested conditionals — favor guard clauses and method extractions.
+- Use safe navigation (`&.`) instead of multiple `nil` checks.
+- Prefer `.present?`, `.blank?`, and `.any?` over manual nil/empty checks.
+- Scope queries in models or use query objects for clarity and reuse.
+- Use `before_action` callbacks sparingly — avoid business logic in them.
+- Use `Rails.cache` to store expensive computations or frequently accessed data.
+- Construct file paths with `Rails.root.join(...)` instead of hardcoding.
+- Use `class_name` and `foreign_key` in associations for explicit relationships.
+- Keep secrets and config out of the codebase using ENV variables.
+- Write isolated unit tests for models, services, and helpers.
+- Cover end-to-end logic with request/system tests.
+- Use background jobs (ActiveJob) for non-blocking operations like sending emails or calling APIs.
+- Document complex code paths and methods with YARD
+
 ### Helper Methods Quick Reference
 
 | Task | Helper Method | Example |
