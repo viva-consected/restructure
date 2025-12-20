@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "#{Rails.root}/spec/support/user_support"
 require "#{Rails.root}/spec/support/seeds"
 require './db/table_generators/external_identifiers_table'
 
