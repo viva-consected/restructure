@@ -14,49 +14,242 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
-## [9.38.3] - 2025-12-21
+- [Added] option to release script to that must be set if we want to merge back from new-master branch after build
+- [Fixed] undefined method 'definition' error when renaming or trashing filestore files - fixes #878
+- [Updated] agent tool access
+
+## [9.42.1] - 2026-01-19
+
+### From FPHS - PR #848 - 2026-01-19
+
+- [Added] substitutions within save trigger pull_external_data headers, to support `Authorization: Bearer {{access_token}}` requirements - references #840
+
+## [9.42.0] - 2026-01-19
+
+### From FPHS - PR #39 - 2026-01-19
+
+- [Fixed] batch_trigger not being removed when dynamic definition is disabled - resolves #39
+
+### From FPHS - PR #845 - 2026-01-19
+
+- [Fixed] #216 - Recreate triggers when field types change in dynamic models
+
+### From FPHS - PR #844 - 2026-01-19
+
+- [Added] detailed error logging to reload_this trigger - fixed #838
+
+### From FPHS - PR #843 - 2026-01-19
+
+- [Added] exclude regex field to Rails log admin viewer - fixed #751
+
+### From FPHS - PR #842 - 2026-01-16
+
+- [Added] extra debugging logging and exceptions
+
+### From FPHS - PR #841 - 2026-01-14
+
+- [Added] failed file field marker and retry logic for REDCap pulls - fixed #837
+
+### From FPHS - PR #839 - 2026-01-15
+
+- [Added] Redcap project buttons to retrieve "since" last retrieval or "all", and ensure the date to retrieve from represents the last successful retrieval - resolves #379
+- [Added] Redcap project options for metadata_export_cache_time, record_export_cache_time, export_only_updated_records
+
+### From FPHS - PR #836 - 2026-01-14
+
+Fixed using field default 'current_user_email' fails in a report criteria default when viewed within the admin panel - fixes #620
+
+### From FPHS - PR #835 - 2026-01-14
+
+- [Fixed] master search results being requested from server twice in quick succession - fixes #834
+
+### From FPHS - PR #832 - 2026-01-13
+
+- [Fixed] tracker history ordering to use event_date::date DESC, id DESC so that events are ordered correctly based on event date "date without time" and latest insert - fixes #830
+
+### From FPHS - PR #833 - 2026-01-13
+
+- [Changed] the parsed config functionality for dynamic definitions to just show options text with merged libraries and defaults - resolves #831
+
+## [9.41.6] - 2026-01-13
+
+### From FPHS - PR #829 - 2026-01-13
+
+- [Fixed] admin panel editing Activity Log locks up UI due to styling parsed config code - fixes #828
+
+## [9.41.5] - 2026-01-12
+
+### From FPHS - PR #827 - 2026-01-12
+
+- [Fixed] incorrect listing of filesystem flag files
+- [Fixed] specs for reliability
+- [Fixed] cleanup of test database to also clean temp filestore test files
+- [Added] save or batch trigger mechanism to reload "this" - resolves #824
+- [Added] save trigger that acts as a transaction block around other save triggers
+- [Added] save trigger that runs all the listed triggers in a single background job
+- [Added] save trigger to add log entry - resolves #823
+- [Added] save trigger to run a batch trigger in another dynamic model - resolves #822
+- [Fixed] "Run Batch Now" button not working after saving a dynamic model definition
+- [Fixed] broken YAML in dynamic model with view_sql prevents changes being saved
+- [Added] developer documentation to show simple implementation of "AJAX Requests and Responses Using Regular Markup"
+- [Added] ability for report row create and edit to operate for admins without explicit user access controls
+- [Fixed] create_master to return a valid value
+- [Added] more information to add_trackers failure if protocol name or id not found
 
 ### From Viva
 
-- [Fixed] file exclusion for rspec
-- [Updated] CHANGELOG
-- [Fixed] duplicated arguments in calling method
-- [Added] support for cleaner feature spec testing
-- [Added] links to directories for environment specific specs
-- [Added] developer and AI agent documentation to support test development
-- [Added] ability to RUN_APP_SPECS, keeping environment specific acceptance tests outside core
-- [Fxied] regression around avoiding duplicated migration names
-- [Fixed] regression due to not initializing class variables
-- [Changed] handling of dynamically generated migrations to avoid duplications
-- [Fixed] issue with empty `_default...:` options
-- [Added] test to protect essential models from being removed
-- [Added] more markup for automated tests
-- [Fixed] 2FA authentication disabled check edge case
-- [Changed] handling of schema ownership to only be applied in production, to allow effective testing
-- [Changed] error reporting level when SQL fails in a report
-- [Added] scripts to assist automated test runs
-- [Changed] app type imports to improve reliability and reporting of errors
-- [Added] UI markup to assist with automated tests
+- [Changed] custom editor tests to split out reusable helpers
+- [Fixed] the markdown editor failing to paste multiple paragraphs of text successfully from Word docs - fixes #825
 
-## [9.38.2] - 2025-12-12
+## [9.41.4] - 2026-01-08
+
+### From FPHS - PR #819 - 2026-01-08
+
+- [Fixed] create_reference force_valid: true option not working for standard "player" models - fixes #818
+
+### From FPHS - PR #817 - 2026-01-08
+
+- [Fixed] batch and save triggers not running the full set of triggers - fixes #816
+
+### From FPHS - PR #815 - 2026-01-08
+
+- [Added] feature to run dynamic model batch jobs immediately in the admin panel - resolves #814
+
+### From FPHS - PR #813 - 2026-01-07
+
+- [Added] tests and documentation for valid_if dynamic definition option - resolves #228
+
+### From FPHS - PR #812 - 2026-01-07
+
+- [Fixed] scenario where a user has been disabled but we still attempt to send a password notification, causing an exception - fixes #544
+
+### From FPHS - PR #811 - 2026-01-07
+
+- [Added] documentation for tag formatters Fixed implementation and test differences between Ruby and Javascript tag formatters - resolves #679
+- [Fixed] failure to run DicomMetadataJob when the original user's app type id has changed - fixes #808
+
+### From FPHS - PR #810 - 2026-01-06
+
+- [Fixed] failure to run DicomMetadataJob when the original user's app type id has changed - fixes #808
+
+### From FPHS - PR #809 - 2026-01-06
+
+- [Fixed] user access control admin panel copy or editing item causes drop downs to lose values - fixes #395
+- [Added] AI tools
+
+## [9.41.3] - 2025-12-23
+
+## [9.41.2] - 2025-12-23
+
+Rebuild
+
+## [9.41.2] - 2025-12-23
+
+Rebuild
+
+## [9.41.1] - 2025-12-23
+
+### From FPHS - PR #806 - 2025-12-23
+
+- [Added] memcached connection status, version and stats and DB server info in Server info - resolves #627
+
+### From FPHS - PR #805 - 2025-12-23
+
+- [Added] option to copy roles that also set the target user's disabled roles back to enabled - resolves #672
+
+### From FPHS - PR #804 - 2025-12-23
+
+- [Added] admin info panel to view a "parsed config" of dynamic definitions after the config libraries, cleaned configs and YAML anchors have been applied - resolves #795
+
+### From FPHS - PR  #803 - 2025-12-23
+
+- [Added] multiple repetitions to allow config libraries referenced within config libraries to be successfully imported within an app import - resolves #793
+
+### From FPHS - PR #802 - 2025-12-23
+
+- [Fixed] add_item_button incorrect markup for dynamic models - fixes #798
+
+## [9.41.0] - 2025-12-22
+
+- [Updated] gems and yarn
+
+## [9.40.0] - 2025-12-22
+
+### From Viva - 2025-12-22
+
+- [Updates] to support improved testing and app import reliability
+
+### From FPHS - PR #801- 2025-12-22
+
+- [Fixed] NfsStore::Dicom::MetadataHandler bug when guarding against a missing file_path due to user not having appropriate user roles - fixes #796
+
+## [9.39.0] - 2025-12-22
+
+- [Updated] gems to address CVE:
+  - CVE-2025-14762
+
+### From Viva - PR #800 - 2025-12-22
+
+- [Updated] gems to restrict connection_pool version
+
+### From Viva and FPHS - PR #799 -2025-12-22
+
+Combined effort related to both projects with similar issues.
+
+- [Fixed] specs and test automation
+
+Fixed-test-script
+
+### From FPHS - PR #791 - 2025-12-07
+
+- [Added] test scripts to aid automated testing
+- [Changed] handling of test database cleaning using a Postgres user with appropriate privileges, rather than the superuser
+- [Fixed] specs for reliability
+
+Added brakeman ignore entry
+
+### From FPHS - PR #789 - 2025-1205
+
+- [Fixed] deprecation warnings for SCSS files - fixes #669
+
+### From FPHS - PR #788 - 2025-12-05
+
+Added more information when the save trigger add_tracker fails for some reason - fixes #280
+
+### From FPHS - PR #648 - 2025-12-05
+
+- [Added] Redcap transfer to include failed files count - resolves #648
+
+### From FPHS - PR #617 - 2025-12-05
+
+- [Added] notify save trigger to allow curly substitutions for emails, users and other configurations -  resolves #617
+
+- [Fixed] documentation related to notify save trigger
+
+- [Allow] use of `return_value_list` calculated value to return multiple results form the data for emails and phones in notify save trigger
+Fixed documentation related to notify save trigger
+
+Allow use of `return_value_list` calculated value to return multiple results form the data for emails and phones in notify save trigger
+
+### From FPHS - PR #785 - 2025-12-05
+
+- [Changed] handling of Redcap projects with transfer mode "none" to reinforce its meaning as "never transfer this project" - resolves #630
+
+### From FPHS - PR 784 - 2025-12-05
+
+- [Changed] database setup for better testing (avoid need for sudo and remove Filestore temp files)
+
+### From FPHS - PR #783 - 2025-12-05
+
+- [Added] a warning indicator on the Redcap Project admin panel link to show if any scheduled pulls are marked as "failed" - resolves #639
+
+### From Consected - PR #782 - 2025-12-03
 
 - [Added] dynamic model batch_trigger job details and link in dynamic model admin panel - resolves #691
-- [Added] a warning indicator on the Redcap Project admin panel link to show if any scheduled pulls are marked as "failed" - resolves #639
-- [Changed] database setup for better testing
-- [Changed] handling of Redcap projects with transfer mode "none" to reinforce its meaning as "never transfer this project" - resolves #630
-- [Added] notify save trigger to allow curly substitutions for emails, users and other configurations -  resolves #617
-- [Added] Redcap transfer to include failed files count - resolves #648
-- [Added] more information when the save trigger add_tracker fails for some reason - fixes #280
-- [Fixed] deprecation warnings for SCSS files - fixes #669
-- [Added] brakeman ignore entry
-- [Fixed] parallel_test script issue
-- [Added] test fixes and new scripts for improved automation support
-- [Fixed] more test scripts for automation
-- [Fixed] test scripts
 
-## [9.38.1] - 2025-12-03
+### From Consected - PR #781 - 2025-12-03
 
-- [Build] Viva version
+- [Added] version diffs to config_libraries in a new admin panel tab - resolves #780
 
 ## [9.38.0] - 2025-12-03
 
@@ -361,11 +554,13 @@ Fixed reporting multiple failures
 
 - [Changed] Filestore upload multi files - condensed list of uploaded files - resolves #705
 
-## [9.30.7] - 2025-10-28
-
 ### From Viva - PR #703 - 2025-10-23
 
 - [Added] documentation on setting search_path directly on the database user - resolves #577
+
+### From Viva - PR #701 - 2025-10-23
+
+- [Fixed] embedded_record substitution in a placeholder doesn't work (in show mode) - it does above a reference caption - fixes #684
 
 ### From Viva - PR #700 - 2025-10-23
 

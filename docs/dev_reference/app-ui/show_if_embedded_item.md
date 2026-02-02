@@ -88,15 +88,12 @@ fields:
 
 ### JavaScript Tests
 
-Location: `spec/javascripts/_fpa_show_if_spec.js`
+Location: `spec/javascripts/`
 
 Tests validate:
 
-- Basic embedded_item conditions
-- Nested conditions with any/all logic
-- Explicit operators (>=, <, in?, etc.)
-- Array value matching
-- Missing embedded_item handling
+- Field show_if
+- Tag formatting
 
 Run with: `app-scripts/jasmine-serve.sh`
 
@@ -113,7 +110,7 @@ Run with: `bundle exec rspec spec/models/option_configs/dynamic_model_options_sp
 
 ### Feature Tests
 
-Location: `spec/features/dynamic_model_show_if_spec.rb`
+Location: `spec/system/dynamic_model_show_if_spec.rb`
 
 Tests validate:
 
@@ -123,7 +120,7 @@ Tests validate:
 
 Support module: `spec/support/test_show_if_dm_support.rb`
 
-Run with: `bundle exec rspec spec/features/dynamic_model_show_if_spec.rb`
+Run with: `bundle exec rspec spec/system/dynamic_model_show_if_spec.rb`
 
 ## Related Documentation
 

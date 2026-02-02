@@ -32,12 +32,12 @@ app-scripts/setup-dev-filestore.sh
 app-scripts/clean-test-db.sh
 
 # Run tests - this ensures appropriate environment variables are set to include 
-# `spec/features/apps/` and `spec/support/apps/`
-app-scripts/headless_rspec.sh exec rspec spec/features/your_spec.rb
+# `spec/system/apps/` and `spec/support/apps/`
+app-scripts/headless_rspec.sh exec rspec spec/system/your_spec.rb
 
 # Run with visible browser for debugging - this ensures appropriate environment variables are set to include
-# spec/features/apps/ and spec/support/apps
-app-scripts/not_headless_rspec.sh spec/features/your_spec.rb
+# spec/system/apps/ and spec/support/apps
+app-scripts/not_headless_rspec.sh spec/system/your_spec.rb
 ```
 
 ### 2FA Configuration
@@ -540,10 +540,8 @@ end
 ### Scroll Helper
 
 ```ruby
-def scroll_into_view(element)
-  page.execute_script('arguments[0].scrollIntoView(true);', element)
-  sleep 0.5
-end
+include FeatureSupport
+scroll_into_view(element)
 ```
 
 ## Test Organization

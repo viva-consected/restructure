@@ -12,7 +12,7 @@ if [ -z "${DBUS_SESSION_BUS_ADDRESS}" ]; then
 fi
 
 rm public/assets/application-*
-JS_SETUP=true SKIP_BROWSER_SETUP=true SKIP_DB_SETUP=true SKIP_APP_SETUP=true rspec spec/features/js_asset_spec.rb
+JS_SETUP=true SKIP_BROWSER_SETUP=true SKIP_DB_SETUP=true SKIP_APP_SETUP=true rspec spec/system/js_asset_spec.rb
 
 if [ "${browserarg}" ]; then
   killall firefox 2> /dev/null
@@ -24,3 +24,7 @@ $(
 ) &
 
 npx jasmine-browser-runner ${runas}
+echo 'Done'
+if [ "${browserarg}" ]; then
+  killall firefox 2> /dev/null
+fi

@@ -10,6 +10,19 @@ _fpa.loaded.preload = function () {
     ev.preventDefault();
   });
 
+  // Delegated handler for show-in-modal elements using data-content-el attribute.
+  // Using event delegation ensures this works for dynamically loaded content
+  // without requiring re-attachment after AJAX updates.
+  $(document).on('click', '.show-in-modal[data-content-el]', function (ev) {
+    ev.preventDefault();
+    var contentSelector = $(this).attr('data-content-el');
+    if (!contentSelector) return;
+
+    var content = $(contentSelector).html();
+    var title = $(this).attr('data-title');
+    _fpa.show_modal(content, title);
+  });
+
 
   window.addEventListener('focus', function () {
     // Check the session timeout
@@ -97,7 +110,7 @@ _fpa.loaded.default = function () {
     _fpa.printing.appPrintHandler();
   });
 
-  if (_fpa.state.current_user.sign_in_count < 3 && $('body.rails-env-test').length == 0 && _fpa.status.controller !== 'registrations') {
+  if (_fpa.state.current_user && _fpa.state.current_user.sign_in_count < 3 && $('body.rails-env-test').length == 0 && _fpa.status.controller !== 'registrations') {
     const key_viewed_intro = `viewed-introduction-${_fpa.state.current_user.email}`;
     var viewed = localStorage.getItem(key_viewed_intro);
     if (!viewed) {

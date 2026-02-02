@@ -42,6 +42,7 @@ RSpec.describe Redcap::DataRecords, type: :model do
       @bad_admin, = create_admin
       @bad_admin.update! disabled: true
       create_admin
+      change_setting('RedcapJobUserEmail', @admin.email)
       setup_file_store
       @projects = setup_redcap_project_admin_configs
       @project = @projects.first
@@ -356,14 +357,28 @@ RSpec.describe Redcap::DataRecords, type: :model do
 
       expect(dr.existing_records_length).to be > 0
 
-      cr = Redcap::ClientRequest.where(admin: request_admin,
-                                       action: 'store records',
+      cr = Redcap::ClientRequest.where(action: 'store records',
                                        server_url: rc.server_url,
                                        name: rc.name,
                                        redcap_project_admin: rc)
                                 .where('created_at > :created_at', created_at: start_time)
                                 .last
 
+      if cr.nil?
+        req = {
+          admin: request_admin,
+          action: 'store records',
+          server_url: rc.server_url,
+          name: rc.name,
+          redcap_project_admin: rc,
+          created_at: start_time
+        }
+        puts "About to fail - no ClientRequest found for #{req}"
+        Redcap::ClientRequest.where(redcap_project_admin: rc).where('created_at > :created_at', created_at: start_time).each do |r|
+          puts "  Found ClientRequest #{r.attributes}"
+        end
+      end
+      expect(cr).to be_present, "No ClientRequest found. Available: #{Redcap::ClientRequest.where(redcap_project_admin: rc).where('created_at > :created_at', created_at: start_time).pluck(:action).join(', ')}"
       expect(cr.result).to be_a Hash
       expect(cr.result['storage_stage']).to be_present
       expect(cr.result['count_retrieved']).to be > 0
@@ -405,8 +420,7 @@ RSpec.describe Redcap::DataRecords, type: :model do
 
       rc.update! current_admin: @admin, dynamic_model_table: dm.implementation_class.table_name.to_s
 
-      cr = Redcap::ClientRequest.where(admin: request_admin,
-                                       action: 'store records',
+      cr = Redcap::ClientRequest.where(action: 'store records',
                                        server_url: rc.server_url,
                                        name: rc.name,
                                        redcap_project_admin: rc)
@@ -423,18 +437,16 @@ RSpec.describe Redcap::DataRecords, type: :model do
 
       expect(dr.existing_records_length).to eq 0
 
-      cr = Redcap::ClientRequest.where(admin: request_admin,
-                                       action: 'store records',
+      cr = Redcap::ClientRequest.where(action: 'store records',
                                        server_url: rc.server_url,
                                        name: rc.name,
                                        redcap_project_admin: rc)
                                 .where('created_at > :created_at', created_at: start_time)
                                 .last
 
-      expect(cr.result['storage_stage']).to eq 'validate'
+      expect(cr.result['storage_stage']).to eq 'validate (failed)'
 
-      cr = Redcap::ClientRequest.where(admin: request_admin,
-                                       action: 'capture records job',
+      cr = Redcap::ClientRequest.where(action: 'capture records job',
                                        server_url: rc.server_url,
                                        name: rc.name,
                                        redcap_project_admin: rc)
@@ -454,6 +466,13 @@ RSpec.describe Redcap::DataRecords, type: :model do
       expect(@user.has_access_to?(:edit, :table, rc.dynamic_storage.dynamic_model.resource_name))
       expect(@user.role_names).to include(Settings.admin_nfs_role)
       puts @user.email
+
+      # Debug: Check what user the data_records will use
+      dr_user = rc.current_user
+      # puts "DataRecords current_user: #{dr_user&.email}"
+      # puts "DataRecords current_user has edit access to stored_files: #{dr_user&.has_access_to?(:edit, :table, 'nfs_store__manage__stored_files')}"
+      # puts "DataRecords current_user app_type: #{dr_user&.app_type&.name}"
+      # puts "@user app_type: #{@user.app_type&.name}"
 
       dd = rc.redcap_data_dictionary
       clean_file_fields_filesystem rc.file_store
@@ -547,9 +566,9 @@ RSpec.describe Redcap::DataRecords, type: :model do
       expect(dr.errors.count).to eq 1
       expect(dr.errors.first[:action]).to eq :capture_files
 
-      # Verify the file field was cleared in the database record
+      # Verify the file field was marked with FailedFileFieldMarker in the database record
       model_record.reload
-      expect(model_record.file1).to be_nil
+      expect(model_record.file1).to eq Redcap::DataRecords::FailedFileFieldMarker
       expect(model_record.signature).to be_present
     end
 
@@ -602,8 +621,7 @@ RSpec.describe Redcap::DataRecords, type: :model do
 
       # Verify job result includes file counts
       start_time = DateTime.now - 1.minute
-      cr = Redcap::ClientRequest.where(admin: request_admin,
-                                       action: 'store records',
+      cr = Redcap::ClientRequest.where(action: 'store records',
                                        server_url: rc.server_url,
                                        name: rc.name,
                                        redcap_project_admin: rc)

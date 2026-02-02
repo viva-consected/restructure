@@ -191,19 +191,8 @@ _fpa.postprocessors = {
       hljs.highlightBlock($(this)[0]);
     });
 
-
-    block.find('.show-in-modal').not('.attached-show-in-modal').each(function () {
-      var el = $(this).attr('data-content-el');
-      if (!el) return;
-
-      var content = $(el).html()
-      var title = $(this).attr('data-title');
-
-      $(this).on('click', function (ev) {
-        ev.preventDefault();
-        _fpa.show_modal(content, title);
-      })
-    }).addClass('attached-show-in-modal');
+    // Note: .show-in-modal[data-content-el] elements are handled by a delegated
+    // event handler in _fpa_loaded.js to ensure they work after AJAX updates.
 
   },
 
@@ -286,6 +275,7 @@ _fpa.postprocessors = {
       .click(function (ev) {
         ev.preventDefault();
         var id = $(this).attr('data-target');
+
         $(id).on('shown.bs.collapse', function () {
           $('.selected-result').removeClass('selected-result');
 

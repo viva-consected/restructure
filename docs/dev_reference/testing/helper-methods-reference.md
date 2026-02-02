@@ -368,10 +368,11 @@ alert_messages  # Returns array of {severity => text}
 
 ```bash
 # Enable puts_debug output from all helpers
-FEATURE_DEBUG=true bundle exec rspec spec/features/your_spec.rb
+# AI Agents: do not use this
+FEATURE_DEBUG=true bundle exec rspec spec/system/your_spec.rb
 
-# Recommended for development:
-FEATURE_DEBUG=true app-scripts/not_headless_rspec.sh spec/features/your_spec.rb
+# AI Agents: use this instead
+app-scripts/headless_rspec.sh spec/system/your_spec.rb
 ```
 
 ## Complete Examples

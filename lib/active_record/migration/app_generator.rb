@@ -665,7 +665,20 @@ module ActiveRecord
           changed_history.each do |k, v|
             v = map_migration_type_to_db_type(v)
             change_type = "#{v} using #{k}::#{v}"
-            change_column "#{schema}.#{table_name}", k, change_type
+            change_column "#{schema}.#{history_table_name}", k, change_type
+          end
+        end
+
+        # Recreate the trigger if any field types changed, since the trigger function
+        # needs to reflect the correct types for the fields being copied to history
+        if changed.present? || changed_history.present?
+          case resource_type
+          when :dynamic_model
+            create_dynamic_model_trigger
+          when :activity_log
+            create_activity_log_trigger
+          when :external_identifier
+            create_external_identifier_trigger
           end
         end
 
@@ -690,7 +703,7 @@ module ActiveRecord
         reference_views&.each do |view|
           Rails.logger.warn "Dropping AL dependent view #{view['schemaname']}.#{view['viewname']} which references #{schema}.#{table_name} via activity log"
           execute <<~END_SQL
-            DROP VIEW #{view['schemaname']}.#{view['viewname']};
+            DROP VIEW #{view['schemaname']}.#{view['viewname']} CASCADE;
           END_SQL
         end
 
@@ -1091,7 +1104,7 @@ module ActiveRecord
 
       def dynamic_model_view_sql
         <<~DO_TEXT
-          DROP VIEW if exists #{schema}.#{table_name};
+          DROP VIEW if exists #{schema}.#{table_name} CASCADE;
           CREATE VIEW #{schema}.#{table_name} AS
           #{view_sql};
         DO_TEXT
@@ -1101,7 +1114,7 @@ module ActiveRecord
         if updating?
           dynamic_model_view_sql
         else
-          "DROP VIEW is exists #{schema}.#{table_name};"
+          "DROP VIEW if exists #{schema}.#{table_name} CASCADE;"
         end
       end
 
