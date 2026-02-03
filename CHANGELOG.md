@@ -14,6 +14,8 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
+## [9.42.3] - 2026-02-03
+
 - [Fixed] asset cleaning to limit to test directories
 - [Fixed] race condition in auto-run report tabs causing 0 results on tab rotation - fixes #835
 
