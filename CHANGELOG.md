@@ -14,6 +14,9 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
+- [Fixed] asset cleaning to limit to test directories
+- [Fixed] race condition in auto-run report tabs causing 0 results on tab rotation - fixes #835
+
 ## [9.42.2] - 2026-02-02
 
 - [Added] option to release script to that must be set if we want to merge back from new-master branch after build
