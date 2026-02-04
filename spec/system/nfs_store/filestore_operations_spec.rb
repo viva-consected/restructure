@@ -13,16 +13,21 @@
 #   - Downloading single and multiple files
 #   - Sending a file to trash
 #
-# Regression test for Issue #878:
-#   Error when renaming or sending files to trash due to
+# Regression test for Issues #878 and #884:
+#
+# Issue #878: Error when renaming or sending files to trash due to
 #   "undefined method 'definition' for class NfsStore::Manage::StoredFile"
-#
-# The issue was that the JSON serialization of the action result (containing StoredFile objects)
-# was calling methods from Dynamic::ImplementationHandler that expected a 'definition' class
-# method to exist, which is only present on ActivityLog/DynamicModel implementations.
-#
-# NOTE: The core bug fix for Issue #878 is validated by the unit test in:
+#   The issue was that the JSON serialization of the action result (containing StoredFile objects)
+#   was calling methods from Dynamic::ImplementationHandler that expected a 'definition' class
+#   method to exist, which is only present on ActivityLog/DynamicModel implementations.
+#   Core bug fix for Issue #878 is validated by the unit test in:
 #   spec/models/nfs_store/manage/container_file_spec.rb
+#
+# Issue #884: Filestore "send to trash" opens response as JSON in new tab
+#   The issue is that clicking "send to trash" causes the browser to navigate to the JSON
+#   response URL instead of handling it via AJAX. This happens because the link click handler
+#   doesn't call e.preventDefault(), causing the default link behavior (navigate to href="#")
+#   to interfere with the AJAX form submission.
 #
 # This system spec provides UI-level regression testing for the filestore operations.
 
@@ -240,7 +245,7 @@ describe 'Filestore file operations', js: true, driver: $browser_driver, type: :
   end
 
   describe 'Send file to trash' do
-    it 'sends a file to trash without errors (regression for issue #878)' do
+    it 'sends a file to trash without errors (regression for issues #878 and #884)' do
       # Navigate to the master record
       navigate_to_master(@master.id)
 
@@ -264,8 +269,25 @@ describe 'Filestore file operations', js: true, driver: $browser_driver, type: :
       # Open the hamburger menu
       open_filestore_menu
 
+      # Capture the current URL before clicking send to trash (for issue #884 regression test)
+      original_url = page.current_url
+
       # Click send to trash
       click_send_to_trash_menu_item
+
+      # REGRESSION TEST FOR ISSUE #884:
+      # Verify the page didn't navigate away to a JSON endpoint
+      # The bug causes the browser to navigate to /nfs_store/downloads with JSON response
+      expect(page.current_url).to eq(original_url),
+                                  "Page navigated away (issue #884): expected to stay on #{original_url}, but went to #{page.current_url}"
+
+      # Verify the page body doesn't contain raw JSON (another symptom of issue #884)
+      expect(page.body).not_to include('"success":true'),
+                               'Page shows raw JSON response (issue #884)'
+
+      # Verify the filestore container is still visible (not navigated to JSON page)
+      expect(page).to have_css('.container-browser', wait: 5),
+                      'Filestore container not visible - may have navigated to JSON page (issue #884)'
 
       # Verify no error occurred (this was the bug in issue #878)
       expect(has_error_alert?).to be(false), "Unexpected error: #{error_alert_text}"

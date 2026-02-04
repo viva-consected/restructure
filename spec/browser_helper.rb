@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module BrowserHelper
-  BASE_BROWSER_PORT = 9887
+  BASE_BROWSER_PORT = 19_887
   @@running = {}
   $browser_driver = nil
 

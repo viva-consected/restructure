@@ -117,7 +117,17 @@ _nfs_store.fs_browser = function ($outer) {
     }
 
     $('body').addClass('prevent-page-transition');
-    btn.click();
+    
+    // Add the commit parameter as a hidden field so Rails controller knows which action to perform
+    // When programmatically submitting a form, the button value isn't included,
+    // so we need to manually add it to the form
+    var btnVal = btn.val() || btn.text() || '';
+    form.find('input[name="commit"]').remove(); // Remove any existing commit field
+    form.append('<input type="hidden" name="commit" value="' + btnVal + '" />');
+    
+    // Trigger form submission so Rails UJS can handle it via AJAX
+    // Using trigger('submit') instead of .submit() ensures Rails UJS intercepts the event
+    form.trigger('submit');
   };
 
   var refresh_browser = function (outer, container_id) {
@@ -326,11 +336,13 @@ _nfs_store.fs_browser = function ($outer) {
     submit_download_form(target);
     disable_submit(target, true);
     set_submit_download_caption(target, "request submitted");
-  }).on('click', '.container-browse-trash-submit', function () {
+  }).on('click', '.container-browse-trash-submit', function (e) {
+    e.preventDefault();
     var target = $($(this).attr('data-target-browser'));
     submit_action_form(target, 'trash');
     disable_submit(target, true);
-  }).on('click', '.container-browse-trigger-file-action', function () {
+  }).on('click', '.container-browse-trigger-file-action', function (e) {
+    e.preventDefault();
     var target = $($(this).attr('data-target-browser'));
     var action_id = $(this).attr('data-trigger-file-action');
     submit_action_form(target, 'trigger-file-action-' + action_id);
@@ -339,8 +351,7 @@ _nfs_store.fs_browser = function ($outer) {
       refresh_browser($outer, container_id);
     }, 10000)
 
-  }).on('click', '.container-browse-move-files', function () {
-    var target = $($(this).attr('data-target-browser'));
+  }).on('click', '.container-browse-move-files', function (e) {    e.preventDefault();    var target = $($(this).attr('data-target-browser'));
     var msg = $('#container-browse-move-files-form-' + container_id).html();
     var title = 'Move Files to a folder';
     _fpa.show_modal(msg, title);
@@ -422,7 +433,8 @@ _nfs_store.fs_browser = function ($outer) {
     set_move_from();
 
 
-  }).on('click', '.container-browse-rename-file', function () {
+  }).on('click', '.container-browse-rename-file', function (e) {
+    e.preventDefault();
     var target = $($(this).attr('data-target-browser'));
     var msg = $('#container-browse-rename-file-form-' + container_id).html();
     var title = 'Rename file';

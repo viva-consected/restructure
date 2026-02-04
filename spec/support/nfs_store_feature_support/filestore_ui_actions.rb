@@ -139,6 +139,9 @@ module FilestoreUiActions
     trash_link = find('.dropdown-menu a.container-browse-trash-submit', text: /Send to trash/i, wait: 5)
     trash_link.click
     finish_page_loading
+
+    # Give time for any async operations to complete
+    sleep 0.5
   end
 
   # Click the refresh list button in the filestore browser
