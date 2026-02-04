@@ -14,6 +14,11 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
+- [Added] consistent app settings setup to system specs
+- [Fixed] add_item_button to use correct hyphenated names for activity logs and external identifiers - fixes #802
+- [Refactored] dicom_deidentify_job_spec for maintainability - resolves #887
+- [Fixed] user NfsStore actions, to prevent them changing the user's app type id for the UI - fixes #887
+
 - [Fixed] asset cleaning to limit to test directories
 - [Fixed] race condition in auto-run report tabs causing 0 results on tab rotation - fixes #835
 - [Added] option to release script to that must be set if we want to merge back from new-master branch after build
