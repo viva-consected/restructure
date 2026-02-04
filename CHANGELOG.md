@@ -14,6 +14,8 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
+## [9.42.5] - 2026-02-04
+
 ### From Viva (with debugging contributions from FPHS) - PR #891 - 2026-02-04
 
 - [Changed] edit form template to ensure filestore form is not inside the main form - fixes #884
