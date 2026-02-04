@@ -14,6 +14,8 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
+## [9.42.4] - 2026-02-04
+
 - [Added] consistent app settings setup to system specs
 - [Fixed] add_item_button to use correct hyphenated names for activity logs and external identifiers - fixes #802
 - [Refactored] dicom_deidentify_job_spec for maintainability - resolves #887
