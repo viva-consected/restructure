@@ -117,14 +117,14 @@ _nfs_store.fs_browser = function ($outer) {
     }
 
     $('body').addClass('prevent-page-transition');
-    
+
     // Add the commit parameter as a hidden field so Rails controller knows which action to perform
     // When programmatically submitting a form, the button value isn't included,
     // so we need to manually add it to the form
     var btnVal = btn.val() || btn.text() || '';
     form.find('input[name="commit"]').remove(); // Remove any existing commit field
     form.append('<input type="hidden" name="commit" value="' + btnVal + '" />');
-    
+
     // Trigger form submission so Rails UJS can handle it via AJAX
     // Using trigger('submit') instead of .submit() ensures Rails UJS intercepts the event
     form.trigger('submit');
@@ -351,7 +351,8 @@ _nfs_store.fs_browser = function ($outer) {
       refresh_browser($outer, container_id);
     }, 10000)
 
-  }).on('click', '.container-browse-move-files', function (e) {    e.preventDefault();    var target = $($(this).attr('data-target-browser'));
+  }).on('click', '.container-browse-move-files', function (e) {
+    e.preventDefault(); var target = $($(this).attr('data-target-browser'));
     var msg = $('#container-browse-move-files-form-' + container_id).html();
     var title = 'Move Files to a folder';
     _fpa.show_modal(msg, title);
@@ -450,13 +451,14 @@ _nfs_store.fs_browser = function ($outer) {
     submit_modal('rename-file');
   });
 
-  $(document).on('click', '.refresh-container-list[data-container-id="' + container_id + '"]', function (e) {
-    $outer.find('.container-browser').addClass('ajax-running');
-    var time = (new Date).getTime() / 1000;
-    $(this).attr('data-last-click-at', time);
-  }).on('change', 'input[name="container-meta-controls-' + container_id + '"]', function (e) {
-    set_metadata_views($(this));
-  });
+  $(document).off('click', '.refresh-container-list[data-container-id="' + container_id + '"]')
+    .on('click', '.refresh-container-list[data-container-id="' + container_id + '"]', function (e) {
+      $outer.find('.container-browser').addClass('ajax-running');
+      var time = (new Date).getTime() / 1000;
+      $(this).attr('data-last-click-at', time);
+    }).on('change', 'input[name="container-meta-controls-' + container_id + '"]', function (e) {
+      set_metadata_views($(this));
+    });
 
   var classification_radio = $('input[name="container-meta-controls-' + container_id + '"]:checked');
   set_metadata_views(classification_radio, true);
