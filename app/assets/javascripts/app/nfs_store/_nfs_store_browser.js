@@ -445,14 +445,17 @@ _nfs_store.fs_browser = function ($outer) {
 
   var $modal = $('#primary-modal');
 
-  $modal.on('click', '.container-browse-move-files-submit', function () {
+  $modal.on('click', '.container-browse-move-files-submit', function (e) {
+    e.preventDefault();
     submit_modal('move-files');
-  }).on('click', '.container-browse-rename-file-submit', function () {
+  }).on('click', '.container-browse-rename-file-submit', function (e) {
+    e.preventDefault();
     submit_modal('rename-file');
   });
 
   $(document).off('click', '.refresh-container-list[data-container-id="' + container_id + '"]')
     .on('click', '.refresh-container-list[data-container-id="' + container_id + '"]', function (e) {
+      e.preventDefault();
       $outer.find('.container-browser').addClass('ajax-running');
       var time = (new Date).getTime() / 1000;
       $(this).attr('data-last-click-at', time);
