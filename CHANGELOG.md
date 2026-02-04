@@ -14,6 +14,11 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
+- [Added] consistent app settings setup to system specs
+- [Fixed] add_item_button to use correct hyphenated names for activity logs and external identifiers - fixes #802
+- [Refactored] dicom_deidentify_job_spec for maintainability - resolves #887
+- [Fixed] user NfsStore actions, to prevent them changing the user's app type id for the UI - fixes #887
+
 ## [9.42.3] - 2026-02-03
 
 - [Fixed] asset cleaning to limit to test directories
