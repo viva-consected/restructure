@@ -14,6 +14,8 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
+## [9.42.7] - 2026-02-05
+
 - [Merged] release 9.42.6 back to develop
 - [Fixed] missing session variable
 
