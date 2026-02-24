@@ -14,6 +14,87 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
+### From FPHS - PR #923 - 2026-02-24
+
+- [Fixed] Rails log search page formatting
+
+### From FPHS - PR #922 - 2026-02-24
+
+- [Added] action to clear all user roles from a user in an app - fixes #671
+
+### From FPHS - PR #921 - 2026-02-24
+
+- [Added] collapsible admin server alerts panel - fixes #905
+- [Added] collapsible app type missing configs panel
+
+### From FPHS - PR #920 - 2026-02-23
+
+- [Added] precompilation of Handlebars template - resolves #873
+
+### From FPHS - PR #918 - 2026-02-23
+
+- [Fixed] adding page layouts that have the same name as previously disabled page layouts
+
+### From FPHS - PR #917 - 2026-02-23
+
+- [Fixed] failing admin message notifications and iframe report cells
+
+### From FPHS - PR #916 - 2026-02-23
+
+- [Fixed] error handling for test DB setup
+
+### From FPHS - PR #914 - 2026-02-20
+
+- [Fixed] HTML entity encoding in javascript_tag heredoc blocks
+
+### From FPHS - PR #875 - 2026-02-20
+
+- [Added] enforcement of CSP with strict-dynamic and fix big-select for CSP compliance - resolves #279
+
+### From FPHS - PR #915 - 2026-02-19
+
+- [Fixed] test database setup scripts, especially for single DB setup
+
+### From FPHS - PR #901 - 2026-02-19
+
+- [Fixed] parallel test failures and FrozenError issues - fixes #901
+
+### From FPHS - PR #913 - 2026-02-19
+
+- [Added] descriptive error handling for flag file operations in Mounter - fixes #911
+
+### From FPHS - PR #912 - 2026-02-19
+
+- [Fixed] MountArchiveJob failing when user app type changes - fixes #910
+
+### From FPHS - PR #909 - 2026-02-18
+
+- [Fixed] the setup of rspec browsers for system tests when checking if the port is in use already
+
+### From Viva - PR #908 - 2026-02-17
+
+- [Fixed] create_reference force-created parent records not creating embedded items when user lacks create access- fixes #903
+
+### From FPHS - 2026-02-17
+
+- [Added] the ability to run multiple dev and test servers in multiple workspaces on the same machine, to support AI agents and human developers working simultaneously
+
+### From FPHS - PR #906 - 2026-02-16
+
+- [Fixed] job reviews URL in job failure emails
+
+### From FPHS - PR #902 - 2026-02-05
+
+- [Added] NFS Mountpoint Monitoring and Server Info UI Improvements - fixes #896
+
+### from FPHS - PR #900 - 2026-02-05
+
+- [Fixed] Filestore actions like "send to trash", "move" and "rename" need to delay before submitting the "refresh" - fixes #899
+
+### From FPHS - PR #898 - 2026-02-05
+
+- [Fixed] download button in the filestore secure viewer fails with an error when using a file field - fixes #897
+
 ## [9.42.7] - 2026-02-05
 
 - [Merged] release 9.42.6 back to develop
