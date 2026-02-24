@@ -25,7 +25,7 @@
 - Use `git` and `gh` CLI tools for version control and repository management; DO NOT use GitKraken or other GUI tools.
 - Commit messages should be short (1 line) and clear, typically starting with one of the past tense verbs (Added, Fixed, Changed, Removed, Refactored, Updated) and ending with a suffix like ` - fixes #123` or ` - resolves #123` to reference related issues.
 - Rebase your branch onto the latest local `up-develop` branch before creating a pull request `git checkout up-develop && git pull && git rebase --onto up-develop start-<feature-name>-<issue-number>`.
-- If requested, the AI Agent should create a pull request in repo `consected/restructure` based on the `develop` branch, with a descriptive title and summary of changes 
+- If requested, the AI Agent should create a (cross fork) pull request on repo `consected/restructure` based on the `develop` branch, with a descriptive title and summary of changes. "head" should refer to the local branch created for the feature.
 - Only a human user will merge branches after code review; AI agents should not merge branches.
 
 ### Testing Conventions
@@ -36,6 +36,13 @@
 ### Ruby on Rails Conventions
 
 For all Ruby on Rails code you write, follow these conventions: [Ruby on Rails Coding Standards](instructions/ruby-on-rails.instructions.md)
+
+### HTML and CSS Conventions
+
+- Avoid adding HTML styles inline; use CSS classes instead.
+- Use BEM (Block, Element, Modifier) naming conventions for CSS classes.
+- If JavaScript is needed for UI behavior, preferably use appropriate postprocessors rather than inline scripts.
+- If inline `<script>` or `<style>` tags are necessary, use Rails `javascript_tag` or `style_tag` helpers with a nonce for CSP compliance.
 
 ### Database Conventions
 - Use migrations for all schema changes; avoid direct DB modifications for implementation.
