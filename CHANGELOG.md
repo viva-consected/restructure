@@ -14,6 +14,30 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
+- [Merged] release 9.42.8 back to develop
+- [Added] documentation for APIs and facilitate clean return of API endpoint routes by ensuring STDERR is written to within the app for CLI messaging
+- [Added] API create master with associations, transactional rollback, and API docs - fixes #924
+- [Added] dynamic definition setup re: automatic migrations to agent instructions
+- [Added] API definitions panel to admin dynamic definition and report views - resolves #652
+- [Added] save trigger API endpoint specs for dynamic models and reports - resolves #652
+- [Added] create master with associations API tests via pull_external_data - PR #929
+- [Moved] report curl and save trigger generation into helper methods
+- [Aligned] report save trigger key to get_report (was get_record)
+- [Moved] copy-to-clipboard to fpa_form_utils, fixed {{master_id}} curl variable, generalised copy button CSS class
+- [Added] support for all HTTP verbs in pull_external_data trigger - fixes #928
+- [Changed] Dalli cache store to use meta protocol - fixes #886
+- [Refactored] cache store spec and config per rubocop conventions
+- [Added] system spec for memcached connection panel with live memcached - fixes #886
+- [Added] user context to raise_flag_file_error in Mounter - resolves #649
+- [Added] a master records admin page - resolves #930
+- [Fixed] session timeout not working due to CSP reports resetting session timer - fixes #925
+- [Fixed] test database setup naming
+- [Fixed] test setup
+- [Added] object key passthrough in FieldDefaults.calculate_default for JSONB fields - fixes #943
+- [Added] integration test for create_reference with JSONB object storage - fixes #943
+- [Refactored] YARD docs and restored test cleanup guards for JSONB object passthrough - fixes #943
+- [Added] shared defs for with: attribute values documenting object: wrapper for JSONB fields - fixes #943
+
 ## [9.42.8] - 2026-02-24
 
 ### From FPHS - PR #923 - 2026-02-24
