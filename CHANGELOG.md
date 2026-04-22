@@ -14,6 +14,148 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
+- [Merged] release 9.42.8 back to develop
+- [Added] documentation for APIs and facilitate clean return of API endpoint routes by ensuring STDERR is written to within the app for CLI messaging
+- [Added] API create master with associations, transactional rollback, and API docs - fixes #924
+- [Added] dynamic definition setup re: automatic migrations to agent instructions
+- [Added] API definitions panel to admin dynamic definition and report views - resolves #652
+- [Added] save trigger API endpoint specs for dynamic models and reports - resolves #652
+- [Added] create master with associations API tests via pull_external_data - PR #929
+- [Moved] report curl and save trigger generation into helper methods
+- [Aligned] report save trigger key to get_report (was get_record)
+- [Moved] copy-to-clipboard to fpa_form_utils, fixed {{master_id}} curl variable, generalised copy button CSS class
+- [Added] support for all HTTP verbs in pull_external_data trigger - fixes #928
+- [Changed] Dalli cache store to use meta protocol - fixes #886
+- [Refactored] cache store spec and config per rubocop conventions
+- [Added] system spec for memcached connection panel with live memcached - fixes #886
+- [Added] user context to raise_flag_file_error in Mounter - resolves #649
+- [Added] a master records admin page - resolves #930
+- [Fixed] session timeout not working due to CSP reports resetting session timer - fixes #925
+- [Fixed] test database setup naming
+- [Fixed] test setup
+- [Added] object key passthrough in FieldDefaults.calculate_default for JSONB fields - fixes #943
+- [Added] integration test for create_reference with JSONB object storage - fixes #943
+- [Refactored] YARD docs and restored test cleanup guards for JSONB object passthrough - fixes #943
+- [Added] shared defs for with: attribute values documenting object: wrapper for JSONB fields - fixes #943
+- [Added] comprehensive specs for SaveTriggers::Case including integration tests - fixes #944
+- [Refactored] save triggers to extract shared execute_trigger_list and store_trigger_results to base class - fixes #944
+- [Refactored] case spec with helper methods to reduce config boilerplate - fixes #944
+- [Updated] CHANGELOG.md with git commits
+- [Added] set_save_trigger_results save trigger option - fixes #949
+- [Refactored] set_save_trigger_results to use base class if_evaluates helper and improved integration test - fixes #949
+- [Added] submitted_request (data, url, method) to save_trigger_results for pull_external_data - fixes #950
+- [Updated] pull_external_data YAML docs to document _submitted_request in save_trigger_results - refs #950
+- [Replaced] trackers table with a database view derived from tracker_history - fixes #941
+- [Added] navigable help doc indexes, back navigation, open-in-new-tab, and fixed YAML option doc rendering
+- [Updated] tdd agent and instructions
+- [Added] recursive substitution for object key values in FieldDefaults.calculate_default - fixes #956
+- [Added] calendar invite (.ics) attachment support to email notifications - fixes #953
+- [Added] NfsStore file attachment support to email notifications - fixes #954
+- [Added] generate_document save trigger - fixes #961
+- [Added] set_variables save trigger - resolves #964
+- [Added] encrypted attribute support for dynamic definition db_columns - fixes #966
+- [Updated] brakeman ignore list
+- [Changed] dynamic models admin index table columns - fixes #968
+- [Updated] specs for revised index table columns - fixes #968
+- [Added] squash commits requirement to createpr
+- [Added] 'Referenced by' section to config library admin details - fixes #970
+- [Changed] filter buttons to chosen select boxes in admin and reports pages - fixes #969
+- [Added] password expiry days to user menu label - fixes #317
+- [Updated] `createpr` agent prompt
+- [Added] example for storing encrypted secrets
+- [Fixed] save trigger admin documentation issues - fixes #976
+- [Fixed] error after changing admin password - fixes #979
+- [Updated] agent instructions
+- [Fixed] admin password change issue - fixes #979 Changed short backtraces to show a full backtrace if the filtered version is empty
+- [Updated] agent instructions
+- [Added] on_complete and on_failure lifecycle hooks to all save triggers - fixes #982
+- [Added] full config to save trigger error messages for debugging - fixes #984
+- [Fixed] tool usage instructions for agents
+- [Fixed] memcached clear breaking UI template retrieval for logged in users - fixes #987
+- [Fixed] template loading race condition causing JS error on early search click - fixes #987
+- [Updated] gems to address Devise security issue
+- [Fixed] report criteria admin style issue
+- [Fixed] Import CSV to auto-populate id, created_at and updated_at - fixes #991
+- [Fixed] stopPropagation called on jQuery element instead of event object - fixes #990
+- [Added] admin panel styling fix
+- [Added] parsed_options_text to resolve YAML anchors in Parsed Config tab - fixes #992
+- [Fixed] _configurations key not being stripped in parsed_options_text - fixes #992
+- [Changed] Parsed Config panel to use CodeMirror YAML viewer - fixes #992
+- [Updated] copilot instructions to allow use of environment variables
+- [Added] batch trigger API sync with association resolution and dynamic name substitution - fixes #996
+- [Security] updated gems to address Nokogiri security issue
+- [Updated] structure.sql
+- [Added] admin report preview action to fix auth issue - fixes #1000
+- [Fixed] report table header cache key to include editable state - fixes #1000
+- [Added] visual indicator on Edit table data button when fields are configured - fixes #1000
+- [Changed] edit table data button to use ternary for btn class
+- [Documented] create_reference specific_record option - resolves #221 (#1002)
+- [Added] refactor prompt
+- [Fixed] report tab to refresh instead of collapse when already expanded - fixes #87
+- [Added] standalone dynamic model support to create_reference save trigger - fixes #1003
+- [Fixed] user session timeout spec to finish in a reasonable time
+- [Fixed] multi-file caching for Handlebars templates - fixes #1004
+- [Fixed] redcap_email and redcap_phone fields showing blank in show mode - fixes #558
+- [Added] full agent tool to tdd-implementation agent
+- [Added] optional expire_datetime field to users and admins - fixes #330
+- [Updated] DB structure to reflect recent migration
+- [Added] brakeman whitelist for new admin reports controller action
+- [Added] get_query_count list_option to control report auto-count on reports page - fixes #1011
+- [Added] nested library resolution to requested_libraries - fixes #1007
+- [Added] guidance to use internal browser if needed in system specs
+- [Added] UAC summary to reports admin Definition tab - fixes #1014
+- [Added] sort_order option for select_record_from fields - fixes #217
+- [Added] PostgreSQL full text search indexing and docs - fixes #74
+- [Added] model requirements to prompts and agents
+- [Updated] brakeman.ignore file to allow tsvector writing
+- [Fixed] initial_show CSS class bug and added system specs - fixes #219
+- [Fixed] select_user_with_role_ label resolution in reports and selections - fixes #333
+- [Updated] parallel test scripts for better logging
+- [Refactored] spec helper stability and layout cleanup - fixes #1020
+- [Refactored] system spec navigation helpers - fixes #1020
+- [Changed] parallel test script to accept command line args in place of environment variables
+- [Fixed] bad exit message in parallel test retests
+- [Added] api_access_only flag for API-only users to bypass 2FA setup - fixes #1025
+- [Added] admin manage users system specs - resolves #1027
+- [Refactored] admin manage users spec with helpers and context blocks - resolves #1027
+- [Fixed] prepend_to_options gsub corrupting YAML with escaped quotes - fixes #1029
+- [Fixed] config library _default: breaking configs when _definitions: appear below it - fixes #521
+- [Added] versioned config library resolution for dynamic definitions - fixes #666
+- [Added] config library timestamp check to dynamic definition cache invalidation - fixes #523
+- [Fixed] duplicate admin panel server alerts - fixes #1035
+- [Added] test for item flag name export filtering by app type - fixes #3
+- [Fixed] tdd agent prompt
+- [Added] item flag name import support and test - fixes #3
+- [Added] secure viewer support for Redcap file links and filestore_view show_as option in reports - fixes #1040
+- [Added] URL search formats to admin Master Records and External Identifiers panels - fixes #1041
+- [Added] new agent prompts for feature branch management
+- [Added] agent prompt to merge latest changes from up-develop branch to local develop
+- [Fixed] admin Redcap project creation failing in non-ref-data app types - fixes #1043
+- [Added] explicit serializer: Marshal to Dalli cache config to suppress security warning - fixes #1038
+- [Added] 2FA upgrade spec, docs, OTP setup fix, and admin 2FA status column - fixes #1047
+- [Fixed] message template form losing message_type and template_type on save - fixes #1049
+- [Fixed] admin forms overriding saved select field values with filter params - fixes #1050
+- [Added] URL fallback and XSS protection for report column show_as url - fixes #1053
+- [Added] User Access Overview admin reports with 5 perspectives - fixes #706
+- [Fixed] parallel test failures in specs
+- [Fixed] documentation link
+- [Fixed] activestorage CVE-2026-33658 by pinning minitest to 5.x
+- [Fixed] YAML safe_load to permit Date and Time classes during app type import - fixes #4
+- [Added] private and immutable Cache-Control headers to cached endpoints - fixes #63
+- [Added] support for arbitrary-length else-if and else-is conditional blocks - fixes #1061
+- [Fixed] create_reference failing with in: none when source has no master association - fixes #1062
+- [Fixed] embedded item preset_value null in index serialization - fixes #1067
+- [Added] resolved definition versioning indicator to admin details panels and record id to Edit Entry title - fixes #1066
+- [Added] creatable select field auto-creation for all single-select variants - fixes #73
+- [Updated] agent tools
+- [Added] field types documentation and spec for dynamic definitions - fixes #1071
+- [Updated] gems and yarn
+- [Fixed] failing EB installs due to staging preventing Rails tmp directory use for rake db:migrate
+- [Updated] CHANGELOG
+- [Updated] gems
+- [Updated] db structure
+- [Merged] release 9.43.0 back to develop
+
 ## [9.43.0] - 2026-04-22
 
 ### From FPHS - PR #1082 - 2026-04-21
