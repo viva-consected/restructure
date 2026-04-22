@@ -10,23 +10,30 @@
 5. **If requirements are not clear, ask for clarification before proceeding**
 6. **Never commit directly to `up-develop` or `develop` branches** - always create feature branches and pull requests
 7. **Focus on configuration over code** - most features should be achievable through admin panel settings rather than new Ruby code
-8. **Create new files and edit directly in the editor**; avoid using command line file operations unless absolutely necessary
+8. **Create new files and edit directly in the editor**; avoid using command line file operations to generate source code
 
 
 ### Critical Rules for Running Terminal Commands
-1. **Never set environment variables** - use app-scripts instead
-2. **Always run tests after making changes** to verify functionality
-3. **Never redirect scripts stdout or stderr to /dev/null**
+1. **Never set environment variables inline** - use app-scripts instead or `export` them in the terminal before running commands
+2. **Always wait for commands to complete before proceeding** - load the `execute/awaitTerminal` tool first
+3. **Never redirect scripts stdout or stderr to /dev/null or /tmp**
 4. **Never run commands in the background** - all commands exit when complete with success or failure codes
 
 ### Git and GitHub Usage
 
+- Use `git` and `gh` CLI tools for version control and repository management.
 - Before starting work, add a tag `start-<feature-name>-<issue-number>` then create a features/bug branch `<feature-name>-<issue-number>`.
-- Use `git` and `gh` CLI tools for version control and repository management; DO NOT use GitKraken or other GUI tools.
 - Commit messages should be short (1 line) and clear, typically starting with one of the past tense verbs (Added, Fixed, Changed, Removed, Refactored, Updated) and ending with a suffix like ` - fixes #123` or ` - resolves #123` to reference related issues.
-- Rebase your branch onto the latest local `up-develop` branch before creating a pull request `git checkout up-develop && git pull && git rebase --onto up-develop start-<feature-name>-<issue-number>`.
-- If requested, the AI Agent should create a (cross fork) pull request on repo `consected/restructure` based on the `develop` branch, with a descriptive title and summary of changes. "head" should refer to the local branch created for the feature.
-- Only a human user will merge branches after code review; AI agents should not merge branches.
+
+### Creating a Pull Request
+
+If requested to create a PR, follow these steps:
+
+- Rebase your branch onto the latest local `up-develop` branch before creating a pull request:
+  `git checkout up-develop && git pull && git rebase --onto up-develop start-<feature-name>-<issue-number>`
+- Create a (cross fork) pull request on repo `consected/restructure` based on the `develop` branch, with a descriptive title and summary of changes. "head" should refer to the local branch created for the feature.
+
+NOTE: Only a human user will merge branches after code review; AI agents should not merge branches.
 
 ### Testing Conventions
 - When fixing implementation bugs, **always write new Rspec or Jasmine tests** to demonstrate the bug, before fixing it.
@@ -61,10 +68,43 @@ For Rspec System Specs Refer to: [Rspec System Specs project coding standards](i
 ### Command Line Usage
 - Create a directory `./tmp/agent-tmp` in the workspace root
 - Use `./tmp/agent-tmp` for all temporary files and logs
-- DO NOT set environment variables or prefix commands with `VAR=VALUE`; use the appropriate app-scripts instead
+- DO NOT set environment variables or prefix commands with `VAR=VALUE`; use the appropriate app-scripts instead or `export VAR=value` in the terminal before running commands
 - DO NOT run commands that redirect output to `/dev/null` or `/tmp/`
-- DO NOT run commands in the background using `&` or `nohup`
+- DO NOT run commands in the background using `&` or `nohup` unless absolutely necessary, and if so, ensure output is redirected to a file in `./tmp/agent-tmp` for later analysis
 - DO NOT run commands with `timeout` unless absolutely necessary
+
+```bash
+# Let test output stream, then analyze the saved log
+bundle exec rspec spec/system/ 2>&1 | tee /tmp/rspec_output.log | tail -100
+grep -E "pattern" /tmp/rspec_output.log | tail -15
+grep -E --after-context=100 "other pattern" /tmp/rspec_output.log | tail -200
+
+# NOTE: the arguments after the script are the same as you would pass to the underlying command
+# Replace `RAILS_ENV=test bundle exec rails runner ...` with: 
+app-scripts/rails_runner_test.sh "puts User.count"
+# or use the rails environment argument
+bundle exec rails runner -e test "puts Rails.env"
+
+# Replace `RUN_APP_SPECS=true FEATURE_DEBUG=true bundle exec rspec ...` with:
+app-scripts/headless_rspec.sh spec/system/my_spec.rb -e 'the example to test'
+
+# Replace `NOT_HEADLESS=true RUN_APP_SPECS=true FEATURE_DEBUG=true bundle exec rspec ...` with:
+app-scripts/not_headless_rspec.sh spec/system/my_spec.rb -e 'the example to test'
+
+# Clean the test database (creates a fresh one)
+app-scripts/clean-test-db.sh 
+
+# Clean test assets and cache
+app-scripts/clean-test-assets-and-cache.sh
+```
+
+#### Why These Rules Exist
+
+- **Terminal tools can lose output** if commands pipe before completion
+- **Background processes hide errors** and completion status from the agent
+- **Environment variables must be consistent** - app-scripts ensure this
+- **Tee allows both viewing and analyzing** output without losing information
+- **Agents need full output** to diagnose failures accurately
 
 ## Project-Specific Conventions
 
@@ -171,6 +211,25 @@ Since activity logs are case management workflows, each record in the `activity_
 
 Resource names are used extensively in access control definitions and naming of associations within the code. They are a unique way of referring to specific models or subsets of records within models. The `Resources::Models` module maps resource names to their corresponding runtime classes and acts as a registry for all dynamic definitions. If in doubt, try to look up resources in `Resources::Models` to find the correct class, resource name or actual class itself.
 
+## Dynamic Definition Setup - Automatic Migrations
+
+When an admin or rspec test creates a new dynamic definition (dynamic model, activity log or external identifier), the system may automatically generate a new database table for that definition, with the appropriate columns and types. This is enabled by the `Settings::AllowDynamicMigrations` setting to `true`. This setting is **enabled** by default in *development environments* and for *system spec tests*, but **disabled** in *production environments* by default. 
+
+Other spec tests (models, controllers, requests, helpers, etc) may explicitly enable this setting if they need to create dynamic definitions as part of their tests. Add the following to the top of the spec file to enable automatic migrations for that spec:
+
+```ruby
+before :all do
+   change_setting('AllowDynamicMigrations', true)
+end
+
+after :all do
+   change_setting('AllowDynamicMigrations', false)
+end
+```
+
+*Production environments* can enable dynamic migrations by setting the environment variable `FPHS_ALLOW_DYNAMIC_MIGRATIONS=true` on the app server.
+
+If automatic migrations are disabled, dynamic definitions will need underlying database tables to be created manually before they can be used. These may be created through manual migrations, or using SQL directly on the database. Some *spec tests* have previously generated tables manually using SQL, but the recommended approach is to enable automatic migrations for tests that require dynamic definitions, and allow the system to handle table creation.
 
 ## Development Setup
 ```bash

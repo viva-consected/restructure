@@ -197,12 +197,12 @@ _fpa.form_utils = {
   setup_big_select_fields(block) {
     // First, process any JSON data elements that store big-select configuration
     // This approach avoids inline script tags that fail CSP when loaded via AJAX
-    block.find('script.big-select-data[type="application/json"]').each(function() {
+    block.find('script.big-select-data[type="application/json"]').each(function () {
       var $dataEl = $(this);
       var fieldId = $dataEl.data('field-id');
       var optionsAttr = $dataEl.attr('data-options');
       var hashAttr = $dataEl.attr('data-hash');
-      
+
       // Parse JSON from attributes (jQuery .data() may not parse HTML-escaped JSON correctly)
       var options = {};
       var hashData = {};
@@ -216,7 +216,7 @@ _fpa.form_utils = {
       } catch (e) {
         // Ignore parse errors - field will be skipped if no hash data
       }
-      
+
       var field = document.getElementById(fieldId);
       if (field) {
         field.big_select_options = field.big_select_options || options;
@@ -532,8 +532,14 @@ _fpa.form_utils = {
   setup_typeahead: function (element, list, name, limit, options) {
     if (typeof list === 'string') list = _fpa.cache.fetch(list);
 
+    var hasObjectItems = list && list.length && typeof list[0] === 'object';
+
     var items = new Bloodhound({
-      datumTokenizer: Bloodhound.tokenizers.whitespace,
+      datumTokenizer: hasObjectItems
+        ? function (datum) {
+          return Bloodhound.tokenizers.whitespace(datum.label || '');
+        }
+        : Bloodhound.tokenizers.whitespace,
       queryTokenizer: Bloodhound.tokenizers.whitespace,
       local: list,
     });
@@ -560,12 +566,32 @@ _fpa.form_utils = {
       source: items,
     };
 
+    if (hasObjectItems) {
+      dataset.display = function (item) {
+        return item.label;
+      };
+    }
+
     if (limit) {
       dataset.limit = limit;
     }
 
     $(element)
       .typeahead(options, dataset)
+      .on('typeahead:select typeahead:autocomplete', function (_ev, suggestion) {
+        if (suggestion && typeof suggestion === 'object') {
+          $(this).attr('data-creatable-selected-label', suggestion.label);
+          $(this).attr('data-creatable-selected-value', suggestion.value);
+          $(this).val(suggestion.label);
+        }
+      })
+      .on('input', function () {
+        var selectedLabel = $(this).attr('data-creatable-selected-label');
+        if (selectedLabel && $(this).val() !== selectedLabel) {
+          $(this).removeAttr('data-creatable-selected-label');
+          $(this).removeAttr('data-creatable-selected-value');
+        }
+      })
       .on('keypress', function (ev) {
         if (ev.keyCode != 13) return;
         var dnf = $(this).attr('data-next-field');
@@ -842,8 +868,8 @@ _fpa.form_utils = {
   },
 
   // Blocks marked with the class use-secure-view-on-links are checked
-  // to find <a> links for filestore downloads. These are then set to
-  //
+  // to find <a> links for filestore downloads or Redcap file downloads.
+  // These are then set to use the secure viewer.
   setup_secure_view_links: function (block) {
     if (block.hasClass('use-secure-view-on-links-setup')) return;
 
@@ -861,6 +887,13 @@ _fpa.form_utils = {
         $(this).parents('.nfs-store-container-block').length == 0
       ) {
         $(this).addClass('use-secure-view');
+      } else if (
+        href &&
+        href.indexOf('/redcap/project_user_requests/') >= 0 &&
+        href.indexOf('/download_field_file/') >= 0 &&
+        !$(this).hasClass('redcap-file-use-secure-view')
+      ) {
+        $(this).addClass('redcap-file-use-secure-view');
       }
     });
 
@@ -1852,6 +1885,49 @@ _fpa.form_utils = {
       });
 
     block
+      .find('input.creatable-select-input.typeahead')
+      .not('.attached-creatable-select_ta')
+      .addClass('attached-creatable-select_ta')
+      .each(function () {
+        var el = $(this);
+        var rawItems = el.attr('data-creatable-items');
+        if (rawItems) {
+          var items = JSON.parse(rawItems);
+          var fieldName = el.attr('data-attr-name');
+          el.data('creatable-select-items', items);
+
+          var form = el.closest('form');
+          if (form.length && !form.hasClass('attached-creatable-select-submit')) {
+            form
+              .addClass('attached-creatable-select-submit')
+              .on('submit', function () {
+                $(this)
+                  .find('input.creatable-select-input.typeahead')
+                  .each(function () {
+                    var input = $(this);
+                    var inputItems = input.data('creatable-select-items') || [];
+                    if (!inputItems.length || typeof inputItems[0] !== 'object') return;
+
+                    var selectedValue = input.attr('data-creatable-selected-value');
+                    if (selectedValue !== undefined) {
+                      // User selected an existing item from typeahead — submit its value (e.g. id)
+                      input.val(selectedValue);
+                    } else {
+                      // User typed freeform text not matching any suggestion — mark as new
+                      var rawValue = input.val();
+                      var newPrefix = input.attr('data-creatable-new-prefix') || '__creatable_new__';
+                      if (rawValue && rawValue !== '') {
+                        input.val(newPrefix + rawValue);
+                      }
+                    }
+                  });
+              });
+          }
+          _fpa.form_utils.setup_typeahead(el, items, fieldName);
+        }
+      });
+
+    block
       .find('[data-format-date-local="true"]')
       .not('.formatted-date-local')
       .each(function () {
@@ -2083,6 +2159,41 @@ _fpa.form_utils = {
         });
       })
       .addClass('made-sortable');
+  },
+
+  // Set up icons to allow copy to clipboard
+  setup_copy_blocks: function (block) {
+
+    $(block).find('.copy-block-button')
+      .not('.added-copy-block-handler')
+      .each(function () {
+        $(this).on('click', function (e) {
+          e.preventDefault();
+          var text = $(this).attr('data-copy-text');
+          // Decode HTML entities
+          var textarea = document.createElement('textarea');
+          textarea.innerHTML = text;
+          text = textarea.value;
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function () {
+              _fpa.flash_notice('Copied to clipboard');
+            }).catch(function () {
+              _fpa.flash_notice('Failed to copy to clipboard');
+            });
+          } else {
+            // Fallback for older browsers
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            _fpa.flash_notice('Copied to clipboard');
+          }
+        })
+      })
+      .addClass('added-copy-block-handler');
   },
 
   setup_sub_lists: function (block) {
