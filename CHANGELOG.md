@@ -14,6 +14,8 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
+## [9.44.1] - 2026-05-02
+
 - [Added] Chart.js chart reports documentation and system spec - fixes #1086
 - [Allow] run_at to be specified with batch_trigger frequency 'once' - fixes #1090
 - [Fixed] api_access_only 2FA edge cases: missing otp_secret generation and flag reset - fixes #1083
