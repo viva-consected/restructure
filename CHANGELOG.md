@@ -14,6 +14,8 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
+## [9.44.2] - 2026-05-04
+
 ## [9.44.1] - 2026-05-02
 
 - [Added] Chart.js chart reports documentation and system spec - fixes #1086
