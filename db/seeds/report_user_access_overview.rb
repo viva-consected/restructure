@@ -23,21 +23,26 @@ module Seeds
     end
 
     def self.create_templates
-      # Shared search attributes for all perspectives
+      # Shared search attributes for the first three perspectives (by_role,
+      # by_resource, resolved). User and App Type are required for meaningful
+      # results; Resource Type, Resource Name, and Role are optional filters.
       search_attrs = <<~END_YAML
         user:
           user:
+            label: 'User (required)'
             multiple: single
             default: current_user
-        role_name:
+        app_type_id:
           select_from_model:
-            resource_name: admin__user_roles
+            label: 'App Type (required)'
+            multiple: single
+            resource_name: admin__app_types
             selections:
-              role_name: role_name
-            all: true
+              name: id
+            default: '{{current_user_app_type_id}}'
         resource_type:
           config_selector:
-            label: Resource Type
+            label: 'Resource Type (optional)'
             multiple: single
             all: true
             filter_selector: resource_name
@@ -50,56 +55,67 @@ module Seeds
               activity_log_type: activity_log_type
         resource_name:
           select_from_model:
+            label: 'Resource Name (optional)'
             resource_name: admin__user_access_controls
             selections:
               resource_name: resource_name
             group_by: resource_type
             all: true
-        app_type_id:
+        role_name:
           select_from_model:
-            multiple: single
-            resource_name: admin__app_types
+            label: 'Role (optional)'
+            resource_name: admin__user_roles
             selections:
-              name: id
-            default: '{{current_user_app_type_id}}'
+              role_name: role_name
+            all: true
       END_YAML
 
+      # Search attributes for the roles-by-user perspective (roles_only).
+      # App Type is required; User and Role are optional filters.
       search_attrs_roles_with_user = <<~END_YAML
-        user:
-          user:
-            multiple: single
-        role_name:
-          select_from_model:
-            resource_name: admin__user_roles
-            selections:
-              role_name: role_name
-            all: true
         app_type_id:
           select_from_model:
+            label: 'App Type (required)'
             multiple: single
             resource_name: admin__app_types
             selections:
               name: id
             default: '{{current_user_app_type_id}}'
+        user:
+          user:
+            label: 'User (optional)'
+            multiple: single
+        role_name:
+          select_from_model:
+            label: 'Role (optional)'
+            resource_name: admin__user_roles
+            selections:
+              role_name: role_name
+            all: true
       END_YAML
 
+      # Search attributes for the users-by-role perspective (users_with_role).
+      # App Type is required; User and Role are optional filters.
       search_attrs_users_with_role = <<~END_YAML
-        user:
-          user:
-            multiple: single
-        role_name:
-          select_from_model:
-            resource_name: admin__user_roles
-            selections:
-              role_name: role_name
-            all: true
         app_type_id:
           select_from_model:
+            label: 'App Type (required)'
             multiple: single
             resource_name: admin__app_types
             selections:
               name: id
             default: '{{current_user_app_type_id}}'
+        user:
+          user:
+            label: 'User (optional)'
+            multiple: single
+        role_name:
+          select_from_model:
+            label: 'Role (optional)'
+            resource_name: admin__user_roles
+            selections:
+              role_name: role_name
+            all: true
       END_YAML
 
       # ── Perspective 1: By Role ──────────────────────────────────────────
@@ -543,61 +559,66 @@ module Seeds
 
       report_values = [
         {
-          name: 'User Access Overview - By Role',
+          name: "User Access Controls - Selected User's Grants by Role",
           item_type: 'admin-user-access-overview',
           short_name: 'user_access_overview_by_role',
-          description: 'View all access controls for a user, grouped by role name or direct assignment',
+          description: 'Lists every access control granted to the selected user, grouped by the role that grants it (or shown as a direct user assignment). Raw, unresolved entries — the same resource may appear more than once under different roles.',
           report_type: 'regular_report',
           auto: false,
           searchable: false,
+          position: 1,
           options: p1_options,
           sql: p1_sql,
           search_attrs: search_attrs
         },
         {
-          name: 'User Access Overview - By Resource',
+          name: "User Access Controls - Selected User's Grants by Resource",
           item_type: 'admin-user-access-overview',
           short_name: 'user_access_overview_by_resource',
-          description: 'View all access controls for a user, grouped by resource',
+          description: 'Lists every access control granted to the selected user, grouped by resource. Raw, unresolved entries from all roles and direct assignments — the same resource may appear more than once with different access levels.',
           report_type: 'regular_report',
           auto: false,
           searchable: false,
+          position: 2,
           options: p2_options,
           sql: p2_sql,
           search_attrs: search_attrs
         },
         {
-          name: 'User Access Overview - Resolved',
+          name: "User Access Controls - Selected User's Effective Access",
           item_type: 'admin-user-access-overview',
           short_name: 'user_access_overview_resolved',
-          description: 'View the effective access for each resource after priority resolution',
+          description: 'Shows the effective access the selected user has for each resource after role precedence and resolution rules have been applied. Each resource appears once, with the access level that actually takes effect.',
           report_type: 'regular_report',
           auto: false,
           searchable: false,
+          position: 3,
           options: p3_options,
           sql: p3_sql,
           search_attrs: search_attrs
         },
         {
-          name: 'User Access Overview - Roles Listed by User',
+          name: "User Roles - Each User's Roles",
           item_type: 'admin-user-access-overview',
           short_name: 'user_access_overview_roles_only',
-          description: 'View the roles assigned to a user in the selected app type',
+          description: 'Lists each user in the selected app type with the roles assigned to them. One row per user-role assignment, ordered by user. Does not include resource-level access controls.',
           report_type: 'regular_report',
           auto: false,
           searchable: false,
+          position: 4,
           options: p4_options,
           sql: p4_sql,
           search_attrs: search_attrs_roles_with_user
         },
         {
-          name: 'User Access Overview - Users Listed by Role',
+          name: "User Roles - Each Role's Users",
           item_type: 'admin-user-access-overview',
           short_name: 'user_access_overview_users_with_role',
-          description: 'View users who have a role assigned in the selected app type',
+          description: 'Lists each role in the selected app type with the users assigned to it. One row per user-role assignment, ordered by role. Does not include resource-level access controls.',
           report_type: 'regular_report',
           auto: false,
           searchable: false,
+          position: 5,
           options: p5_options,
           sql: p5_sql,
           search_attrs: search_attrs_users_with_role
