@@ -14,6 +14,8 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
+## [9.46.2] - 2026-06-25
+
 - [Fixed] CSS error breaking study info pages
 
 ## [9.46.1] - 2026-06-25
