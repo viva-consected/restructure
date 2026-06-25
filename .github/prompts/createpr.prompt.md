@@ -1,6 +1,5 @@
 name: createpr
 description: Create a new pull request using our workspace workflow
-model: Claude Opus 4.6 (copilot)
 ---
 ### Creating a Pull Request
 
