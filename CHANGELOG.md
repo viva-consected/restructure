@@ -14,6 +14,8 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
+## [9.46.1] - 2026-06-25
+
 - [Merged] release 9.44.4 back to develop
 - [Fixed] Redcap file capture desync and added manual recovery option - fixes #1137
 - [Fixed] missing general selection fallback for report edit fields - fixes #1140
