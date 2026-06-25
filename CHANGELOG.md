@@ -14,6 +14,8 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
+- [Fixed] CSS error breaking study info pages
+
 ## [9.46.1] - 2026-06-25
 
 - [Merged] release 9.44.4 back to develop
@@ -38,7 +40,7 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 - [Added] ActivityLog embedded_item API panel trigger examples - fixes #930
 - [Added] parse_json and parse_yaml substitution formatters - fixes #1170
 - [Added] current app type access boolean column and filter to Usernames and Passwords admin page - resolves #1168
-- [Added] _constants and _configurations merging from config libraries - fixes #1178
+- [Added] _constants and_configurations merging from config libraries - fixes #1178
 - [Refactored] page layout resources to standardise UI panel rendering within generic blocks - fixes #1180
 - [Added] `same_site` lax to session cookie - fixes #1184
 - [Added] full_item_type_name to Admin::MasterRecord - fixes #1183
@@ -85,8 +87,8 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 - [Fixed] safe email layout XSS false-positive handling - fixes #1229
 - [Fixed] User.emails_by_id memo not cleared on save due to wrong ivar name - refs #1228
 - [Fixed] Group D spec failures: user access overview template selector and redcap nfs_store batch user access - refs #1228
-- [Fixed] false config errors for select_record_from_* and select_user_with_role_* fields - refs #1228
-- [Moved] select_record_from_* and select_user_with_role_* exclusion to use_with_attribute? - refs #1228
+- [Fixed] false config errors for select_record_from_*and select_user_with_role_* fields - refs #1228
+- [Moved] select_record_from_*and select_user_with_role_* exclusion to use_with_attribute? - refs #1228
 - [Refactored] minor formatting updates in selection and report specs - refs #1228
 - [Refactored] Group C self-sourcing field exemption into canonical prefix list - refs #1228
 - [Fixed] singular resource name in page layout template resolution - fixes #1233
@@ -391,7 +393,6 @@ Fixed notes field format: plain newlines overridden by app config markdown setti
 ### From FPHS - PR #1113 - 2026-05-06
 
 - [Fixed] tracker history protocol casing in history view - fixes #1112
-
 
 ## [9.44.0] - 2026-05-02
 
