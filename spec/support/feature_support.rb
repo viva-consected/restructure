@@ -192,6 +192,22 @@ module FeatureSupport
     have_no_css('.collapsing')
   end
 
+  # Wait for the admin edit form's deferred JS setup to complete before interacting
+  # with tabs. The JS in setup_auto_loading_links (100ms setTimeout) marks every
+  # [data-toggle="tab"] element with 'attached-tab-show' once event handlers are
+  # attached. Additionally, any on-show-auto-click links that fire automatically on
+  # the initially-active tab are marked with 'auto-clicked'.
+  # Waiting for these markers is more robust than a fixed sleep.
+  def finish_admin_form_setup
+    if page.has_css?('[data-toggle="tab"]:not(.attached-tab-show)', wait: 0)
+      expect(page).not_to have_css('[data-toggle="tab"]:not(.attached-tab-show)', wait: 5)
+    end
+
+    if page.has_css?('a.on-show-auto-click:not(.auto-clicked)', wait: 0)
+      expect(page).not_to have_css('a.on-show-auto-click:not(.auto-clicked)', wait: 5)
+    end
+  end
+
   # Navigate to a master record by ID
   def navigate_to_master(master_id)
     expect(master_id).not_to be nil
@@ -230,6 +246,18 @@ module FeatureSupport
     end
 
     has_css?('body.status-compiled, body.sessions, body.confirmations, body.passwords, body.registrations', wait: 10)
+
+    # After status-compiled appears, wait for JS setup markers from setup_extra_actions
+    # (called via format_block on each rendered block). These are the same signals used
+    # by finish_admin_form_setup — checking them here catches visible tabs and
+    # on-show-auto-click links that may not have been processed yet.
+    if page.has_css?('[data-toggle="tab"]:not(.attached-tab-show)', wait: 0)
+      expect(page).not_to have_css('[data-toggle="tab"]:not(.attached-tab-show)', wait: 5)
+    end
+    if page.has_css?('a.on-show-auto-click:not(.auto-clicked)', wait: 0)
+      expect(page).not_to have_css('a.on-show-auto-click:not(.auto-clicked)', wait: 5)
+    end
+
     sleep 1
   end
 
@@ -255,6 +283,16 @@ module FeatureSupport
     # wait for the modal to fade out before continuing
     has_no_css?('.modal.fade.in')
     has_css?('.modal[style~="display: none"]')
+  end
+
+  def set_notes_field_format(markdown: false, app_type: @app_type, admin: @admin)
+    app_type.app_configurations.where(name: 'notes field format').update_all(disabled: true)
+    Admin::AppConfiguration.create!(
+      name: 'notes field format',
+      value: markdown ? 'markdown' : 'plain',
+      app_type: app_type,
+      current_admin: admin
+    )
   end
 
   def open_player_element(el, items)
@@ -285,8 +323,8 @@ module FeatureSupport
     expect(page).not_to have_css('.collapse.collapsing')
   end
 
-  def expect_tracker_to_be_expanded(master_id)
-    expect(page).to have_css "#trackers-#{master_id}.collapse.in"
+  def expect_tracker_to_be_expanded(master_id, wait: 15)
+    expect(page).to have_css "#trackers-#{master_id}.collapse.in", wait: wait
   end
 
   def all_master_record_panels
@@ -333,10 +371,22 @@ module FeatureSupport
     tab_link = all(scoped_selector, visible: :all, wait: 0).first
     expect(tab_link).not_to be nil
     scroll_into_view(tab_link)
-    tab_link.click if tab_link['aria-expanded'] != 'true'
+
+    target = tab_link['data-target']
+
+    # Avoid clicking again if the panel is already open, or already in the process
+    # of opening: Bootstrap adds `.collapsing` to the target while its collapse
+    # animation is in progress, and `.ajax-running` is added to the clicked link
+    # itself while its `data-remote` request (e.g. for the tracker tab) is in flight.
+    already_expanded_or_expanding = target.present? &&
+                                    page.has_css?("#{target}.collapse.in, #{target}.collapsing", visible: :all, wait: 0)
+    ajax_in_flight = tab_link['class'].to_s.include?('ajax-running')
+
+    tab_link.click if tab_link['aria-expanded'] != 'true' && !already_expanded_or_expanding && !ajax_in_flight
+
+    finish_page_loading
 
     # Wait for the target panel to fully expand (Bootstrap collapse animation)
-    target = tab_link['data-target']
     return unless target.present?
 
     target_selector = "#{target}.collapse.in"
