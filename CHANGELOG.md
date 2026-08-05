@@ -14,109 +14,172 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
-## [9.46.3] - 2026-07-08
+## [9.47.0] - 2026-08-05
 
-## [9.46.2] - 2026-06-25
+- [DB-Migration] required before upgrade
+- [DB-Seeds] update required from admin panel
+- [Security][Updated] gems to address activestorage CVE: CVE-2026-66066
 
-- [Fixed] CSS error breaking study info pages
+### From FPHS - PR #1336 - 2026-08-04
 
-## [9.46.1] - 2026-06-25
+- [Fixed] blank primary_key_name causing PG::SyntaxError in view_sql dynamic models - fixes #1304
 
-- [Merged] release 9.44.4 back to develop
-- [Fixed] Redcap file capture desync and added manual recovery option - fixes #1137
-- [Fixed] missing general selection fallback for report edit fields - fixes #1140
-- [Fixed] Redcap job perform() to use opts hash instead of kwargs for delayed_job Ruby 3 compatibility - fixes #1137
-- [Added] if: conditions to attachments and after_processing in pull_emails trigger - fixes #1144
-- [Updated] pull_emails spec whitespace formatting - fixes #1144
-- [Added] lookup sub-query value source and condition: return flags - fixes #1142
-- [Added] inline data URI image embedding in notification emails - resolves #1148
-- [Fixed] notify on_complete array handling - fixes #1147
-- [Added] tracking for Redcap DataRecords requested options and skipped files - fixes #1143
-- [Improved] NFS container error messaging and mkdir test return value - refs #1155
-- [Added] regression specs for embed via create_reference extra_log_type investigation
-- [Corrected] initial_show and open_panels documentation and specs - resolves #1153
-- [Update] docs to correctly note that initial_show: false is also overridden by open panels
-- [Added] auto name filter for admin pages with name column - fixes #1159
-- [Added] validation to raise FphsOptionsParseError for unexpected underscore-prefixed keys in option configs - fixes #1163
-- [Fixed] Puma test port selection reliability - fixes #1165
-- [Fixed] notes field format: plain newlines overridden by app config markdown setting - fixes #1167
-- [Added] async lazy loading for admin components panel - fixes #1171
-- [Added] ActivityLog embedded_item API panel trigger examples - fixes #930
-- [Added] parse_json and parse_yaml substitution formatters - fixes #1170
-- [Added] current app type access boolean column and filter to Usernames and Passwords admin page - resolves #1168
-- [Added] _constants and_configurations merging from config libraries - fixes #1178
-- [Refactored] page layout resources to standardise UI panel rendering within generic blocks - fixes #1180
-- [Added] `same_site` lax to session cookie - fixes #1184
-- [Added] full_item_type_name to Admin::MasterRecord - fixes #1183
-- [Fixed] unsafe SQL interpolation of role names in Reports::Runner - fixes #1077
-- [Added] non-blocking main template load on admin pages - fixes #1181
-- [Fixed] SQL injection in AppType#associated_general_selections
-- [Fixed] stored XSS protection with Nokogiri parsing - fixes #1189
-- [Updated] upload notify error message matcher for upstream format change - fixes #1172 compatibility
-- [Added] SSRF guard to pull_external_data save trigger
-- [Refactored] constantize on user-influenced strings to use Resources::Models registry allow-list
-- [Harden] NfsStore path traversal: clean_path guard, containment invariant, filename validation, model-layer defence-in-depth
-- [Added] link from reports API admin panel to extra URL attributes documentation
-- [Fixed] contains.resources panel HTML IDs and data-panel-tab for single-resource panels - fixes #1200
-- [Split] contains.resources panels into legacy single-resource and multi-resource wrapper rendering; forbid mixed AL panels - fixes #1205
-- [Added] activity log panel perspectives feature - resolves #1194
-- [Fixed] SQL injection vulnerability in runner.rb - resolves #1194
-- [Updated] Puma to 7.2.1 to fix CVE
-- [Fixed] substitutions.md library page rendering and added {{#is}} docs - fixes #1213
-- [Updated] to fix some formatting issues and add null and blank comparisons
-- [Added] "show in new tab" link to top of library document page
-- [Added] batch user fallback for nfs_store jobs when active user has no group roles - fixes #1204
-- [Added] URL params passthrough to report search criteria in standalone page layouts - fixes #1217
-- [Added] Admin Reports link in Status block on admin page using AdminReportItemTypes constant - fixes #1216
-- [Added] datalabels plugin to chartjs
-- [Fixed] view spec doubles to stub perspectives, default_perspective, AppConfiguration.hash_for and current_user
-- [Fixed] message_notification_spec by granting user access in bulk-msg app type
-- [Fixed] manage users show partial to display user name in credential flash - fixes #1027
-- [Added] view user record link to manage users credential flash - fixes #1168
-- [Fixed] save trigger API spec by allowing private hosts for Capybara test server
-- [Fix] data pollution in specs
-- [Fixed] run_batch_now to raise when configured user not found; fixed batch user setup in spec
-- [Fixed] P1 UAO report spec: user field defaults to current_user, not empty result
-- [Fixed] save trigger API spec AL setup to regenerate class when AL already exists in DB
-- [Fixed] batch_now spec to restore admin vars after create_user; fixed UAC spec to use dynamic activity_log_type resource name
-- [Fixed] save_trigger API spec: reset DM route cache after setup_access creates UAC
-- [Fixed] save_trigger API spec: use routes_reloader.reload! to finalize routes (not routes_load)
-- [Updated] Gemfile.lock gem versions
-- [Fixed] decryption error handling for corrupt otp_secret - fixes #1226
-- [Added] system specs for corrupt OTP login and admin reset flows - fixes #1226
-- [Hardened] SafeOtp concern: fix attributes re-raise, remove reload, self-priming auth flag - refs #1226
-- [Apply] RuboCop formatting fixes
-- [Ignored] brakeman warning about Rails 7.2 series upcoming EOL
-- [Added] script to analyse an app-type YAML config file
-- [Fixed] safe email layout XSS false-positive handling - fixes #1229
-- [Fixed] User.emails_by_id memo not cleared on save due to wrong ivar name - refs #1228
-- [Fixed] Group D spec failures: user access overview template selector and redcap nfs_store batch user access - refs #1228
-- [Fixed] false config errors for select_record_from_*and select_user_with_role_* fields - refs #1228
-- [Moved] select_record_from_*and select_user_with_role_* exclusion to use_with_attribute? - refs #1228
-- [Refactored] minor formatting updates in selection and report specs - refs #1228
-- [Refactored] Group C self-sourcing field exemption into canonical prefix list - refs #1228
-- [Fixed] singular resource name in page layout template resolution - fixes #1233
-- [Fixed] activity log item_type_exists validation to skip disabled records; cleaned up perspectives spec pollution - fixes #1235
-- [Added] bundler update to release script
-- [Updated] agent prompts
-- [Added] new details and scripts for managing up-develop and PRs
-- [Added] better instructions to agents in how to use debugging for system spec issues and development
-- [Added] interactive debugging and development notes for system specs
-- [Fixed] missing filename persistence in REDCap file capture skip branch
-- [Fixed] embedded DM show mode for versioned definitions - fixes #1238
-- [Fixed] activity log historical-version templates breaking page render - refs #1238
-- [Added] external identifier versioned field templates and coexistence test - refs #1238
-- [Added] versioned field list render guards for DMs - refs #665 #1238
-- [Fixed] broken historical version templates and added use_current_version guard - fixes #1238
-- [Added] failing specs for historical version loop removal - fixes #1238 perf
-- [Fixed] historical DM version config injection for on-demand template_config - fixes #1238
-- [Fixed] notes field entry in phone log specs to use markdown editor helper - fixes #1238
-- [Updated] CHANGELOG.md with git commits
-- [Changed] release scripts to get PRs for CHANGELOG if "minor" release
-- [Fixed] CHANGELOG
-- [Updated] CHANGELOG.md with git commits
-- [Updated] gems
-- [Merged] release 9.46.0 back to develop
+### From FPHS - PR #1320 - 2026-08-04
+
+- [Fixed] always_embed_creatable_reference raising when a direct embed is at capacity - fixes #1319
+
+### From FPHS - PR #1334 - 2026-08-04
+
+- [Changed] user access overview report navigation and highlighting - fixes #1330
+- [Fixed] Seeding of user access overview reports to allow updates - fixes #1330
+
+### From FPHS - PR #1331 - 2026-08-04
+
+- [Changed] spec tests to improve reliability and increase performance
+- [Added] better agent prompts
+
+### From FPHS - PR #1321 - 2026-08-04
+
+- [Fixed] tracker_history rows written outside the app leaving tracker_id null - fixes #1309
+
+### From FPHS - PR #1324 - 2026-07-30
+
+- [Fixed] admin components panel cache not varying by app type - fixes #1323
+
+### From FPHS - PR #1322 - 2026-07-29
+
+- [Changed] handling of configurations to allow Hash-based app_type/user references across save triggers - fixes #1318
+
+### From FPHS - PR #1317 - 2026-07-25
+
+- [Added] typed conditional access regression tests - fixes #1316
+
+### From FPHS - PR #1315 - 2026-07-25
+
+- [Fixed] implementation bugs following trigger-tasks-validation refactoring
+- [Fixed] spec failures
+
+### From FPHS - PR #1314 - 2026-07-25
+
+- [Fixed] preset_value and related field options to allow array values - fixes #1313
+
+### From FPHS - PR #1306 - 2026-07-23
+
+- [Note] this represents a large refactor of the dynamic definitions configuration.
+- [Added] per-type trigger validation and ExtraOptionConfigs BaseConfiguration refactoring - fixes #986 fixes #1058
+
+### From FPHS - 2026-07-23
+
+- [Fixed] spec setup and common handling to improve reliability
+
+### From FPHS - PR #1307 - 2026-07-22
+
+- [Fixed] pre-existing memoization test-isolation failures in external_identifier_spec and container_file_spec - fixes #1303
+
+### From FPHS - PR #1301 - 2026-07-22
+
+- [Fixed] force_not_valid not bypassing PlayerInfo source and PlayerContact rec_type validation - fixes #1281
+
+### From FPHS - 2026-07-21
+
+- [Added] notes field format support for specs
+
+### From FPHS - 2026-07-21
+
+- [Fixed] system spec issues
+
+### From FPHS - PR #1292 - 2026-07-21
+
+- [Changed] parallel test scripts to limit processes and improve DB setup
+
+### From FPHS - PR #1291 - 2026-07-21
+
+- [Fixed] pages#template honoring version token to prevent browser cache poisoning - fixes #1287
+
+### From Viva - PR #1290 - 2026-07-20
+
+- [Added] testrelated app config inspector modes for page layouts/access controls and fixed flaky Rspec support helpers
+
+### From FPHS - PR #1288 - 2026-07-20
+
+- [Fixed] under-scoped access-control cache keys causing missing master panel tabs after in-session app type switch - fixes #1279
+
+### From FPHS - PR #1286 - 2026-07-20
+
+- [Fixed] col_type_json blank textarea clearing empty json/jsonb Hash/Array values - fixes #1285
+
+### From Viva - PR #1283 - 2026-07-16
+
+- [Fixed] handlebars_cache_key to be app_type- and user-aware, preventing cross-app_type and user cache poisoning - fixes #1279
+
+### From FPHS - PR #1282 - 2026-07-16
+
+- [Added] ability to remove a Redcap user from a project in project admin - fixes #1260
+
+### From Viva - PR #1280 - 2026-07-16
+
+- [Fixed] spec flakiness in register_call, admin_parsed_config, and API association specs
+
+### From FPHS - PR #1278 - 2026-07-16
+
+- [Fixed] and documented  ColTypeJson YAML-to-JSON field behaviour - fixes #1268
+
+### From FPHS - PR #1277 - 2026-07-16
+
+- [Added] import_project_user to REDCap API client and save/batch trigger support - resolves #1276
+
+### From FPHS - PR #1275 - 2016-07-16
+
+- [Added] REDCap Users admin report with Search Project Users admin link - resolves #1258
+
+### From FPHS - PR #1274 - 2026-07-16
+
+- [Added] yaml_parse substitution and fix json/yaml_parse top-level array indexing - fixed #1267 and #1273
+
+### From FPHS - PR #1272 - 2026-07-16
+
+- [Added] remove_project_user REDCap API method for save/batch triggers - resolves #1259
+
+### From FPHS - PR #1271 - 2026-07-16
+
+- [Fixed] whole-cache clear on routine User/Admin saves - fixes #1270
+
+### From FPHS - PR #1266 - 2026-07-15
+
+- [Fixed] Delayed::Job job_id lookup fragility that broke Admin Job UUID search - fixes #1232
+
+### From FPHS - PR #1265 - 2026-07-15
+
+- [Fixed] AppSettingsVars NfsStoreJobDefaultAppTypeId typo and added method fallback in app_settings - fixes #1248
+
+### From FPHS - PR #1264 - 2026-07-15
+
+- [Fixed] active_model_configurations fail-open when FPHS_LOAD_APP_TYPES matches no active app type - fixes #1263
+
+### From FPHS - PR #1261 - 2026-07-15
+
+- [Fixed] clean_references_def unresolved reference handling and suppressed spurious startup WARN logging - fixes #1246
+
+### From Viva - PR #1262 - 2026-07-14
+
+- [Added] system spec for edit-mode show_if with custom option_type_attr_name - resolves #1256
+
+### From Viva - PR #1257 - 2026-07-14
+
+- [Fixed] show_if hiding of read-only field values for option-typed dynamic models - fixes #1254
+
+### From Viva - PR #1255 - 2026-07-14
+
+- [Fixed] missing `library` definition in sidebar embedded page view - fixes #1252
+
+### From FPHS - PR #1250 - 2026-06-30
+
+- [Fixed] Chartjs datalabels plugin appearing on all charts - fixes #1249
+- [Added] documentation for Chartjs datalabels and disabling legends
+
+### From FPHS - PR #1247 - 2026-06-27
+
+- [Fixed] YAML corruption and config library cycle expansion in dynamic model options - fixes #676
 
 ## [9.46.0] - 2026-06-25
 
