@@ -14,6 +14,8 @@ Since [version 8.4.0](#840---2024-01-10) the convention is that releases made wi
 
 ## Unreleased
 
+## [9.47.1] - 2026-08-05
+
 ## [9.47.0] - 2026-08-05
 
 - [DB-Migration] required before upgrade
